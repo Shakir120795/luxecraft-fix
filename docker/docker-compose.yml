@@ -1,0 +1,51 @@
+version: '3.9'
+
+# LuxeCraft — Local Development Infrastructure
+# Runs PostgreSQL and Redis for local development.
+# Application services (API, storefront, admin) run via npm on the host.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: luxecraft_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-luxecraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-luxecraft_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-luxecraft_dev}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-luxecraft} -d ${POSTGRES_DB:-luxecraft_dev}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: luxecraft_redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-luxecraft_redis_dev}
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-luxecraft_redis_dev}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  default:
+    name: luxecraft_network

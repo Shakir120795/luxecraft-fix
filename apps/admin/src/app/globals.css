@@ -1,0 +1,82 @@
+/* LuxeCraft Admin — shares the storefront's warm luxury palette. */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --color-primary: #211d19;
+  --color-accent: #b3955a;
+  --color-accent-strong: #8f743d;
+  --color-bg: #f6f1e8;
+  --color-surface: #fbf8f2;
+  --color-text: #211d19;
+  --color-muted: #756b61;
+  --color-border: #ded5c8;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: Georgia, Cambria, 'Times New Roman', Times, serif;
+}
+
+html, body {
+  height: 100%;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.admin-card {
+  width: 100%;
+  max-width: 32rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  padding: clamp(2rem, 7vw, 4rem);
+  text-align: center;
+}
+
+.admin-eyebrow {
+  color: var(--color-accent);
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.admin-card h1 {
+  margin-top: 1rem;
+  font-family: var(--font-serif);
+  font-size: clamp(2.25rem, 7vw, 3.25rem);
+  font-weight: 400;
+}
+
+.admin-card p {
+  margin-top: 1rem;
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.admin-action {
+  display: inline-flex;
+  margin-top: 2rem;
+  border: 1px solid var(--color-accent);
+  background: var(--color-accent);
+  padding: .85rem 1.25rem;
+  color: white;
+  font-family: var(--font-serif);
+  font-size: .875rem;
+  letter-spacing: .08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background-color .2s ease;
+}
+
+.admin-action:hover { background: var(--color-accent-strong); }

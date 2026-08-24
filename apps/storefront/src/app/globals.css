@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* LuxeCraft design tokens. Tailwind's luxury palette reads these variables. */
+:root {
+  --luxury-canvas: 246 241 232;
+  --luxury-surface: 251 248 242;
+  --luxury-ink: 33 29 25;
+  --luxury-muted: 117 107 97;
+  --luxury-border: 222 213 200;
+  --luxury-terracotta: 168 111 93;
+  --luxury-gold: 179 149 90;
+  --luxury-gold-strong: 143 116 61;
+}
+
+:root.dark {
+  --luxury-canvas: 23 21 19;
+  --luxury-surface: 33 30 26;
+  --luxury-ink: 242 236 226;
+  --luxury-muted: 185 174 160;
+  --luxury-border: 58 52 45;
+  --luxury-terracotta: 185 120 100;
+  --luxury-gold: 193 162 105;
+  --luxury-gold-strong: 214 184 123;
+}
+
+@layer base {
+  *, *::before, *::after {
+    @apply border-luxury-sand;
+  }
+
+  html {
+    @apply bg-luxury-cream;
+  }
+
+  body {
+    @apply min-h-screen bg-luxury-cream font-sans text-luxury-charcoal antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+
+  ::selection {
+    @apply bg-luxury-gold text-white;
+  }
+}
+
+@layer components {
+  .btn-luxury {
+    @apply inline-flex items-center justify-center border border-luxury-gold bg-luxury-gold px-7 py-3.5 font-serif text-sm uppercase tracking-[0.14em] text-white transition duration-300 hover:bg-luxury-darkGold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-luxury-gold disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-luxury-outline {
+    @apply inline-flex items-center justify-center border border-luxury-gold bg-transparent px-7 py-3.5 font-serif text-sm uppercase tracking-[0.14em] text-luxury-gold transition duration-300 hover:bg-luxury-gold hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-luxury-gold;
+  }
+
+  .card-luxury {
+    @apply border border-luxury-sand bg-luxury-beige transition-colors duration-300 hover:border-luxury-gold/70;
+  }
+
+  .input-luxury {
+    @apply w-full border border-luxury-sand bg-luxury-beige px-4 py-3 text-luxury-charcoal placeholder:text-luxury-brown/70 transition-colors focus:border-luxury-gold focus:outline-none focus:ring-1 focus:ring-luxury-gold;
+  }
+}
