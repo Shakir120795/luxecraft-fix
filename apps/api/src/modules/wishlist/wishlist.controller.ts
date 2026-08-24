@@ -24,50 +24,50 @@ export class WishlistController {
   constructor(private readonly svc: WishlistService) {}
 
   @Get()
-  getWishlist(@CurrentUser() user: { userId: string }) {
-    return this.svc.getWishlist(user.userId);
+  getWishlist(@CurrentUser() user: { id: string }) {
+    return this.svc.getWishlist(user.id);
   }
 
   @Post('items')
-  addToWishlist(@Body() dto: AddToWishlistDto, @CurrentUser() user: { userId: string }) {
-    return this.svc.addToWishlist(dto, user.userId);
+  addToWishlist(@Body() dto: AddToWishlistDto, @CurrentUser() user: { id: string }) {
+    return this.svc.addToWishlist(dto, user.id);
   }
 
   @Post('toggle')
   @HttpCode(HttpStatus.OK)
-  toggleWishlist(@Body() dto: AddToWishlistDto, @CurrentUser() user: { userId: string }) {
-    return this.svc.toggleWishlist(dto, user.userId);
+  toggleWishlist(@Body() dto: AddToWishlistDto, @CurrentUser() user: { id: string }) {
+    return this.svc.toggleWishlist(dto, user.id);
   }
 
   @Delete('items/:itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
-  removeFromWishlist(@Param('itemId') itemId: string, @CurrentUser() user: { userId: string }) {
-    return this.svc.removeFromWishlist(itemId, user.userId);
+  removeFromWishlist(@Param('itemId') itemId: string, @CurrentUser() user: { id: string }) {
+    return this.svc.removeFromWishlist(itemId, user.id);
   }
 
   @Delete('clear')
   @HttpCode(HttpStatus.NO_CONTENT)
-  clearWishlist(@CurrentUser() user: { userId: string }) {
-    return this.svc.clearWishlist(user.userId);
+  clearWishlist(@CurrentUser() user: { id: string }) {
+    return this.svc.clearWishlist(user.id);
   }
 
   @Post('move-to-cart')
   @HttpCode(HttpStatus.OK)
   moveToCart(
     @Body() dto: MoveToCartDto,
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { id: string },
     @Req() req: Request,
   ) {
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
-    return this.svc.moveToCart(dto, user.userId, sessionId as string);
+    return this.svc.moveToCart(dto, user.id, sessionId as string);
   }
 
   @Get('check')
   checkInWishlist(
     @Query('productId') productId: string,
     @Query('variantId') variantId: string | undefined,
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { id: string },
   ) {
-    return this.svc.isInWishlist(productId, variantId, user.userId);
+    return this.svc.isInWishlist(productId, variantId, user.id);
   }
 }

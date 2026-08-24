@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   // API rewrites — proxy /api/* to the NestJS backend during development
   async rewrites() {
     const apiUrl = process.env.API_INTERNAL_URL ?? 'http://localhost:3001/api/v1';

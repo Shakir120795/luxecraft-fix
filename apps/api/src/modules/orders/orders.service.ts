@@ -100,6 +100,15 @@ export class OrdersService {
     return order;
   }
 
+  async findOneForUser(id: string, userId: string): Promise<Order> {
+    const order = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: true, payments: true },
+    });
+    if (!order) throw new NotFoundException(`Order ${id} not found.`);
+    return order;
+  }
+
   async findByOrderNumber(orderNumber: string): Promise<Order> {
     const order = await this.prisma.order.findUnique({
       where: { orderNumber },

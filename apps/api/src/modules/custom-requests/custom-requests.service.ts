@@ -52,6 +52,15 @@ export class CustomRequestsService {
     return req;
   }
 
+  async findOneForUser(id: string, userId: string): Promise<CustomRequest> {
+    const request = await this.prisma.customRequest.findFirst({
+      where: { id, userId },
+      include: { messages: true, quotes: true, designs: true },
+    });
+    if (!request) throw new NotFoundException(`Custom request ${id} not found.`);
+    return request;
+  }
+
   async findByCustomRequestNumber(customRequestNumber: string): Promise<CustomRequest> {
     const req = await this.prisma.customRequest.findUnique({
       where: { customRequestNumber },

@@ -114,7 +114,7 @@ export default function AddressesPage() {
                         <p className="text-sm text-luxury-brown">{address.addressLine2}</p>
                       )}
                       <p className="text-sm text-luxury-brown">
-                        {address.city}, {address.state} {address.postalCode}
+                        {address.city}, {address.stateProvince} {address.postalCode}
                       </p>
                       <p className="text-sm text-luxury-brown">{address.country}</p>
                       <p className="text-sm text-luxury-brown mt-2">{address.phone}</p>
@@ -170,7 +170,7 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
     addressLine1: '',
     addressLine2: '',
     city: '',
-    state: '',
+    stateProvince: '',
     postalCode: '',
     country: 'US',
     phone: '',
@@ -244,7 +244,7 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
         <div>
           <label className="block text-sm font-serif text-luxury-charcoal mb-2">State</label>
-          <input name="state" value={formData.state} onChange={handleChange} className="input-luxury" />
+          <input name="stateProvince" value={formData.stateProvince} onChange={handleChange} className="input-luxury" />
         </div>
       </div>
 

@@ -1,5 +1,24 @@
 # Task Queue
 
+## Phase 10 — Lean VPS Launch
+
+- [x] Add a self-contained, single-VPS Docker Compose topology.
+- [x] Keep PostgreSQL and Redis private; publish only reverse-proxy traffic.
+- [x] Add standalone production images for storefront and admin.
+- [x] Add VPS environment template and operational commands.
+- [x] Add a single-command Linux VPS update helper (`bash update.sh`).
+- [ ] Commit a generated baseline Prisma migration for fresh database provisioning.
+- [ ] Run the stack on the target VPS and perform health, storefront, admin, and database smoke tests.
+- [ ] Configure TLS (Cloudflare or host-level TLS proxy) and production DNS.
+
+## Backend ↔ Frontend Synchronization
+
+- [x] Connect storefront shipping lookup and standard-order creation to backend routes.
+- [x] Support guest shipping-address snapshots through checkout.
+- [x] Align address fields and `204 No Content` handling with the API contract.
+- [x] Align admin client paths, auth headers, pagination envelopes, and custom-request messages/quotes with protected backend routes.
+- [ ] Verify checkout and admin mutation flows against a running PostgreSQL/Redis stack.
+
 ## Requirements Finalization
 
 - [ ] Finalize brand/project name
@@ -465,5 +484,3 @@ LuxeCraft is fully implemented and production-ready:
 - Admin: 15 pages ✅
 - TypeScript: All passing ✅
 - Production builds: All successful ✅
-
-

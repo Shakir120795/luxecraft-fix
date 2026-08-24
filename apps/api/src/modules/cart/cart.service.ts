@@ -33,8 +33,8 @@ export class CartService {
         include: {
           items: {
             include: {
-              product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } },
-              variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } },
+              product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, status: true } },
+              variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, isAvailable: true } },
             },
           },
         },
@@ -79,8 +79,8 @@ export class CartService {
         include: {
           items: {
             include: {
-              product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } },
-              variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } },
+              product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, status: true } },
+              variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, isAvailable: true } },
             },
           },
         },
@@ -136,8 +136,8 @@ export class CartService {
         where: { id: existingItem.id },
         data: { quantity: { increment: dto.quantity } },
         include: {
-          product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } },
-          variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } },
+          product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, status: true } },
+          variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, isAvailable: true } },
         },
       });
     }
@@ -164,8 +164,8 @@ export class CartService {
         priceSnapshot,
       },
       include: {
-        product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } },
-        variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } },
+        product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, status: true } },
+        variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, isAvailable: true } },
       },
     });
   }
@@ -196,8 +196,8 @@ export class CartService {
         }),
       },
       include: {
-        product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } },
-        variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } },
+        product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, status: true } },
+        variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, isAvailable: true } },
       },
     });
   }

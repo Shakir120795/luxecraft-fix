@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ShippingMethod } from '@prisma/client';
 
+export type CalculatedShippingMethod = ShippingMethod & { calculatedRate: number };
+
 @Injectable()
 export class ShippingService {
   private readonly logger = new Logger(ShippingService.name);
@@ -12,7 +14,7 @@ export class ShippingService {
     country: string;
     cartWeightKg: number;
     cartTotal: number;
-  }): Promise<ShippingMethod[]> {
+  }): Promise<CalculatedShippingMethod[]> {
     // Find zone for country
     const zones = await this.prisma.shippingZone.findMany({
       where: { isActive: true },
@@ -36,7 +38,7 @@ export class ShippingService {
       return {
         ...method,
         calculatedRate: finalRate,
-      } as ShippingMethod & { calculatedRate: number };
+      } as CalculatedShippingMethod;
     });
   }
 

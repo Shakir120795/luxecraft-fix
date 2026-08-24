@@ -36,6 +36,7 @@ export default function CheckoutPage() {
 
   // Addresses
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [guestShippingAddress, setGuestShippingAddress] = useState<Omit<Address, 'id' | 'userId' | 'createdAt'>>();
   const [selectedShippingAddressId, setSelectedShippingAddressId] = useState<string>('');
   const [selectedBillingAddressId, setSelectedBillingAddressId] = useState<string>('');
   const [sameAsShipping, setSameAsShipping] = useState(true);
@@ -126,8 +127,15 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!authenticated && !guestShippingAddress) {
+      setError('Please enter and use a shipping address.');
+      return;
+    }
+
     // Load shipping methods
-    const shippingAddr = addresses.find(a => a.id === selectedShippingAddressId);
+    const shippingAddr = authenticated
+      ? addresses.find(a => a.id === selectedShippingAddressId)
+      : guestShippingAddress;
     if (shippingAddr && cart) {
       const methods = await getShippingMethods({
         country: shippingAddr.country,
@@ -165,9 +173,21 @@ export default function CheckoutPage() {
     try {
       const result = await createOrder({
         shippingAddressId: selectedShippingAddressId || undefined,
-        billingAddressId: sameAsShipping ? selectedShippingAddressId : selectedBillingAddressId || undefined,
         shippingMethodId: selectedShippingMethodId,
         guestEmail: isGuest ? guestEmail : undefined,
+        guestShippingAddress: isGuest
+          ? {
+              firstName: guestShippingAddress?.firstName ?? guestFirstName,
+              lastName: guestShippingAddress?.lastName ?? guestLastName,
+              addressLine1: guestShippingAddress?.addressLine1 ?? '',
+              addressLine2: guestShippingAddress?.addressLine2 ?? undefined,
+              city: guestShippingAddress?.city ?? '',
+              stateProvince: guestShippingAddress?.stateProvince ?? undefined,
+              postalCode: guestShippingAddress?.postalCode ?? '',
+              country: guestShippingAddress?.country ?? '',
+              phone: guestShippingAddress?.phone ?? undefined,
+            }
+          : undefined,
       });
 
       if (result.success && result.data) {
@@ -287,7 +307,14 @@ export default function CheckoutPage() {
               <div className="border border-luxury-sand bg-luxury-beige p-8">
                 <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Shipping Address</h2>
                 <form onSubmit={handleAddressSubmit} className="space-y-6">
-                  {addresses.length > 0 ? (
+                  {isGuest ? (
+                    <AddressForm
+                      guestMode
+                      initialFirstName={guestFirstName}
+                      initialLastName={guestLastName}
+                      onGuestAddress={(address) => setGuestShippingAddress(address)}
+                    />
+                  ) : addresses.length > 0 ? (
                     <div className="space-y-3">
                       {addresses.map(addr => (
                         <label key={addr.id} className="flex items-start gap-3 p-4 border border-luxury-sand hover:border-luxury-gold transition-colors cursor-pointer">
@@ -305,7 +332,7 @@ export default function CheckoutPage() {
                               {addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}
                             </p>
                             <p className="text-sm text-luxury-brown">
-                              {addr.city}, {addr.state} {addr.postalCode}
+                              {addr.city}, {addr.stateProvince} {addr.postalCode}
                             </p>
                             <p className="text-sm text-luxury-brown">{addr.country}</p>
                             <p className="text-sm text-luxury-brown">{addr.phone}</p>
@@ -317,17 +344,17 @@ export default function CheckoutPage() {
                     <p className="text-luxury-brown">No saved addresses. Please add a new address.</p>
                   )}
 
-                  <button
+                  {!isGuest && <button
                     type="button"
                     onClick={() => setShowNewAddressForm(!showNewAddressForm)}
                     className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
                   >
                     {showNewAddressForm ? '− Cancel' : '+ Add New Address'}
-                  </button>
+                  </button>}
 
-                  {showNewAddressForm && <AddressForm onSuccess={() => { loadCheckoutData(); setShowNewAddressForm(false); }} />}
+                  {!isGuest && showNewAddressForm && <AddressForm onSuccess={() => { loadCheckoutData(); setShowNewAddressForm(false); }} />}
 
-                  <div className="flex items-center gap-2 pt-4">
+                  {!isGuest && <div className="flex items-center gap-2 pt-4">
                     <input
                       type="checkbox"
                       id="sameAsShipping"
@@ -338,7 +365,7 @@ export default function CheckoutPage() {
                     <label htmlFor="sameAsShipping" className="text-sm text-luxury-brown">
                       Billing address same as shipping
                     </label>
-                  </div>
+                  </div>}
 
                   <div className="flex gap-4 pt-4">
                     <button type="button" onClick={() => setCurrentStep('customer')} className="btn-luxury-outline px-8 py-4">
@@ -491,15 +518,27 @@ function StepIndicator({ step, label, current, completed }: { step: number; labe
   );
 }
 
-function AddressForm({ onSuccess }: { onSuccess: () => void }) {
+function AddressForm({
+  onSuccess,
+  guestMode = false,
+  initialFirstName = '',
+  initialLastName = '',
+  onGuestAddress,
+}: {
+  onSuccess?: () => void;
+  guestMode?: boolean;
+  initialFirstName?: string;
+  initialLastName?: string;
+  onGuestAddress?: (address: Omit<Address, 'id' | 'userId' | 'createdAt'>) => void;
+}) {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    firstName: initialFirstName,
+    lastName: initialLastName,
     company: '',
     addressLine1: '',
     addressLine2: '',
     city: '',
-    state: '',
+    stateProvince: '',
     postalCode: '',
     country: 'US',
     phone: '',
@@ -522,10 +561,16 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
     setError(null);
     setSubmitting(true);
 
+    if (guestMode) {
+      onGuestAddress?.(formData);
+      setSubmitting(false);
+      return;
+    }
+
     const result = await createAddress(formData);
 
     if (result.success) {
-      onSuccess();
+      onSuccess?.();
     } else {
       setError(result.message || 'Failed to create address');
       setSubmitting(false);
@@ -553,7 +598,7 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
 
       <div className="grid grid-cols-2 gap-3">
         <input name="city" placeholder="City *" value={formData.city} onChange={handleChange} required className="input-luxury" />
-        <input name="state" placeholder="State" value={formData.state} onChange={handleChange} className="input-luxury" />
+        <input name="stateProvince" placeholder="State" value={formData.stateProvince} onChange={handleChange} className="input-luxury" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -564,7 +609,7 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
       <input name="phone" type="tel" placeholder="Phone *" value={formData.phone} onChange={handleChange} required className="input-luxury" />
 
       <button type="submit" disabled={submitting} className="btn-luxury w-full px-6 py-3 text-sm disabled:opacity-50">
-        {submitting ? 'Saving...' : 'Save Address'}
+        {submitting ? 'Saving...' : guestMode ? 'Use This Address' : 'Save Address'}
       </button>
     </form>
   );

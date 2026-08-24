@@ -22,32 +22,32 @@ export class AddressesController {
   constructor(private readonly svc: AddressesService) {}
 
   @Post()
-  create(@Body() dto: CreateAddressDto, @CurrentUser() user: { userId: string }) {
-    return this.svc.create(dto, user.userId);
+  create(@Body() dto: CreateAddressDto, @CurrentUser() user: { id: string }) {
+    return this.svc.create(dto, user.id);
   }
 
   @Get()
-  findAll(@CurrentUser() user: { userId: string }) {
-    return this.svc.findAll(user.userId);
+  findAll(@CurrentUser() user: { id: string }) {
+    return this.svc.findAll(user.id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
-    return this.svc.findOne(id, user.userId);
+  findOne(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.svc.findOne(id, user.id);
   }
 
   @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() dto: UpdateAddressDto,
-    @CurrentUser() user: { userId: string },
+    @CurrentUser() user: { id: string },
   ) {
-    return this.svc.update(id, dto, user.userId);
+    return this.svc.update(id, dto, user.id);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string, @CurrentUser() user: { userId: string }) {
-    return this.svc.delete(id, user.userId);
+  remove(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.svc.delete(id, user.id);
   }
 }

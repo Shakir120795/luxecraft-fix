@@ -25,7 +25,12 @@ export class AdminCustomOrdersService {
   async getRequestDetail(id: string): Promise<any> {
     const req = await this.prisma.customRequest.findUnique({
       where: { id },
-      include: { messages: { orderBy: { createdAt: 'asc' } }, quotes: { orderBy: { version: 'desc' } }, designs: { orderBy: { version: 'desc' } } },
+      include: {
+        user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        messages: { orderBy: { createdAt: 'asc' } },
+        quotes: { orderBy: { version: 'desc' } },
+        designs: { orderBy: { version: 'desc' } },
+      },
     });
     if (!req) throw new NotFoundException(`Custom request ${id} not found.`);
     return req;

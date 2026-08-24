@@ -18,7 +18,7 @@ import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { Request } from 'express';
 
 interface RequestWithUser extends Request {
-  user?: { userId: string };
+  user?: { id: string };
 }
 
 @Controller('cart')
@@ -28,21 +28,21 @@ export class CartController {
 
   @Get()
   getCart(@Req() req: RequestWithUser) {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
     return this.svc.getCart(userId, sessionId as string);
   }
 
   @Get('totals')
   getCartTotals(@Req() req: RequestWithUser) {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
     return this.svc.calculateCartTotals(userId, sessionId as string);
   }
 
   @Post('items')
   addToCart(@Body() dto: AddToCartDto, @Req() req: RequestWithUser) {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
     return this.svc.addToCart(dto, userId, sessionId as string);
   }
@@ -53,7 +53,7 @@ export class CartController {
     @Body() dto: UpdateCartItemDto,
     @Req() req: RequestWithUser,
   ) {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
     return this.svc.updateCartItem(itemId, dto, userId, sessionId as string);
   }
@@ -61,7 +61,7 @@ export class CartController {
   @Delete('items/:itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeCartItem(@Param('itemId') itemId: string, @Req() req: RequestWithUser) {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
     return this.svc.removeCartItem(itemId, userId, sessionId as string);
   }
@@ -69,7 +69,7 @@ export class CartController {
   @Delete('clear')
   @HttpCode(HttpStatus.NO_CONTENT)
   clearCart(@Req() req: RequestWithUser) {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
     return this.svc.clearCart(userId, sessionId as string);
   }
@@ -77,7 +77,7 @@ export class CartController {
   @Post('merge')
   @HttpCode(HttpStatus.OK)
   mergeGuestCart(@Req() req: RequestWithUser, @Body('guestSessionId') guestSessionId: string) {
-    const userId = req.user?.userId;
+    const userId = req.user?.id;
     if (!userId) {
       throw new Error('User must be authenticated to merge cart.');
     }

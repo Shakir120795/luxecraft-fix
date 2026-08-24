@@ -2,9 +2,28 @@
 
 ## Project Status
 
-Phase: **PHASE 9 COMPLETE ✅ — Frontend UI Development**
+Phase: **PHASE 10 IN PROGRESS — Lean VPS deployment**
 
-Phase 1–9 complete. All features production-ready for deployment.
+The application UI and core services exist, but the deployment path still needs its first committed Prisma migration and runtime smoke tests. Production readiness must not be claimed until those checks complete.
+
+## Lean VPS Deployment Foundation — 2026-08-24
+
+- Added a single-VPS Docker Compose stack: PostgreSQL, Redis, API, storefront, admin, and Nginx.
+- Database, Redis, API, storefront, and admin ports are private to Docker; Nginx exposes only port 80.
+- Storefront and admin now use Next.js standalone production output for smaller runtime images.
+- Added `VPS_DEPLOYMENT.md`, `.env.vps.example`, and `npm run vps:*` commands.
+- Prisma client generation and project typechecks pass after regeneration.
+- A baseline `apps/api/prisma/migrations` migration remains required before a fresh production database can start.
+- Added `update.sh` as the single Linux VPS / Google Cloud Shell update command: `bash update.sh`.
+
+## Backend ↔ Frontend Sync — 2026-08-24
+
+- Storefront checkout now obtains live shipping methods and creates standard orders through the protected checkout API; final price, tax, and shipping are recalculated by the backend.
+- Guest checkout now collects a shipping-address snapshot in the storefront and submits it with the guest email; authenticated customers continue to use saved addresses.
+- Address field naming now matches the API (`stateProvince`), and cart/wishlist deletions correctly handle API `204 No Content` responses.
+- Admin API client now uses the real protected route boundary, unwraps paginated admin lists, and maps backend commerce fields for the existing UI.
+- Admin custom-request quotes and replies are available through protected `/admin/custom-orders/requests/:id/{quotes,messages}` routes.
+- API, storefront, and admin TypeScript checks pass. Storefront and admin Next.js production builds pass outside the restricted shell (existing lint warnings only).
 
 ---
 

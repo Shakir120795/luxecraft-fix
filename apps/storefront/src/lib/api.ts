@@ -265,13 +265,9 @@ export async function removeCartItem(itemId: string): Promise<{ success: boolean
       },
     });
 
+    if (res.ok) return { success: true };
     const data = await res.json();
-    
-    if (!res.ok) {
-      return { success: false, message: data.message || 'Failed to remove item' };
-    }
-
-    return { success: true };
+    return { success: false, message: data.message || 'Failed to remove item' };
   } catch (error) {
     console.error('Failed to remove cart item:', error);
     return { success: false, message: 'Failed to remove item' };
@@ -291,13 +287,9 @@ export async function clearCart(): Promise<{ success: boolean; message?: string 
       },
     });
 
+    if (res.ok) return { success: true };
     const data = await res.json();
-    
-    if (!res.ok) {
-      return { success: false, message: data.message || 'Failed to clear cart' };
-    }
-
-    return { success: true };
+    return { success: false, message: data.message || 'Failed to clear cart' };
   } catch (error) {
     console.error('Failed to clear cart:', error);
     return { success: false, message: 'Failed to clear cart' };
@@ -551,7 +543,7 @@ export interface Address {
   addressLine1: string;
   addressLine2: string | null;
   city: string;
-  state: string | null;
+  stateProvince: string | null;
   postalCode: string;
   country: string;
   phone: string;
@@ -775,6 +767,18 @@ export interface CustomRequest {
   updatedAt: string;
 }
 
+function mapCustomRequest(request: any): CustomRequest {
+  return {
+    ...request,
+    requestNumber: request.customRequestNumber,
+    desiredDimensions: request.dimensions ?? null,
+    preferredMaterials: request.materialPreference ?? null,
+    quantity: request.quantityRequested ?? 1,
+    estimatedBudget: request.estimatedBudget ?? null,
+    referenceFiles: request.referenceFiles ?? [],
+  };
+}
+
 export interface CustomMessage {
   id: string;
   customRequestId: string;
@@ -823,13 +827,22 @@ export async function createCustomRequest(params: {
         'Content-Type': 'application/json',
         ...headers,
       },
-      body: JSON.stringify(params),
+      body: JSON.stringify({
+        title: params.title,
+        description: params.description,
+        dimensions: params.desiredDimensions,
+        designNotes: params.productCategory ? `Product/category: ${params.productCategory}` : undefined,
+        preferredColors: params.preferredColors,
+        materialPreference: params.preferredMaterials,
+        quantityRequested: params.quantity,
+        budgetRange: params.estimatedBudget?.toString(),
+      }),
     });
 
     const data = await res.json();
     
     if (res.ok && data.success) {
-      return { success: true, data: data.data };
+      return { success: true, data: mapCustomRequest(data.data) };
     }
 
     return { success: false, message: data.message || 'Failed to create request' };
@@ -849,7 +862,7 @@ export async function getCustomRequests(): Promise<CustomRequest[]> {
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : [];
+    return data.success ? data.data.map(mapCustomRequest) : [];
   } catch (error) {
     console.error('Failed to fetch custom requests:', error);
     return [];
@@ -870,7 +883,13 @@ export async function getCustomRequest(requestId: string): Promise<{
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : null;
+    return data.success
+      ? {
+          request: mapCustomRequest(data.data),
+          messages: data.data.messages ?? [],
+          quotes: data.data.quotes ?? [],
+        }
+      : null;
   } catch (error) {
     console.error('Failed to fetch custom request:', error);
     return null;
@@ -1006,12 +1025,8 @@ export async function removeFromWishlist(itemId: string): Promise<{ success: boo
       },
     });
 
+    if (res.ok) return { success: true };
     const data = await res.json();
-    
-    if (res.ok && data.success) {
-      return { success: true };
-    }
-
     return { success: false, message: data.message || 'Failed to remove from wishlist' };
   } catch (error) {
     console.error('Failed to remove from wishlist:', error);
@@ -1082,12 +1097,8 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
       },
     });
 
+    if (res.ok) return { success: true };
     const data = await res.json();
-    
-    if (res.ok && data.success) {
-      return { success: true };
-    }
-
     return { success: false, message: data.message || 'Failed to clear wishlist' };
   } catch (error) {
     console.error('Failed to clear wishlist:', error);

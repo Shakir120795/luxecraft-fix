@@ -24,14 +24,18 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;
+  const token = typeof window === 'undefined' ? null : localStorage.getItem('adminToken');
   const response = await fetch(url, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init?.headers,
     },
     credentials: 'include',
   });
+
+  if (response.status === 204) return undefined as T;
 
   const json = (await response.json()) as ApiResponse<T> | { success: false; statusCode: number; error: string; message: string };
 
@@ -201,6 +205,31 @@ export interface DashboardStats {
   ordersChange: number;
 }
 
+function mapProduct(product: any): Product {
+  return {
+    ...product,
+    regularPrice: Number(product.regularPrice),
+    salePrice: product.salePrice === null ? null : Number(product.salePrice),
+    stockQuantity: product.variants?.reduce((total: number, variant: any) => total + Number(variant.stockQty ?? 0), 0) ?? 0,
+    isActive: product.status === 'ACTIVE',
+    images: product.media?.map((media: any) => media.url) ?? [],
+  };
+}
+
+function mapCategory(category: any): Category {
+  return { ...category, isActive: category.status === 'ACTIVE' };
+}
+
+function mapOrder(order: any): Order {
+  return {
+    ...order,
+    status: order.orderStatus,
+    tax: Number(order.taxAmount ?? 0),
+    shippingAddressId: order.shippingMethodId,
+    billingAddressId: order.shippingMethodId,
+  };
+}
+
 // ============================================================================
 // Auth Functions
 // ============================================================================
@@ -217,12 +246,13 @@ export interface LoginResponse {
 }
 
 export async function adminLogin(credentials: LoginRequest): Promise<LoginResponse> {
-  return adminApi.post<LoginResponse>('/admin-auth/login', credentials);
+  return adminApi.post<LoginResponse>('/admin/auth/login', credentials);
 }
 
 export async function adminLogout(): Promise<void> {
   try {
-    await adminApi.post<void>('/admin-auth/logout', {});
+    const refreshToken = typeof window === 'undefined' ? '' : localStorage.getItem('adminRefreshToken') || '';
+    await adminApi.post<void>('/admin/auth/logout', { refreshToken });
   } catch (error) {
     console.error('Logout error:', error);
   }
@@ -234,7 +264,7 @@ export async function adminLogout(): Promise<void> {
 }
 
 export async function getAdminProfile(): Promise<Admin> {
-  return adminApi.get<Admin>('/admin-auth/profile');
+  return adminApi.get<Admin>('/admin/auth/me');
 }
 
 // ============================================================================
@@ -242,16 +272,16 @@ export async function getAdminProfile(): Promise<Admin> {
 // ============================================================================
 
 export async function getDashboardStats(): Promise<DashboardStats> {
-  // Mock data for now - replace with actual API call
+  const data = await adminApi.get<any>('/admin/dashboard/stats');
   return {
-    totalRevenue: 125000,
-    totalOrders: 342,
-    totalCustomers: 156,
-    totalProducts: 89,
-    pendingOrders: 12,
-    pendingCustomRequests: 5,
-    revenueChange: 12.5,
-    ordersChange: 8.3,
+    totalRevenue: Number(data.todayRevenue ?? 0),
+    totalOrders: data.todayOrders ?? 0,
+    totalCustomers: data.newCustomers ?? 0,
+    totalProducts: data.alerts?.lowStockItems ?? 0,
+    pendingOrders: 0,
+    pendingCustomRequests: data.alerts?.pendingCustomRequests ?? 0,
+    revenueChange: 0,
+    ordersChange: 0,
   };
 }
 
@@ -260,11 +290,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 // ============================================================================
 
 export async function getProducts(): Promise<Product[]> {
-  return adminApi.get<Product[]>('/products');
+  const data = await adminApi.get<{ items: any[] }>('/admin/products');
+  return data.items.map(mapProduct);
 }
 
 export async function getProduct(id: string): Promise<Product> {
-  return adminApi.get<Product>(`/products/${id}`);
+  return mapProduct(await adminApi.get<any>(`/admin/products/${id}`));
 }
 
 export interface CreateProductRequest {
@@ -283,15 +314,23 @@ export interface CreateProductRequest {
 }
 
 export async function createProduct(data: CreateProductRequest): Promise<Product> {
-  return adminApi.post<Product>('/products', data);
+  const product = await adminApi.post<any>('/admin/products', {
+    ...data,
+    status: data.isActive ? 'ACTIVE' : 'DRAFT',
+  });
+  return mapProduct(product);
 }
 
 export async function updateProduct(id: string, data: Partial<CreateProductRequest>): Promise<Product> {
-  return adminApi.patch<Product>(`/products/${id}`, data);
+  const product = await adminApi.patch<any>(`/admin/products/${id}`, {
+    ...data,
+    ...(data.isActive !== undefined ? { status: data.isActive ? 'ACTIVE' : 'DRAFT' } : {}),
+  });
+  return mapProduct(product);
 }
 
 export async function deleteProduct(id: string): Promise<void> {
-  return adminApi.delete<void>(`/products/${id}`);
+  return adminApi.delete<void>(`/admin/products/${id}`);
 }
 
 // ============================================================================
@@ -299,11 +338,12 @@ export async function deleteProduct(id: string): Promise<void> {
 // ============================================================================
 
 export async function getCategories(): Promise<Category[]> {
-  return adminApi.get<Category[]>('/categories');
+  const data = await adminApi.get<{ items: any[] }>('/admin/categories');
+  return data.items.map(mapCategory);
 }
 
 export async function getCategory(id: string): Promise<Category> {
-  return adminApi.get<Category>(`/categories/${id}`);
+  return mapCategory(await adminApi.get<any>(`/admin/categories/${id}`));
 }
 
 export interface CreateCategoryRequest {
@@ -316,15 +356,21 @@ export interface CreateCategoryRequest {
 }
 
 export async function createCategory(data: CreateCategoryRequest): Promise<Category> {
-  return adminApi.post<Category>('/categories', data);
+  return mapCategory(await adminApi.post<any>('/admin/categories', {
+    ...data,
+    status: data.isActive ? 'ACTIVE' : 'DRAFT',
+  }));
 }
 
 export async function updateCategory(id: string, data: Partial<CreateCategoryRequest>): Promise<Category> {
-  return adminApi.patch<Category>(`/categories/${id}`, data);
+  return mapCategory(await adminApi.patch<any>(`/admin/categories/${id}`, {
+    ...data,
+    ...(data.isActive !== undefined ? { status: data.isActive ? 'ACTIVE' : 'DRAFT' } : {}),
+  }));
 }
 
 export async function deleteCategory(id: string): Promise<void> {
-  return adminApi.delete<void>(`/categories/${id}`);
+  return adminApi.delete<void>(`/admin/categories/${id}`);
 }
 
 // ============================================================================
@@ -332,15 +378,16 @@ export async function deleteCategory(id: string): Promise<void> {
 // ============================================================================
 
 export async function getOrders(): Promise<Order[]> {
-  return adminApi.get<Order[]>('/orders');
+  const data = await adminApi.get<{ items: any[] }>('/admin/orders');
+  return data.items.map(mapOrder);
 }
 
 export async function getOrder(id: string): Promise<Order> {
-  return adminApi.get<Order>(`/orders/${id}`);
+  return mapOrder(await adminApi.get<any>(`/admin/orders/${id}`));
 }
 
 export async function updateOrderStatus(id: string, status: string): Promise<Order> {
-  return adminApi.patch<Order>(`/orders/${id}/status`, { status });
+  return adminApi.patch<Order>(`/admin/orders/${id}/status`, { orderStatus: status });
 }
 
 // ============================================================================
@@ -348,15 +395,16 @@ export async function updateOrderStatus(id: string, status: string): Promise<Ord
 // ============================================================================
 
 export async function getCustomers(): Promise<Customer[]> {
-  return adminApi.get<Customer[]>('/users');
+  const data = await adminApi.get<{ items: Customer[] }>('/admin/customers');
+  return data.items;
 }
 
 export async function getCustomer(id: string): Promise<Customer> {
-  return adminApi.get<Customer>(`/users/${id}`);
+  return adminApi.get<Customer>(`/admin/customers/${id}`);
 }
 
 export async function updateCustomerStatus(id: string, isActive: boolean): Promise<Customer> {
-  return adminApi.patch<Customer>(`/users/${id}`, { isActive });
+  return adminApi.patch<Customer>(`/admin/customers/${id}/status`, { status: isActive ? 'ACTIVE' : 'SUSPENDED' });
 }
 
 // ============================================================================
@@ -364,15 +412,34 @@ export async function updateCustomerStatus(id: string, isActive: boolean): Promi
 // ============================================================================
 
 export async function getCustomRequests(): Promise<CustomRequest[]> {
-  return adminApi.get<CustomRequest[]>('/custom-requests');
+  const data = await adminApi.get<{ items: any[] }>('/admin/custom-orders/requests');
+  return data.items.map((request) => ({
+    ...request,
+    requestNumber: request.customRequestNumber,
+    budget: request.estimatedBudget,
+    timeline: null,
+    user: request.user ? { ...request.user, lastName: request.user.lastName ?? '' } : undefined,
+  }));
 }
 
 export async function getCustomRequest(id: string): Promise<CustomRequest> {
-  return adminApi.get<CustomRequest>(`/custom-requests/${id}`);
+  const request = await adminApi.get<any>(`/admin/custom-orders/requests/${id}`);
+  const quote = request.quotes?.[0];
+  return {
+    ...request,
+    requestNumber: request.customRequestNumber,
+    budget: request.estimatedBudget ?? request.budgetRange ?? null,
+    timeline: null,
+    messages: (request.messages ?? []).map((message: any) => ({
+      ...message,
+      isAdminReply: message.senderType === 'ADMIN',
+    })),
+    quote: quote ? { ...quote, amount: Number(quote.total), description: quote.description ?? '' } : null,
+  };
 }
 
 export async function updateCustomRequestStatus(id: string, status: string): Promise<CustomRequest> {
-  return adminApi.patch<CustomRequest>(`/custom-requests/${id}/status`, { status });
+  return adminApi.patch<CustomRequest>(`/admin/custom-orders/requests/${id}/status`, { status });
 }
 
 export interface CreateQuoteRequest {
@@ -381,7 +448,7 @@ export interface CreateQuoteRequest {
 }
 
 export async function createQuote(requestId: string, data: CreateQuoteRequest): Promise<CustomRequestQuote> {
-  return adminApi.post<CustomRequestQuote>(`/custom-requests/${requestId}/quotes`, data);
+  return adminApi.post<CustomRequestQuote>(`/admin/custom-orders/requests/${requestId}/quotes`, data);
 }
 
 export interface SendMessageRequest {
@@ -390,5 +457,5 @@ export interface SendMessageRequest {
 }
 
 export async function sendCustomRequestMessage(requestId: string, data: SendMessageRequest): Promise<CustomRequestMessage> {
-  return adminApi.post<CustomRequestMessage>(`/custom-requests/${requestId}/messages`, data);
+  return adminApi.post<CustomRequestMessage>(`/admin/custom-orders/requests/${requestId}/messages`, data);
 }

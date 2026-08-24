@@ -9,12 +9,12 @@ export class OrdersController {
   constructor(private readonly svc: OrdersService) {}
 
   @Get()
-  findAll(@CurrentUser() user: { userId: string }) {
-    return this.svc.findAllForUser(user.userId);
+  findAll(@CurrentUser() user: { id: string }) {
+    return this.svc.findAllForUser(user.id);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.svc.findOne(id);
+  async findOne(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.svc.findOneForUser(id, user.id);
   }
 }

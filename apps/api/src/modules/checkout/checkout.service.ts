@@ -6,6 +6,7 @@ import { TaxService } from '../tax/tax.service';
 import { OrdersService } from '../orders/orders.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateCheckoutOrderDto, GuestCheckoutAddressDto } from './dto/create-checkout-order.dto';
 
 @Injectable()
 export class CheckoutService {
@@ -61,6 +62,95 @@ export class CheckoutService {
       total,
       currency: data.currency,
     };
+  }
+
+  /**
+   * The only customer-facing standard-order entry point. Prices, weight,
+   * shipping and tax are recalculated from database-backed cart data here;
+   * browser values are never accepted as the source of truth.
+   */
+  async createStandardOrder(input: {
+    userId?: string;
+    sessionId?: string;
+    dto: CreateCheckoutOrderDto;
+  }): Promise<any> {
+    const cart = await this.cart.getCart(input.userId, input.sessionId);
+    if (cart.items.length === 0) throw new BadRequestException('Cart is empty.');
+
+    const persistedItems = await this.prisma.cartItem.findMany({
+      where: { cartId: cart.id },
+      include: {
+        product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true } },
+        variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true } },
+      },
+    });
+
+    const shippingAddress = await this.resolveShippingAddress(input.userId, input.dto);
+    const country = shippingAddress.country.toUpperCase();
+    const cartItems = persistedItems.map((item) => {
+      const unitPrice = Number(
+        item.variant?.salePrice ?? item.variant?.regularPrice ?? item.product.salePrice ?? item.product.regularPrice,
+      );
+      if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+        throw new BadRequestException(`Product ${item.productId} has an invalid price.`);
+      }
+      return { ...item, priceSnapshot: unitPrice };
+    });
+
+    const subtotal = cartItems.reduce((sum, item) => sum + Number(item.priceSnapshot) * item.quantity, 0);
+    const cartWeightKg = cartItems.reduce(
+      (sum, item) => sum + Number(item.variant?.weightKg ?? item.product.weightKg ?? 0) * item.quantity,
+      0,
+    );
+    const methods = await this.shipping.calculateShippingRate({ country, cartWeightKg, cartTotal: subtotal });
+    const shippingMethod = methods.find((method) => method.id === input.dto.shippingMethodId);
+    if (!shippingMethod) throw new BadRequestException('Shipping method is unavailable for this address.');
+
+    const tax = await this.tax.calculateTax({
+      country,
+      stateProvince: shippingAddress.stateProvince ?? undefined,
+      amount: subtotal + shippingMethod.calculatedRate,
+    });
+    const total = subtotal + shippingMethod.calculatedRate + tax.taxAmount;
+
+    const order = await this.orders.create({
+      userId: input.userId,
+      guestEmail: input.userId ? undefined : input.dto.guestEmail?.toLowerCase(),
+      orderType: 'STANDARD',
+      cart: { items: cartItems },
+      shippingAddress,
+      billingAddress: shippingAddress,
+      shippingMethodId: shippingMethod.id,
+      shippingMethodName: shippingMethod.name,
+      shippingCost: shippingMethod.calculatedRate,
+      taxAmount: tax.taxAmount,
+      subtotal,
+      total,
+      currency: cart.currency,
+    });
+    const payment = await this.payments.create({
+      orderId: order.id,
+      provider: 'pending',
+      amount: total,
+      currency: cart.currency,
+      metadata: { orderNumber: order.orderNumber },
+    });
+    await this.cart.clearCart(input.userId, input.sessionId);
+    return { order, payment };
+  }
+
+  private async resolveShippingAddress(
+    userId: string | undefined,
+    dto: CreateCheckoutOrderDto,
+  ): Promise<GuestCheckoutAddressDto | Awaited<ReturnType<AddressesService['findOne']>>> {
+    if (userId) {
+      if (!dto.shippingAddressId) throw new BadRequestException('shippingAddressId is required for signed-in customers.');
+      return this.addresses.findOne(dto.shippingAddressId, userId);
+    }
+    if (!dto.guestEmail || !dto.guestShippingAddress) {
+      throw new BadRequestException('guestEmail and guestShippingAddress are required for guest checkout.');
+    }
+    return dto.guestShippingAddress;
   }
 
   async createOrderFromCheckout(data: {

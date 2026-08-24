@@ -1,0 +1,98 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-luxecraft}
+      POSTGRES_USER: ${POSTGRES_USER:-luxecraft}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.vps}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env.vps} --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-luxecraft}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-luxecraft}?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.vps}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in .env.vps}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET:?set ADMIN_JWT_SECRET in .env.vps}
+      ADMIN_JWT_REFRESH_SECRET: ${ADMIN_JWT_REFRESH_SECRET:?set ADMIN_JWT_REFRESH_SECRET in .env.vps}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:?set SUPER_ADMIN_EMAIL in .env.vps}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:?set SUPER_ADMIN_PASSWORD in .env.vps}
+      SUPER_ADMIN_FIRST_NAME: ${SUPER_ADMIN_FIRST_NAME:-Super}
+      SUPER_ADMIN_LAST_NAME: ${SUPER_ADMIN_LAST_NAME:-Admin}
+      CORS_ORIGINS: https://${STOREFRONT_HOST},https://${ADMIN_HOST}
+      APP_URL: https://${STOREFRONT_HOST}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  storefront:
+    build:
+      context: .
+      dockerfile: apps/storefront/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${STOREFRONT_HOST}/api/v1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - api
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${ADMIN_HOST}/api/v1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      STOREFRONT_HOST: ${STOREFRONT_HOST:?set STOREFRONT_HOST in .env.vps}
+      ADMIN_HOST: ${ADMIN_HOST:?set ADMIN_HOST in .env.vps}
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      - storefront
+      - admin
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:

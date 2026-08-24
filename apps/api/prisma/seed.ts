@@ -7,16 +7,21 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // 1. Create Admin User
-  const adminPasswordHash = await bcrypt.hash('LuxeCraft@Admin1!', 10);
+  const adminEmail = process.env.SUPER_ADMIN_EMAIL;
+  const adminPassword = process.env.SUPER_ADMIN_PASSWORD;
+  if (!adminEmail || !adminPassword) {
+    throw new Error('SUPER_ADMIN_EMAIL and SUPER_ADMIN_PASSWORD must be set before seeding.');
+  }
+  const adminPasswordHash = await bcrypt.hash(adminPassword, 12);
   
   const admin = await prisma.adminUser.upsert({
-    where: { email: 'admin@luxecraft.com' },
+    where: { email: adminEmail.toLowerCase() },
     update: {},
     create: {
-      email: 'admin@luxecraft.com',
+      email: adminEmail.toLowerCase(),
       passwordHash: adminPasswordHash,
-      firstName: 'Super',
-      lastName: 'Admin',
+      firstName: process.env.SUPER_ADMIN_FIRST_NAME || 'Super',
+      lastName: process.env.SUPER_ADMIN_LAST_NAME || 'Admin',
       role: 'SUPER_ADMIN',
       status: 'ACTIVE',
     },
@@ -301,13 +306,11 @@ async function main() {
   console.log(`   - Admin users: 1`);
   console.log(`   - Categories: ${categories.length}`);
   console.log(`   - Products: 5`);
-  console.log('\n🔐 Admin Login:');
-  console.log(`   Email: admin@luxecraft.com`);
-  console.log(`   Password: LuxeCraft@Admin1!`);
+  console.log(`\n🔐 Super Admin created for: ${admin.email}`);
 }
 
 main()
-  .catch((e) => {
+  .catch((e: unknown) => {
     console.error('❌ Seed failed:', e);
     process.exit(1);
   })
