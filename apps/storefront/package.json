@@ -15,7 +15,9 @@
   "dependencies": {
     "next": "15.3.9",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",\n    "@stripe/react-stripe-js": "^2.10.0",\n    "@stripe/stripe-js": "^5.4.0"
+    "react-dom": "^19.0.0",
+    "@stripe/react-stripe-js": "^2.10.0",
+    "@stripe/stripe-js": "^5.4.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
