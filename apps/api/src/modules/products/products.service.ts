@@ -203,7 +203,18 @@ export class ProductsService {
         orderBy: { createdAt: 'desc' },
         include: {
           category: { select: { id: true, name: true, slug: true } },
-          variants: { where: { deletedAt: null }, orderBy: { sortOrder: 'asc' } },
+          variants: {
+          where: { deletedAt: null },
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            media: {
+              orderBy: [
+                { isMain: 'desc' },
+                { sortOrder: 'asc' },
+              ],
+            },
+          },
+        },
           media: { orderBy: { sortOrder: 'asc' } },
         },
       }),
@@ -291,6 +302,7 @@ export class ProductsService {
         ...(dto.lengthCm !== undefined && { lengthCm: dto.lengthCm }),
         ...(dto.widthCm !== undefined && { widthCm: dto.widthCm }),
         ...(dto.heightCm !== undefined && { heightCm: dto.heightCm }),
+        ...(dto.stockQty !== undefined && { stockQty: dto.stockQty }),
         ...(dto.lowStockAt !== undefined && { lowStockAt: dto.lowStockAt }),
         ...(dto.trackInventory !== undefined && { trackInventory: dto.trackInventory }),
         ...(dto.allowBackorder !== undefined && { allowBackorder: dto.allowBackorder }),
@@ -341,17 +353,44 @@ export class ProductsService {
   ): Promise<ProductMedia> {
     await this.findOneOrFail(productId);
 
-    // If isMain=true, unset other main flags
+    // If media belongs to a variant, verify that the variant
+    // actually belongs to this product.
+    if (dto.variantId) {
+      const variant = await this.prisma.productVariant.findFirst({
+        where: {
+          id: dto.variantId,
+          productId,
+          deletedAt: null,
+        },
+      });
+
+      if (!variant) {
+        throw new NotFoundException(
+          `Variant ${dto.variantId} not found for product ${productId}.`,
+        );
+      }
+    }
+
+    // Main-image status is scoped:
+    // - product-level image => variantId is null
+    // - variant image      => variantId is that variant
     if (dto.isMain) {
       await this.prisma.productMedia.updateMany({
-        where: { productId, isMain: true },
-        data: { isMain: false },
+        where: {
+          productId,
+          variantId: dto.variantId ?? null,
+          isMain: true,
+        },
+        data: {
+          isMain: false,
+        },
       });
     }
 
     const media = await this.prisma.productMedia.create({
       data: {
         productId,
+        variantId: dto.variantId ?? null,
         type: dto.type,
         url: dto.url,
         storageKey: dto.storageKey,
@@ -367,7 +406,12 @@ export class ProductsService {
       action: 'PRODUCT_MEDIA_ADDED',
       resource: 'product_media',
       resourceId: media.id,
-      after: { productId, type: media.type, isMain: media.isMain },
+      after: {
+        productId,
+        variantId: media.variantId,
+        type: media.type,
+        isMain: media.isMain,
+      },
     });
 
     return media;
@@ -378,26 +422,81 @@ export class ProductsService {
     dto: Partial<AddMediaDto>,
     adminId: string,
   ): Promise<ProductMedia> {
-    const existing = await this.prisma.productMedia.findUnique({ where: { id: mediaId } });
-    if (!existing) throw new NotFoundException(`Media ${mediaId} not found.`);
+    const existing = await this.prisma.productMedia.findUnique({
+      where: { id: mediaId },
+    });
 
-    // If isMain=true, unset other main flags
+    if (!existing) {
+      throw new NotFoundException(`Media ${mediaId} not found.`);
+    }
+
+    const nextVariantId =
+      dto.variantId !== undefined
+        ? dto.variantId || null
+        : existing.variantId;
+
+    // If moving media to a variant, verify the variant belongs
+    // to the same product.
+    if (nextVariantId) {
+      const variant = await this.prisma.productVariant.findFirst({
+        where: {
+          id: nextVariantId,
+          productId: existing.productId,
+          deletedAt: null,
+        },
+      });
+
+      if (!variant) {
+        throw new NotFoundException(
+          `Variant ${nextVariantId} not found for product ${existing.productId}.`,
+        );
+      }
+    }
+
+    // If this becomes the main image, clear the previous main image
+    // only inside the same product/variant scope.
     if (dto.isMain) {
       await this.prisma.productMedia.updateMany({
-        where: { productId: existing.productId, isMain: true, NOT: { id: mediaId } },
-        data: { isMain: false },
+        where: {
+          productId: existing.productId,
+          variantId: nextVariantId,
+          isMain: true,
+          NOT: {
+            id: mediaId,
+          },
+        },
+        data: {
+          isMain: false,
+        },
       });
     }
 
     const updated = await this.prisma.productMedia.update({
-      where: { id: mediaId },
+      where: {
+        id: mediaId,
+      },
       data: {
-        ...(dto.type && { type: dto.type }),
-        ...(dto.url && { url: dto.url }),
-        ...(dto.storageKey !== undefined && { storageKey: dto.storageKey }),
-        ...(dto.altText !== undefined && { altText: dto.altText }),
-        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
-        ...(dto.isMain !== undefined && { isMain: dto.isMain }),
+        ...(dto.variantId !== undefined && {
+          variantId: nextVariantId,
+        }),
+        ...(dto.type !== undefined && {
+          type: dto.type,
+        }),
+        ...(dto.url !== undefined && {
+          url: dto.url,
+        }),
+        ...(dto.storageKey !== undefined && {
+          storageKey: dto.storageKey,
+        }),
+        ...(dto.altText !== undefined && {
+          altText: dto.altText,
+        }),
+        ...(dto.sortOrder !== undefined && {
+          sortOrder: dto.sortOrder,
+        }),
+        ...(dto.isMain !== undefined && {
+          isMain: dto.isMain,
+        }),
       },
     });
 
@@ -407,6 +506,12 @@ export class ProductsService {
       action: 'PRODUCT_MEDIA_UPDATED',
       resource: 'product_media',
       resourceId: mediaId,
+      after: {
+        productId: updated.productId,
+        variantId: updated.variantId,
+        type: updated.type,
+        isMain: updated.isMain,
+      },
     });
 
     return updated;
@@ -552,6 +657,15 @@ export class ProductsService {
         variants: {
           where: { deletedAt: null, isAvailable: true },
           orderBy: { sortOrder: 'asc' },
+          include: {
+            media: {
+              where: { type: 'IMAGE' },
+              orderBy: [
+                { isMain: 'desc' },
+                { sortOrder: 'asc' },
+              ],
+            },
+          },
         },
         media: { orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }] },
         customizationOptions: {

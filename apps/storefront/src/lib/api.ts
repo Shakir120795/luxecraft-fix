@@ -21,22 +21,60 @@ export interface Product {
   createdAt?: string;
 }
 
+
 export interface ProductMedia {
   id: string;
+  productId: string;
+  variantId?: string | null;
   url: string;
   altText: string | null;
   type: string;
   isMain: boolean;
+  sortOrder?: number;
 }
-
 export interface ProductVariant {
   id: string;
   name: string;
   sku: string;
   stockQty: number;
   regularPrice: number | null;
+  salePrice?: number | null;
+  weightKg?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  trackInventory?: boolean;
+  allowBackorder?: boolean;
+  isAvailable?: boolean;
 }
 
+
+export interface ProductMedia {
+  id: string;
+  productId: string;
+  variantId?: string | null;
+  url: string;
+  altText: string | null;
+  type: string;
+  isMain: boolean;
+  sortOrder?: number;
+}
+export interface ProductVariant {
+  id: string;
+  name: string;
+  sku: string;
+  stockQty: number;
+  regularPrice: number | null;
+  salePrice?: number | null;
+  weightKg?: number | null;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  trackInventory?: boolean;
+  allowBackorder?: boolean;
+  isAvailable?: boolean;
+  media?: ProductMedia[];
+}
 export interface Category {
   id: string;
   name: string;
@@ -306,7 +344,7 @@ export interface User {
   firstName: string | null;
   lastName: string | null;
   phone: string | null;
-  isVerified: boolean;
+  emailVerified: boolean;
   status: string;
   createdAt: string;
 }
@@ -493,7 +531,7 @@ export async function forgotPassword(email: string): Promise<{ success: boolean;
 
 export async function resetPassword(params: {
   token: string;
-  newPassword: string;
+  password: string;
 }): Promise<{ success: boolean; message?: string }> {
   try {
     const res = await fetch(`${API_URL}/auth/reset-password`, {
@@ -527,6 +565,38 @@ export function getCurrentUser(): User | null {
 
 export function isAuthenticated(): boolean {
   return !!localStorage.getItem('accessToken');
+}
+
+export async function updateProfile(params: Pick<User, 'firstName' | 'lastName' | 'phone'>): Promise<{ success: boolean; user?: User; message?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/auth/me`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify(params),
+    });
+    const response = await res.json();
+    if (!res.ok || !response.success) return { success: false, message: response.message || 'Profile update failed' };
+    localStorage.setItem('user', JSON.stringify(response.data));
+    return { success: true, user: response.data };
+  } catch {
+    return { success: false, message: 'Profile update failed' };
+  }
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    const response = await res.json();
+    return res.ok && response.success
+      ? { success: true, message: response.data?.message }
+      : { success: false, message: response.message || 'Password change failed' };
+  } catch {
+    return { success: false, message: 'Password change failed' };
+  }
 }
 
 // ============================================
@@ -675,6 +745,30 @@ export interface Order {
   createdAt: string;
 }
 
+// ============================================
+// PAYMENT API
+// ============================================
+
+export async function getPaymentConfiguration(currency: string = 'USD'): Promise<{
+  provider: string;
+  configured: boolean;
+  currencySupported: boolean;
+  publicKey?: string;
+}> {
+  try {
+    const res = await fetch(`${API_URL}/payments/configuration?currency=${currency}`, {
+      cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    return data.success ? data.data : { provider: 'none', configured: false, currencySupported: false };
+  } catch (error) {
+    console.error('Failed to fetch payment configuration:', error);
+    return { provider: 'none', configured: false, currencySupported: false };
+  }
+}
+
 export async function createOrder(params: {
   shippingAddressId?: string;
   billingAddressId?: string;
@@ -683,7 +777,16 @@ export async function createOrder(params: {
   guestEmail?: string;
   guestShippingAddress?: any;
   guestBillingAddress?: any;
-}): Promise<{ success: boolean; data?: { order: Order; payment: any }; message?: string }> {
+}): Promise<{ 
+  success: boolean; 
+  data?: { 
+    order: Order; 
+    payment: any; 
+    clientSecret?: string;  // Stripe client secret for payment confirmation
+    guestAccessToken?: string 
+  }; 
+  message?: string 
+}> {
   try {
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
@@ -728,10 +831,12 @@ export async function getOrders(): Promise<Order[]> {
   }
 }
 
-export async function getOrder(orderId: string): Promise<Order | null> {
+export async function getOrder(orderId: string, guestAccessToken?: string): Promise<Order | null> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/orders/${orderId}`, {
+    const url = new URL(`${API_URL}/orders/${orderId}`);
+    if (guestAccessToken) url.searchParams.set('access', guestAccessToken);
+    const res = await fetch(url.toString(), {
       headers,
       cache: 'no-store',
     });
@@ -1105,3 +1210,4 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
     return { success: false, message: 'Failed to clear wishlist' };
   }
 }
+

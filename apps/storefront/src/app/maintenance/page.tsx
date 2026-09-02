@@ -59,15 +59,15 @@ export default function MaintenancePage() {
           </p>
           
           <div className="flex gap-6 justify-center text-luxury-brown">
-            <a href="#" className="hover:text-luxury-gold transition-colors">
+            <Link href="https://twitter.com/luxecraft" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
               Twitter
-            </a>
-            <a href="#" className="hover:text-luxury-gold transition-colors">
+            </Link>
+            <Link href="https://instagram.com/luxecraft" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
               Instagram
-            </a>
-            <a href="#" className="hover:text-luxury-gold transition-colors">
+            </Link>
+            <Link href="https://facebook.com/luxecraft" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
               Facebook
-            </a>
+            </Link>
           </div>
         </div>
 

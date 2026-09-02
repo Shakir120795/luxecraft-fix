@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -51,7 +51,6 @@ export default function CartPage() {
   }
 
   async function handleRemoveItem(itemId: string) {
-    if (!confirm('Remove this item from cart?')) return;
 
     setUpdatingItems(prev => new Set(prev).add(itemId));
 
@@ -71,7 +70,6 @@ export default function CartPage() {
   }
 
   async function handleClearCart() {
-    if (!confirm('Clear all items from cart?')) return;
 
     const result = await clearCart();
 
@@ -95,8 +93,8 @@ export default function CartPage() {
     );
   }
 
-  const subtotal = cart?.items.reduce((sum, item) => sum + (item.priceSnapshot * item.quantity), 0) || 0;
-  const itemCount = cart?.items.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const subtotal = cart?.items.reduce((sum, item) => sum + (Number(item.priceSnapshot) || 0) * Number(item.quantity), 0) || 0;
+  const itemCount = cart?.items.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
 
   return (
     <main className="min-h-screen">
@@ -121,14 +119,14 @@ export default function CartPage() {
           // Empty Cart State
           <div className="text-center py-20">
             <div className="mb-8">
-              <span className="text-8xl text-luxury-gold/30">🛒</span>
+              <span className="text-8xl text-luxury-gold/30">ðŸ›’</span>
             </div>
             <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">Your cart is empty</h2>
             <p className="text-luxury-brown mb-8 text-lg">
               Discover our curated collection of luxury pieces
             </p>
             <Link href="/products" className="btn-luxury px-10 py-4">
-              Continue Shopping →
+              Continue Shopping â†’
             </Link>
           </div>
         ) : (
@@ -197,7 +195,7 @@ export default function CartPage() {
                   }}
                   className="btn-luxury w-full px-8 py-4 text-base mb-4"
                 >
-                  Proceed to Checkout →
+                  Proceed to Checkout â†’
                 </button>
 
                 <Link
@@ -210,15 +208,15 @@ export default function CartPage() {
                 {/* Trust Badges */}
                 <div className="mt-10 pt-8 border-t border-luxury-sand space-y-4">
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
-                    <span className="text-xl text-luxury-gold">✓</span>
+                    <span className="text-xl text-luxury-gold">âœ“</span>
                     <span>Secure checkout</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
-                    <span className="text-xl text-luxury-gold">✓</span>
+                    <span className="text-xl text-luxury-gold">âœ“</span>
                     <span>Free worldwide shipping</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
-                    <span className="text-xl text-luxury-gold">✓</span>
+                    <span className="text-xl text-luxury-gold">âœ“</span>
                     <span>Easy returns within 30 days</span>
                   </div>
                 </div>
@@ -243,7 +241,8 @@ function CartItemCard({
   isUpdating: boolean;
 }) {
   const mainImage = item.product.media?.find((m) => m.isMain) || item.product.media?.[0];
-  const itemTotal = item.priceSnapshot * item.quantity;
+  const price = Number(item.priceSnapshot) || 0;
+  const itemTotal = price * Number(item.quantity);
 
   return (
     <div className={`border border-luxury-sand bg-luxury-beige p-6 transition-opacity ${isUpdating ? 'opacity-50' : ''}`}>
@@ -290,7 +289,7 @@ function CartItemCard({
                 ${itemTotal.toFixed(2)}
               </p>
               <p className="text-sm text-luxury-brown/70 mt-1">
-                ${item.priceSnapshot.toFixed(2)} each
+                ${price.toFixed(2)} each
               </p>
             </div>
           </div>
@@ -303,7 +302,7 @@ function CartItemCard({
                 disabled={isUpdating || item.quantity <= 1}
                 className="h-10 w-10 border border-luxury-sand bg-luxury-cream text-luxury-brown transition-colors hover:border-luxury-gold disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                −
+                âˆ’
               </button>
               <span className="text-lg font-serif w-12 text-center text-luxury-charcoal">
                 {item.quantity}
@@ -330,3 +329,6 @@ function CartItemCard({
     </div>
   );
 }
+
+
+

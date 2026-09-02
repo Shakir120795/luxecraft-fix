@@ -1,5 +1,16 @@
 # Task Queue
 
+## Active — Workflow repair and production completion (2026-09-02)
+
+- [x] Repair guest checkout order-confirmation access securely.
+- [x] Expose customer custom-quote and custom-design actions with ownership checks.
+- [x] Replace mock account profile/password updates with protected API calls.
+- [x] Correct root dev-script command reference.
+- [x] Add provider-agnostic environment configuration and safe checkout provider-status API.
+- [ ] Regenerate Prisma client and create the baseline migration after the running local API releases its Prisma engine file.
+- [ ] Select/configure payment, email/OTP, S3-compatible storage, shipping, tax, and production providers.
+- [ ] Complete payment webhook/refund flow and remaining features: contact/newsletter, returns, coupons, reviews, notifications, CMS, tests.
+
 ## Phase 10 — Lean VPS Launch
 
 - [x] Add a self-contained, single-VPS Docker Compose topology.

@@ -15,7 +15,11 @@ export class AddMediaDto {
   @IsEnum(MediaType)
   type!: MediaType;
 
-  @IsUrl()
+  @IsUrl({
+    require_tld: false,
+    protocols: ['http', 'https'],
+    require_protocol: true,
+  })
   @MaxLength(2048)
   url!: string;
 
@@ -38,4 +42,8 @@ export class AddMediaDto {
   @IsOptional()
   @IsBoolean()
   isMain?: boolean;
+
+  @IsOptional()
+  @IsString()
+  variantId?: string;
 }

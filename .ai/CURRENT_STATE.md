@@ -6,6 +6,16 @@ Phase: **PHASE 10 IN PROGRESS — Lean VPS deployment**
 
 The application UI and core services exist, but the deployment path still needs its first committed Prisma migration and runtime smoke tests. Production readiness must not be claimed until those checks complete.
 
+## Workflow-repair slice — 2026-09-02
+
+- Guest checkout confirmation now uses a seven-day signed capability token; guest orders were not made public.
+- Customer quote (`accept`, `reject`, `request-revision`) and design (`approve`, `request-revision`) APIs are now exposed with request-ownership checks.
+- Storefront account settings now use protected API calls for profile and password changes; changing a password revokes refresh sessions.
+- The root development script now invokes the existing `docker:up` command.
+- Verification: API, storefront, and admin TypeScript checks pass; API ESLint passes.
+- Prisma client regeneration remains blocked by a currently running local process that locks Prisma's Windows engine binary. No user process was interrupted.
+- Added a provider-agnostic commerce configuration layer. `PAYMENT_PROVIDER`, `EMAIL_PROVIDER`, `STORAGE_PROVIDER`, market currencies/countries, and provider credentials are now environment-driven; the public payment-configuration endpoint exposes only safe metadata, never secrets.
+
 ## Lean VPS Deployment Foundation — 2026-08-24
 
 - Added a single-VPS Docker Compose stack: PostgreSQL, Redis, API, storefront, admin, and Nginx.

@@ -9,4 +9,9 @@ export const QUEUE_NAMES = {
   INVENTORY: 'inventory',
 } as const;
 
+export const EMAIL_JOB_NAMES = {
+  VERIFY_EMAIL: 'verify-email',
+  PASSWORD_RESET: 'password-reset',
+} as const;
+
 export type QueueName = (typeof QUEUE_NAMES)[keyof typeof QUEUE_NAMES];

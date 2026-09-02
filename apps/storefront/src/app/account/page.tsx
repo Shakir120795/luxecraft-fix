@@ -79,7 +79,7 @@ export default function AccountPage() {
           {/* Main Content */}
           <div className="lg:col-span-3 space-y-8">
             {/* Verification Alert */}
-            {!user.isVerified && (
+            {!user.emailVerified && (
               <div className="border border-luxury-gold/50 bg-luxury-gold/10 p-6">
                 <div className="flex items-start gap-4">
                   <span className="text-2xl">⚠️</span>

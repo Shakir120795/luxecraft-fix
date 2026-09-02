@@ -76,10 +76,13 @@ export class CustomDesignsService {
     });
   }
 
-  async requestRevision(id: string): Promise<CustomDesign> {
+  async requestRevision(id: string, reason?: string): Promise<CustomDesign> {
     return this.prisma.customDesign.update({
       where: { id },
-      data: { approvalStatus: DesignApprovalStatus.REVISION_REQUESTED },
+      data: {
+        approvalStatus: DesignApprovalStatus.REVISION_REQUESTED,
+        ...(reason ? { rejectionReason: reason } : {}),
+      },
     });
   }
 }

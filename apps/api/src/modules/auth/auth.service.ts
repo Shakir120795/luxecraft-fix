@@ -13,6 +13,7 @@ import { PasswordResetService } from './password-reset.service';
 import { LoginAttemptService } from './login-attempt.service';
 import { User, OtpPurpose, UserStatus } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
+import { EmailService } from '../email/email.service';
 
 export interface JwtPayload {
   sub: string;       // userId
@@ -24,6 +25,7 @@ export interface TokenPair {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+  user: Omit<User, 'passwordHash'>;
 }
 
 @Injectable()
@@ -38,6 +40,7 @@ export class AuthService {
     private readonly sessions: SessionService,
     private readonly passwordReset: PasswordResetService,
     private readonly loginAttempts: LoginAttemptService,
+    private readonly email: EmailService,
   ) {}
 
   // ----------------------------------------------------------------
@@ -55,7 +58,7 @@ export class AuthService {
       OtpPurpose.EMAIL_VERIFICATION,
       user.id,
     );
-    this.logger.log(`New registration: ${user.email} | OTP: ${_code} [DEV — remove in prod]`);
+    await this.email.sendVerificationCode(user.email, _code);
     return {
       user: this.users.sanitize(user),
       message:
@@ -133,7 +136,7 @@ export class AuthService {
     }
     const accessToken = this.signAccessToken(user);
     const expiresIn = this.accessTokenTtlSeconds();
-    return { accessToken, refreshToken: result.newRefreshToken, expiresIn };
+    return { accessToken, refreshToken: result.newRefreshToken, expiresIn, user: this.users.sanitize(user) };
   }
 
   async logout(refreshToken: string): Promise<void> {
@@ -164,7 +167,7 @@ export class AuthService {
       OtpPurpose.EMAIL_VERIFICATION,
       user.id,
     );
-    this.logger.log(`Resend OTP for ${email}: ${_code} [DEV — remove in prod]`);
+    await this.email.sendVerificationCode(user.email, _code);
   }
 
   // ----------------------------------------------------------------
@@ -174,13 +177,25 @@ export class AuthService {
   async forgotPassword(email: string): Promise<void> {
     const token = await this.passwordReset.generateToken(email);
     if (token) {
-      this.logger.log(`Password reset token for ${email}: ${token} [DEV — remove in prod]`);
+      await this.email.sendPasswordResetEmail(email, token);
     }
     // Always return success — no email enumeration
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
     await this.passwordReset.resetPassword(token, newPassword);
+  }
+
+  async changePassword(user: User, currentPassword: string, newPassword: string): Promise<void> {
+    if (!(await this.users.verifyPassword(user, currentPassword))) {
+      throw new UnauthorizedException('Current password is incorrect.');
+    }
+    await this.users.updatePassword(user.id, newPassword);
+    await this.sessions.revokeAll(user.id);
+  }
+
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string }) {
+    return this.users.sanitize(await this.users.updateProfile(userId, data));
   }
 
   // ----------------------------------------------------------------
@@ -205,7 +220,7 @@ export class AuthService {
     const accessToken = this.signAccessToken(user);
     const refreshToken = await this.sessions.create(user.id, meta);
     const expiresIn = this.accessTokenTtlSeconds();
-    return { accessToken, refreshToken, expiresIn };
+    return { accessToken, refreshToken, expiresIn, user: this.users.sanitize(user) };
   }
 
   private signAccessToken(user: User): string {
@@ -228,3 +243,8 @@ export class AuthService {
     return parseInt(raw);
   }
 }
+
+
+
+
+

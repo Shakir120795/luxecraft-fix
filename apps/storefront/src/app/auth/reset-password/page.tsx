@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
@@ -37,7 +37,7 @@ function ResetPasswordForm() {
 
     setLoading(true);
 
-    const result = await resetPassword({ token, newPassword: password });
+    const result = await resetPassword({ token, password });
 
     if (result.success) {
       setSuccess(true);

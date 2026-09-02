@@ -1,9 +1,182 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/AdminLayout';
-import { getProduct, createProduct, updateProduct, getCategories, Category, CreateProductRequest } from '@/lib/api';
+import {
+  getProduct,
+  createProduct,
+  updateProduct,
+  getCategories,
+  publishProduct,
+  hideProduct,
+  archiveProduct,
+  restoreProduct,
+  addProductMedia,
+  updateProductMedia,
+  deleteProductMedia,
+  addProductVariant,
+  updateProductVariant,
+  deleteProductVariant,
+  addCustomizationOption,
+  updateCustomizationOption,
+  deleteCustomizationOption,
+  Category,
+  Product,
+  ProductMedia,
+  ProductVariant,
+  ProductCustomizationOption,
+  CreateProductRequest,
+  CreateVariantRequest,
+  AddCustomizationOptionRequest,
+} from '@/lib/api';
+
+type ProductStatus = 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
+
+type FormState = {
+  name: string;
+  slug: string;
+  sku: string;
+  categoryId: string;
+  shortDescription: string;
+  description: string;
+
+  regularPrice: string;
+  salePrice: string;
+  currency: string;
+
+  stockQuantity: string;
+  trackInventory: boolean;
+  allowBackorder: boolean;
+
+  weightKg: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
+
+  seoTitle: string;
+  seoDesc: string;
+
+  status: ProductStatus;
+  isFeatured: boolean;
+  isCustomizable: boolean;
+};
+
+type MediaDraft = {
+  id?: string;
+  url: string;
+  altText: string;
+  isMain: boolean;
+  sortOrder: number;
+};
+
+type LocalImagePreview = {
+  name: string;
+  url: string;
+};
+
+type VariantDraft = {
+  id?: string;
+  name: string;
+  sku: string;
+  regularPrice: string;
+  salePrice: string;
+  weightKg: string;
+  lengthCm: string;
+  widthCm: string;
+  heightCm: string;
+  stockQty: string;
+  lowStockAt: string;
+  trackInventory: boolean;
+  allowBackorder: boolean;
+  isAvailable: boolean;
+  sortOrder: number;
+};
+
+type CustomizationDraft = {
+  id?: string;
+  groupName: string;
+  optionLabel: string;
+  priceDelta: string;
+  sortOrder: number;
+  isAvailable: boolean;
+};
+
+function emptyForm(): FormState {
+  return {
+    name: '',
+    slug: '',
+    sku: '',
+    categoryId: '',
+    shortDescription: '',
+    description: '',
+
+    regularPrice: '',
+    salePrice: '',
+    currency: 'USD',
+
+    stockQuantity: '0',
+    trackInventory: true,
+    allowBackorder: false,
+
+    weightKg: '',
+    lengthCm: '',
+    widthCm: '',
+    heightCm: '',
+
+    seoTitle: '',
+    seoDesc: '',
+
+    status: 'DRAFT',
+    isFeatured: false,
+    isCustomizable: false,
+  };
+}
+
+function numberValue(value: string): number | undefined {
+  if (value.trim() === '') return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function positiveNumber(value: string): number | undefined {
+  const parsed = numberValue(value);
+  return parsed !== undefined && parsed > 0 ? parsed : undefined;
+}
+
+function nonNegativeNumber(value: string): number | undefined {
+  const parsed = numberValue(value);
+  return parsed !== undefined && parsed >= 0 ? parsed : undefined;
+}
+
+function makeVariant(): VariantDraft {
+  return {
+    name: '',
+    sku: '',
+    regularPrice: '',
+    salePrice: '',
+    weightKg: '',
+    lengthCm: '',
+    widthCm: '',
+    heightCm: '',
+    stockQty: '0',
+    lowStockAt: '',
+    trackInventory: true,
+    allowBackorder: false,
+    isAvailable: true,
+    sortOrder: 0,
+  };
+}
+
+function makeCustomization(): CustomizationDraft {
+  return {
+    groupName: '',
+    optionLabel: '',
+    priceDelta: '0',
+    sortOrder: 0,
+    isAvailable: true,
+  };
+}
 
 export default function ProductEditPage() {
   const router = useRouter();
@@ -11,131 +184,664 @@ export default function ProductEditPage() {
   const productId = params.id as string;
   const isNew = productId === 'new';
 
+  const [form, setForm] = useState<FormState>(emptyForm);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [formData, setFormData] = useState<CreateProductRequest>({
-    name: '',
-    slug: '',
-    sku: '',
-    description: '',
-    shortDescription: '',
-    regularPrice: 0,
-    salePrice: 0,
-    stockQuantity: 0,
-    isActive: true,
-    isFeatured: false,
-    categoryId: '',
-    images: [],
-  });
-  const [imageUrl, setImageUrl] = useState('');
+  const [media, setMedia] = useState<MediaDraft[]>([]);
+  const [variants, setSizes] = useState<VariantDraft[]>([]);
+  const [customizations, setCustomizations] = useState<CustomizationDraft[]>([]);
+  const [useSizes, setUseSizes] = useState(false);
+
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+
+  const [imageUrl, setImageUrl] = useState('');
+  const [imageAlt, setImageAlt] = useState('');
+  const [selectedLocalFiles, setSelectedLocalFiles] = useState<string[]>([]);
+  const [localPreviews, setLocalPreviews] = useState<
+    { name: string; url: string }[]
+  >([]);
+  const [localFiles, setLocalFiles] = useState<File[]>([]);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   useEffect(() => {
-    loadCategories();
-    if (!isNew) {
-      loadProduct();
-    }
+    void loadInitialData();
   }, [productId]);
 
-  async function loadCategories() {
+  async function loadInitialData() {
     try {
-      const data = await getCategories();
-      setCategories(data.filter(c => c.isActive));
-    } catch (error) {
-      console.error('Failed to load categories:', error);
-    }
-  }
+      setLoading(true);
+      setError('');
+      const categoryData = await getCategories();
+      setCategories(categoryData.filter((category) => category.isActive));
 
-  async function loadProduct() {
-    try {
-      const product = await getProduct(productId);
-      setFormData({
-        name: product.name,
-        slug: product.slug,
-        sku: product.sku,
-        description: product.description,
-        shortDescription: product.shortDescription || '',
-        regularPrice: Number(product.regularPrice),
-        salePrice: product.salePrice ? Number(product.salePrice) : 0,
-        stockQuantity: product.stockQuantity,
-        isActive: product.isActive,
-        isFeatured: product.isFeatured,
-        categoryId: product.categoryId,
-        images: product.images,
-      });
-    } catch (error) {
-      console.error('Failed to load product:', error);
-      setError('Failed to load product');
+      if (!isNew) {
+        await loadProduct();
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'Failed to load product');
     } finally {
       setLoading(false);
     }
   }
 
+  async function loadProduct() {
+    const product = await getProduct(productId);
+
+    setForm({
+      name: product.name ?? '',
+      slug: product.slug ?? '',
+      sku: product.sku ?? '',
+      categoryId: product.categoryId ?? '',
+      shortDescription: product.shortDescription ?? '',
+      description: product.description ?? '',
+
+      regularPrice: String(product.regularPrice ?? ''),
+      salePrice: product.salePrice == null ? '' : String(product.salePrice),
+      currency: product.currency ?? 'USD',
+
+      stockQuantity: String(product.stockQuantity ?? 0),
+      trackInventory: product.trackInventory !== false,
+      allowBackorder: product.allowBackorder === true,
+
+      weightKg: product.weightKg == null ? '' : String(product.weightKg),
+      lengthCm: product.lengthCm == null ? '' : String(product.lengthCm),
+      widthCm: product.widthCm == null ? '' : String(product.widthCm),
+      heightCm: product.heightCm == null ? '' : String(product.heightCm),
+
+      seoTitle: product.seoTitle ?? '',
+      seoDesc: product.seoDesc ?? '',
+
+      status: product.status ?? 'DRAFT',
+      isFeatured: product.isFeatured === true,
+      isCustomizable: product.isCustomizable === true,
+    });
+
+    setMedia(
+      (product.media ?? []).map((item: ProductMedia, index: number) => ({
+        id: item.id,
+        url: item.url,
+        altText: item.altText ?? '',
+        isMain: item.isMain === true,
+        sortOrder: item.sortOrder ?? index,
+      })),
+    );
+
+    setSizes(
+      (product.variants ?? []).map((item: ProductVariant, index: number) => ({
+        id: item.id,
+        name: item.name,
+        sku: item.sku ?? '',
+        regularPrice:
+          item.regularPrice == null ? '' : String(item.regularPrice),
+        salePrice: item.salePrice == null ? '' : String(item.salePrice),
+        weightKg: item.weightKg == null ? '' : String(item.weightKg),
+        lengthCm: item.lengthCm == null ? '' : String(item.lengthCm),
+        widthCm: item.widthCm == null ? '' : String(item.widthCm),
+        heightCm: item.heightCm == null ? '' : String(item.heightCm),
+        stockQty: String(item.stockQty ?? 0),
+        lowStockAt:
+          item.lowStockAt == null ? '' : String(item.lowStockAt),
+        trackInventory: item.trackInventory !== false,
+        allowBackorder: item.allowBackorder === true,
+        isAvailable: item.isAvailable !== false,
+        sortOrder: item.sortOrder ?? index,
+      })),
+    );
+
+    setCustomizations(
+      (product.customizationOptions ?? []).map(
+        (item: ProductCustomizationOption, index: number) => ({
+          id: item.id,
+          groupName: item.groupName,
+          optionLabel: item.optionLabel,
+          priceDelta: String(item.priceDelta ?? 0),
+          sortOrder: item.sortOrder ?? index,
+          isAvailable: item.isAvailable !== false,
+        }),
+      ),
+    );
+
+    setUseSizes((product.variants ?? []).length > 0);
+  }
+
   function generateSlug(name: string) {
-    return name.toLowerCase()
+    return name
+      .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
   }
 
-  function handleNameChange(name: string) {
-    setFormData({
-      ...formData,
-      name,
-      slug: generateSlug(name),
-    });
+  function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((current) => ({ ...current, [key]: value }));
   }
 
-  function handleAddImage() {
-    if (imageUrl.trim()) {
-      setFormData({
-        ...formData,
-        images: [...formData.images, imageUrl.trim()],
+  function handleNameChange(name: string) {
+    setForm((current) => ({
+      ...current,
+      name,
+      slug: isNew ? generateSlug(name) : current.slug,
+    }));
+  }
+
+  function addImage() {
+    const url = imageUrl.trim();
+    if (!url) return;
+
+    setMedia((current) => {
+      const next = [
+        ...current,
+        {
+          url,
+          altText: imageAlt.trim(),
+          isMain: current.length === 0,
+          sortOrder: current.length,
+        },
+      ];
+      return next;
+    });
+
+    setImageUrl('');
+    setImageAlt('');
+  }
+
+  function setMainImage(index: number) {
+    setMedia((current) =>
+      current.map((item, itemIndex) => ({
+        ...item,
+        isMain: itemIndex === index,
+      })),
+    );
+  }
+
+  async function removeImage(index: number) {
+    const target = media[index];
+
+    try {
+      if (target.id) {
+        await deleteProductMedia(target.id);
+      }
+
+      setMedia((current) => {
+        const next = current.filter((_, itemIndex) => itemIndex !== index);
+        if (next.length > 0 && !next.some((item) => item.isMain)) {
+          next[0] = { ...next[0], isMain: true };
+        }
+        return next.map((item, itemIndex) => ({
+          ...item,
+          sortOrder: itemIndex,
+        }));
       });
-      setImageUrl('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove image');
     }
   }
 
-  function handleRemoveImage(index: number) {
-    setFormData({
-      ...formData,
-      images: formData.images.filter((_, i) => i !== index),
+  function moveImage(index: number, direction: -1 | 1) {
+    setMedia((current) => {
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= current.length) return current;
+
+      const next = [...current];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+
+      return next.map((item, itemIndex) => ({
+        ...item,
+        sortOrder: itemIndex,
+      }));
     });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError('');
+  function handleLocalFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+
+    const imageFiles = Array.from(files).filter((file) =>
+      file.type.startsWith('image/'),
+    );
+
+    if (imageFiles.length === 0) {
+      setError('Please select image files only.');
+      return;
+    }
+
+    const previews = imageFiles.map((file) => ({
+      name: file.name,
+      url: URL.createObjectURL(file),
+    }));
+
+    setLocalFiles((current) => [...current, ...imageFiles]);
+    setLocalPreviews((current) => [...current, ...previews]);
+    setSelectedLocalFiles((current) => [
+      ...current,
+      ...imageFiles.map((file) => file.name),
+    ]);
+
+    setNotice(
+      `${imageFiles.length} image${imageFiles.length > 1 ? 's' : ''} selected from your PC. They will upload to the server when you save the product.`,
+    );
+
+    setFileInputKey((current) => current + 1);
+  }
+
+  function removeLocalPreview(index: number) {
+    setLocalPreviews((current) => {
+      const target = current[index];
+      if (target?.url) URL.revokeObjectURL(target.url);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
+
+    setLocalFiles((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
+
+    setSelectedLocalFiles((current) =>
+      current.filter((_, itemIndex) => itemIndex !== index),
+    );
+  }
+
+  function clearLocalPreviews() {
+    setLocalPreviews((current) => {
+      current.forEach((item) => URL.revokeObjectURL(item.url));
+      return [];
+    });
+
+    setLocalFiles([]);
+    setSelectedLocalFiles([]);
+    setFileInputKey((current) => current + 1);
+  }
+
+  async function uploadProductImage(file: File) {
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+
+    const token =
+      typeof window === 'undefined'
+        ? null
+        : localStorage.getItem('adminToken');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${apiBase}/admin/uploads/products`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: formData,
+      credentials: 'include',
+    });
+
+    let json: any = null;
+    try {
+      json = await response.json();
+    } catch {
+      json = null;
+    }
+
+    if (!response.ok || !json?.success) {
+      throw new Error(
+        json?.message ?? json?.error ?? `Image upload failed (${response.status})`,
+      );
+    }
+
+    return json.data as {
+      url: string;
+      storageKey: string;
+      filename: string;
+    };
+  }
+
+
+  function addVariant() {
+    setUseSizes(true);
+    setSizes((current) => [
+      ...current,
+      {
+        ...makeVariant(),
+        sortOrder: current.length,
+      },
+    ]);
+  }
+
+  function updateVariant(index: number, changes: Partial<VariantDraft>) {
+    setSizes((current) =>
+      current.map((variant, variantIndex) =>
+        variantIndex === index ? { ...variant, ...changes } : variant,
+      ),
+    );
+  }
+
+  async function removeVariant(index: number) {
+    const variant = variants[index];
 
     try {
-      // Prepare data
-      const data = {
-        ...formData,
-        salePrice: formData.salePrice || undefined,
-        shortDescription: formData.shortDescription || undefined,
-      };
-
-      if (isNew) {
-        await createProduct(data);
-      } else {
-        await updateProduct(productId, data);
+      if (variant.id) {
+        await deleteProductVariant(variant.id);
       }
 
-      router.push('/products');
-    } catch (err: any) {
-      setError(err.message || 'Failed to save product');
+      setSizes((current) =>
+        current
+          .filter((_, variantIndex) => variantIndex !== index)
+          .map((item, variantIndex) => ({
+            ...item,
+            sortOrder: variantIndex,
+          })),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Failed to remove variant',
+      );
+    }
+  }
+
+  function addCustomization() {
+    updateForm('isCustomizable', true);
+    setCustomizations((current) => [
+      ...current,
+      {
+        ...makeCustomization(),
+        sortOrder: current.length,
+      },
+    ]);
+  }
+
+  function updateCustomization(
+    index: number,
+    changes: Partial<CustomizationDraft>,
+  ) {
+    setCustomizations((current) =>
+      current.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...changes } : item,
+      ),
+    );
+  }
+
+  async function removeCustomization(index: number) {
+    const option = customizations[index];
+
+    try {
+      if (option.id) {
+        await deleteCustomizationOption(option.id);
+      }
+
+      setCustomizations((current) =>
+        current
+          .filter((_, itemIndex) => itemIndex !== index)
+          .map((item, itemIndex) => ({
+            ...item,
+            sortOrder: itemIndex,
+          })),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to remove customization option',
+      );
+    }
+  }
+
+  async function saveProduct(forcedStatus?: ProductStatus) {
+    if (!form.name.trim()) {
+      throw new Error('Product name is required.');
+    }
+
+    const regularPrice = positiveNumber(form.regularPrice);
+    if (regularPrice === undefined) {
+      throw new Error('Regular price must be greater than 0.');
+    }
+
+    if (!form.categoryId) {
+      throw new Error('Please select a category.');
+    }
+
+    const payload: CreateProductRequest = {
+      name: form.name.trim(),
+      slug: form.slug.trim() || undefined,
+      sku: form.sku.trim() || undefined,
+      categoryId: form.categoryId,
+      description: form.description.trim() || undefined,
+      shortDescription: form.shortDescription.trim() || undefined,
+
+      regularPrice,
+      salePrice: positiveNumber(form.salePrice),
+      currency: form.currency.trim().toUpperCase() || 'USD',
+
+      status: forcedStatus ?? form.status,
+
+      weightKg: nonNegativeNumber(form.weightKg),
+      lengthCm: nonNegativeNumber(form.lengthCm),
+      widthCm: nonNegativeNumber(form.widthCm),
+      heightCm: nonNegativeNumber(form.heightCm),
+
+      seoTitle: form.seoTitle.trim() || undefined,
+      seoDesc: form.seoDesc.trim() || undefined,
+
+      trackInventory: form.trackInventory,
+      allowBackorder: form.allowBackorder,
+      isFeatured: form.isFeatured,
+      isCustomizable:
+        form.isCustomizable || customizations.length > 0,
+    };
+
+    const savedProduct = isNew
+      ? await createProduct(payload)
+      : await updateProduct(productId, payload);
+
+    const savedId = savedProduct.id;
+
+    // Save existing/external URL media first.
+    const mediaResults: ProductMedia[] = [];
+    const mainIndex = media.findIndex((item) => item.isMain);
+
+    for (let index = 0; index < media.length; index += 1) {
+      const item = media[index];
+      const isMain =
+        mainIndex >= 0 ? index === mainIndex : localFiles.length === 0 && index === 0;
+
+      if (!item.url.trim()) continue;
+
+      if (item.id) {
+        const updated = await updateProductMedia(item.id, {
+          type: 'IMAGE',
+          url: item.url.trim(),
+          altText: item.altText.trim() || undefined,
+          sortOrder: index,
+          isMain,
+        });
+        mediaResults.push(updated);
+      } else {
+        const created = await addProductMedia(savedId, {
+          type: 'IMAGE',
+          url: item.url.trim(),
+          altText: item.altText.trim() || undefined,
+          sortOrder: index,
+          isMain,
+        });
+        mediaResults.push(created);
+      }
+    }
+
+    // Upload newly selected PC files to the API local storage.
+    for (let index = 0; index < localFiles.length; index += 1) {
+      const file = localFiles[index];
+      const uploaded = await uploadProductImage(file);
+
+      const created = await addProductMedia(savedId, {
+        type: 'IMAGE',
+        url: uploaded.url,
+        storageKey: uploaded.storageKey,
+        altText: file.name,
+        sortOrder: media.length + index,
+        isMain: mainIndex < 0 && media.length === 0 && index === 0,
+      });
+
+      mediaResults.push(created);
+    }
+
+    // Save sizes/variants.
+    if (useSizes || variants.length > 0) {
+      for (let index = 0; index < variants.length; index += 1) {
+        const item = variants[index];
+
+        if (!item.name.trim()) continue;
+
+        const variantData: CreateVariantRequest = {
+          name: item.name.trim(),
+          sku: item.sku.trim() || undefined,
+          sortOrder: index,
+          regularPrice: positiveNumber(item.regularPrice),
+          salePrice: positiveNumber(item.salePrice),
+          weightKg: nonNegativeNumber(item.weightKg),
+          lengthCm: nonNegativeNumber(item.lengthCm),
+          widthCm: nonNegativeNumber(item.widthCm),
+          heightCm: nonNegativeNumber(item.heightCm),
+          stockQty: Math.max(0, Math.floor(Number(item.stockQty || 0))),
+          lowStockAt:
+            item.lowStockAt.trim() === ''
+              ? undefined
+              : Math.max(0, Math.floor(Number(item.lowStockAt))),
+          trackInventory: item.trackInventory,
+          allowBackorder: item.allowBackorder,
+          isAvailable: item.isAvailable,
+        };
+
+        if (item.id) {
+          await updateProductVariant(item.id, variantData);
+        } else {
+          await addProductVariant(savedId, variantData);
+        }
+      }
+    } else if (isNew) {
+      await addProductVariant(savedId, {
+        name: 'Default',
+        sortOrder: 0,
+        stockQty: Math.max(
+          0,
+          Math.floor(Number(form.stockQuantity || 0)),
+        ),
+        regularPrice,
+        salePrice: positiveNumber(form.salePrice),
+        trackInventory: form.trackInventory,
+        allowBackorder: form.allowBackorder,
+        isAvailable: true,
+      });
+    }
+
+    // Save customization options
+    for (let index = 0; index < customizations.length; index += 1) {
+      const item = customizations[index];
+
+      if (!item.groupName.trim() || !item.optionLabel.trim()) continue;
+
+      const optionData: AddCustomizationOptionRequest = {
+        groupName: item.groupName.trim(),
+        optionLabel: item.optionLabel.trim(),
+        priceDelta: numberValue(item.priceDelta) ?? 0,
+        sortOrder: index,
+        isAvailable: item.isAvailable,
+      };
+
+      if (item.id) {
+        await updateCustomizationOption(item.id, optionData);
+      } else {
+        await addCustomizationOption(savedId, optionData);
+      }
+    }
+
+    return savedProduct;
+  }
+
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>,
+    forcedStatus?: ProductStatus,
+  ) {
+    event.preventDefault();
+
+    try {
+      setSaving(true);
+      setError('');
+      setNotice('');
+
+      await saveProduct(forcedStatus);
+
+      clearLocalPreviews();
+
+      setNotice(
+        forcedStatus === 'ACTIVE'
+          ? 'Product saved and published successfully.'
+          : isNew
+            ? 'Product created successfully.'
+            : 'Product updated successfully.',
+      );
+
+      setTimeout(() => {
+        router.push('/products');
+      }, 700);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'Failed to save product');
     } finally {
       setSaving(false);
     }
   }
 
+  async function handleStatusAction(
+    action:
+      | 'publish'
+      | 'hide'
+      | 'archive'
+      | 'restore',
+  ) {
+    if (isNew) return;
+
+    try {
+      setActionBusy(true);
+      setError('');
+      setNotice('');
+
+      if (action === 'publish') await publishProduct(productId);
+      if (action === 'hide') await hideProduct(productId);
+      if (action === 'archive') await archiveProduct(productId);
+      if (action === 'restore') await restoreProduct(productId);
+
+      const nextStatus: ProductStatus =
+        action === 'publish'
+          ? 'ACTIVE'
+          : action === 'hide'
+            ? 'HIDDEN'
+            : action === 'archive'
+              ? 'ARCHIVED'
+              : 'ACTIVE';
+
+      updateForm('status', nextStatus);
+      setNotice(`Product status changed to ${nextStatus}.`);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'Failed to change status');
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  const totalVariantStock = useMemo(
+    () =>
+      variants.reduce(
+        (total, variant) =>
+          total + Math.max(0, Number(variant.stockQty || 0)),
+        0,
+      ),
+    [variants],
+  );
+
   if (loading) {
     return (
       <AdminLayout>
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 w-48 bg-[var(--color-border)]" />
-          <div className="h-96 bg-[var(--color-border)]" />
+        <div className="space-y-6 animate-pulse">
+          <div className="h-8 w-64 bg-[var(--color-border)]" />
+          <div className="h-80 bg-[var(--color-border)]" />
+          <div className="h-64 bg-[var(--color-border)]" />
         </div>
       </AdminLayout>
     );
@@ -143,266 +849,1139 @@ export default function ProductEditPage() {
 
   return (
     <AdminLayout>
-      <div className="max-w-4xl">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-serif text-[var(--color-primary)]">
-            {isNew ? 'Add New Product' : 'Edit Product'}
-          </h1>
-          <p className="text-[var(--color-muted)] mt-1">
-            {isNew ? 'Create a new product in your catalog' : 'Update product details'}
-          </p>
+      <div className="max-w-6xl">
+        <div className="mb-7 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Product Catalog
+            </p>
+            <h1 className="mt-2 text-4xl font-serif text-[var(--color-primary)]">
+              {isNew ? 'Add New Product' : 'Edit Product'}
+            </h1>
+            <p className="mt-2 text-[var(--color-muted)]">
+              {isNew
+                ? 'Create a complete product for your LuxeCraft storefront.'
+                : 'Manage product details, media, variants, customization and publishing.'}
+            </p>
+          </div>
+
+          {!isNew && (
+            <div className="flex flex-wrap gap-2">
+              {form.status !== 'ACTIVE' && (
+                <button
+                  type="button"
+                  disabled={actionBusy}
+                  onClick={() => void handleStatusAction('publish')}
+                  className="bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-50"
+                >
+                  Publish
+                </button>
+              )}
+
+              {form.status === 'ACTIVE' && (
+                <button
+                  type="button"
+                  disabled={actionBusy}
+                  onClick={() => void handleStatusAction('hide')}
+                  className="border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text)] disabled:opacity-50"
+                >
+                  Hide
+                </button>
+              )}
+
+              {form.status !== 'ARCHIVED' && (
+                <button
+                  type="button"
+                  disabled={actionBusy}
+                  onClick={() => void handleStatusAction('archive')}
+                  className="border border-red-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-red-700 disabled:opacity-50"
+                >
+                  Archive
+                </button>
+              )}
+
+              {form.status === 'ARCHIVED' && (
+                <button
+                  type="button"
+                  disabled={actionBusy}
+                  onClick={() => void handleStatusAction('restore')}
+                  className="bg-[var(--color-accent)] px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white disabled:opacity-50"
+                >
+                  Restore
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 border border-red-400 bg-red-50 px-6 py-4 text-red-800">
-            {error}
+        {(error || notice) && (
+          <div className="mb-6 space-y-3">
+            {error && (
+              <div className="border border-red-300 bg-red-50 px-5 py-4 text-sm text-red-800">
+                {error}
+              </div>
+            )}
+            {notice && (
+              <div className="border border-green-300 bg-green-50 px-5 py-4 text-sm text-green-800">
+                {notice}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
-          <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-            <h2 className="text-xl font-serif text-[var(--color-primary)] mb-4">
-              Basic Information
-            </h2>
+        <form onSubmit={(event) => void handleSubmit(event)} className="space-y-6">
+          {/* Basic Information */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                Basic Information
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Core product information shown across the storefront.
+              </p>
+            </div>
 
-            <div className="space-y-4">
+            <div className="grid gap-5">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+                <label className="mb-2 block text-sm font-medium">
                   Product Name *
                 </label>
                 <input
-                  type="text"
                   required
-                  value={formData.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                  className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
+                  value={form.name}
+                  onChange={(event) => handleNameChange(event.target.value)}
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="e.g. Persian Silk Rug - Royal Blue"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                  Slug *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
-                />
-                <p className="text-xs text-[var(--color-muted)] mt-1">
-                  URL-friendly version (auto-generated from name)
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-5 md:grid-cols-2">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                    SKU *
+                  <label className="mb-2 block text-sm font-medium">
+                    Slug
                   </label>
                   <input
-                    type="text"
-                    required
-                    value={formData.sku}
-                    onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
-                    className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
+                    value={form.slug}
+                    onChange={(event) =>
+                      updateForm('slug', event.target.value)
+                    }
+                    className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                    placeholder="persian-silk-rug-royal-blue"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+                  <label className="mb-2 block text-sm font-medium">
+                    SKU
+                  </label>
+                  <input
+                    value={form.sku}
+                    onChange={(event) =>
+                      updateForm('sku', event.target.value)
+                    }
+                    className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                    placeholder="PSR-001"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
                     Category *
                   </label>
                   <select
                     required
-                    value={formData.categoryId}
-                    onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                    className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
+                    value={form.categoryId}
+                    onChange={(event) =>
+                      updateForm('categoryId', event.target.value)
+                    }
+                    className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
                   >
                     <option value="">Select category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Currency
+                  </label>
+                  <input
+                    maxLength={3}
+                    value={form.currency}
+                    onChange={(event) =>
+                      updateForm('currency', event.target.value.toUpperCase())
+                    }
+                    className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 uppercase outline-none focus:border-[var(--color-accent)]"
+                    placeholder="USD"
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+                <label className="mb-2 block text-sm font-medium">
                   Short Description
                 </label>
                 <input
-                  type="text"
-                  value={formData.shortDescription}
-                  onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
-                  className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
-                  placeholder="Brief one-line description"
+                  value={form.shortDescription}
+                  onChange={(event) =>
+                    updateForm('shortDescription', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="Short customer-friendly summary"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                  Description *
+                <label className="mb-2 block text-sm font-medium">
+                  Description
                 </label>
                 <textarea
-                  required
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  rows={6}
-                  className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)] resize-none"
+                  rows={7}
+                  value={form.description}
+                  onChange={(event) =>
+                    updateForm('description', event.target.value)
+                  }
+                  className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="Detailed product description..."
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Pricing & Inventory */}
-          <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-            <h2 className="text-xl font-serif text-[var(--color-primary)] mb-4">
-              Pricing & Inventory
-            </h2>
+          {/* Pricing */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                Pricing
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Set your base price and optional sale price.
+              </p>
+            </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid gap-5 md:grid-cols-3">
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                  Regular Price * ($)
+                <label className="mb-2 block text-sm font-medium">
+                  Regular Price *
                 </label>
                 <input
-                  type="number"
                   required
-                  min="0"
+                  type="number"
+                  min="0.01"
                   step="0.01"
-                  value={formData.regularPrice}
-                  onChange={(e) => setFormData({ ...formData, regularPrice: parseFloat(e.target.value) })}
-                  className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
+                  value={form.regularPrice}
+                  onChange={(event) =>
+                    updateForm('regularPrice', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="0.00"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                  Sale Price ($)
+                <label className="mb-2 block text-sm font-medium">
+                  Sale Price
                 </label>
                 <input
                   type="number"
                   min="0"
                   step="0.01"
-                  value={formData.salePrice || ''}
-                  onChange={(e) => setFormData({ ...formData, salePrice: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
+                  value={form.salePrice}
+                  onChange={(event) =>
+                    updateForm('salePrice', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="Optional"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                  Stock Quantity *
+                <label className="mb-2 block text-sm font-medium">
+                  Currency Code
                 </label>
                 <input
-                  type="number"
-                  required
-                  min="0"
-                  value={formData.stockQuantity}
-                  onChange={(e) => setFormData({ ...formData, stockQuantity: parseInt(e.target.value) })}
-                  className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
+                  maxLength={3}
+                  value={form.currency}
+                  onChange={(event) =>
+                    updateForm('currency', event.target.value.toUpperCase())
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 uppercase outline-none focus:border-[var(--color-accent)]"
+                  placeholder="USD"
                 />
               </div>
             </div>
-          </div>
+          </section>
+
+          {/* Inventory */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                Inventory
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Inventory can be managed directly or through variants.
+              </p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              {!useSizes && (
+                <div>
+                  <label className="mb-2 block text-sm font-medium">
+                    Stock Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.stockQuantity}
+                    onChange={(event) =>
+                      updateForm('stockQuantity', event.target.value)
+                    }
+                    className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  />
+                </div>
+              )}
+
+              {useSizes && (
+                <div className="border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
+                  <p className="text-xs uppercase tracking-wider text-[var(--color-muted)]">
+                    Variant Stock
+                  </p>
+                  <p className="mt-2 text-2xl font-serif text-[var(--color-primary)]">
+                    {totalVariantStock}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-muted)]">
+                    Total stock across all variants
+                  </p>
+                </div>
+              )}
+
+              <label className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.trackInventory}
+                  onChange={(event) =>
+                    updateForm('trackInventory', event.target.checked)
+                  }
+                  className="h-4 w-4"
+                />
+                <span>
+                  <span className="block text-sm font-medium">
+                    Track inventory
+                  </span>
+                  <span className="block text-xs text-[var(--color-muted)]">
+                    Reduce stock when orders are placed
+                  </span>
+                </span>
+              </label>
+
+              <label className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={form.allowBackorder}
+                  onChange={(event) =>
+                    updateForm('allowBackorder', event.target.checked)
+                  }
+                  className="h-4 w-4"
+                />
+                <span>
+                  <span className="block text-sm font-medium">
+                    Allow backorder
+                  </span>
+                  <span className="block text-xs text-[var(--color-muted)]">
+                    Accept orders when stock is unavailable
+                  </span>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          {/* Physical Details */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                Physical Details
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Optional product measurements for shipping and product details.
+              </p>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-4">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Weight (kg)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.001"
+                  value={form.weightKg}
+                  onChange={(event) =>
+                    updateForm('weightKg', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Length (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.lengthCm}
+                  onChange={(event) =>
+                    updateForm('lengthCm', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Width (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.widthCm}
+                  onChange={(event) =>
+                    updateForm('widthCm', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Height (cm)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.heightCm}
+                  onChange={(event) =>
+                    updateForm('heightCm', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
+            </div>
+          </section>
 
           {/* Images */}
-          <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-            <h2 className="text-xl font-serif text-[var(--color-primary)] mb-4">
-              Product Images
-            </h2>
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                Product Images
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Add image URLs or select multiple images from your PC. PC images are uploaded to the server when you save the product.
+              </p>
+            </div>
 
-            <div className="space-y-4">
-              <div className="flex gap-2">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="border border-[var(--color-border)] bg-[var(--color-bg)] p-5">
+                <h3 className="font-serif text-lg">Add Image URL</h3>
+
                 <input
                   type="url"
                   value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="Enter image URL"
-                  className="flex-1 px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
+                  onChange={(event) => setImageUrl(event.target.value)}
+                  className="mt-4 w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="https://..."
                 />
+
+                <input
+                  type="text"
+                  value={imageAlt}
+                  onChange={(event) => setImageAlt(event.target.value)}
+                  className="mt-3 w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="Alt text"
+                />
+
                 <button
                   type="button"
-                  onClick={handleAddImage}
-                  className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-strong)] text-white px-6 py-2 text-sm uppercase tracking-wider transition-colors"
+                  onClick={addImage}
+                  className="mt-4 bg-[var(--color-accent)] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white"
                 >
-                  Add
+                  Add Image
                 </button>
               </div>
 
-              {formData.images.length > 0 && (
-                <div className="grid grid-cols-4 gap-4">
-                  {formData.images.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={img}
-                        alt={`Product ${index + 1}`}
-                        className="w-full h-32 object-cover border border-[var(--color-border)]"
-                      />
+              <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-bg)] p-5">
+                <h3 className="font-serif text-lg">Upload from PC</h3>
+
+                <label className="mt-4 flex cursor-pointer items-center justify-center border border-[var(--color-accent)] px-5 py-4 text-center text-sm font-medium text-[var(--color-accent)] hover:bg-[var(--color-surface)]">
+                  Choose image files
+                  <input
+                    key={fileInputKey}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(event) => handleLocalFiles(event.target.files)}
+                    className="hidden"
+                  />
+                </label>
+
+                {selectedLocalFiles.length > 0 && (
+                  <div className="mt-4 space-y-1 text-xs text-[var(--color-muted)]">
+                    {selectedLocalFiles.map((name) => (
+                      <div key={name}>{name}</div>
+                    ))}
+                  </div>
+                )}
+                {localPreviews.length > 0 && (
+                  <div className="mt-5">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
+                        Selected from PC
+                      </p>
+
                       <button
                         type="button"
-                        onClick={() => handleRemoveImage(index)}
-                        className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-2 py-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={clearLocalPreviews}
+                        className="border border-red-300 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-red-700 hover:bg-red-50"
                       >
-                        Remove
+                        Remove All
                       </button>
                     </div>
-                  ))}
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                      {localPreviews.map((file, index) => (
+                        <div
+                          key={`${file.name}-${index}`}
+                          className="overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)]"
+                        >
+                          <img
+                            src={file.url}
+                            alt={file.name}
+                            className="h-28 w-full object-cover"
+                          />
+
+                          <div className="p-2">
+                            <p className="truncate text-xs text-[var(--color-text)]">
+                              {file.name}
+                            </p>
+
+                            <button
+                              type="button"
+                              onClick={() => removeLocalPreview(index)}
+                              className="mt-2 w-full border border-red-300 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-red-700 hover:bg-red-50"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="mt-4 text-xs leading-5 text-[var(--color-muted)]">
+                  Selected PC images are uploaded to the LuxeCraft API server when you save the product. Maximum size: 10 MB per image.
+                </p>
+              </div>
+            </div>
+
+            {media.length > 0 && (
+              <div className="mt-6 space-y-4">
+                {media.map((item, index) => (
+                  <div
+                    key={item.id ?? `${item.url}-${index}`}
+                    className="grid gap-4 border border-[var(--color-border)] bg-[var(--color-bg)] p-4 md:grid-cols-[110px_1fr_auto]"
+                  >
+                    <div className="h-24 w-28 overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)]">
+                      <img
+                        src={item.url}
+                        alt={item.altText || `Product image ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+
+                    <div className="min-w-0">
+                      <p className="truncate text-sm text-[var(--color-muted)]">
+                        {item.url}
+                      </p>
+
+                      <input
+                        value={item.altText}
+                        onChange={(event) =>
+                          setMedia((current) =>
+                            current.map((image, imageIndex) =>
+                              imageIndex === index
+                                ? { ...image, altText: event.target.value }
+                                : image,
+                            ),
+                          )
+                        }
+                        className="mt-3 w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm outline-none focus:border-[var(--color-accent)]"
+                        placeholder="Alt text"
+                      />
+
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setMainImage(index)}
+                          className={`px-3 py-2 text-xs font-semibold uppercase tracking-wider ${
+                            item.isMain
+                              ? 'bg-[var(--color-accent)] text-white'
+                              : 'border border-[var(--color-border)]'
+                          }`}
+                        >
+                          {item.isMain ? 'Main Image' : 'Set Main'}
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={index === 0}
+                          onClick={() => moveImage(index, -1)}
+                          className="border border-[var(--color-border)] px-3 py-2 text-xs disabled:opacity-40"
+                        >
+                          Move Left
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={index === media.length - 1}
+                          onClick={() => moveImage(index, 1)}
+                          className="border border-[var(--color-border)] px-3 py-2 text-xs disabled:opacity-40"
+                        >
+                          Move Right
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void removeImage(index)}
+                          className="border border-red-300 px-3 py-2 text-xs font-semibold text-red-700"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* Sizes */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                  Sizes
+                </h2>
+                <p className="mt-1 text-sm text-[var(--color-muted)]">
+                  Add sizes that customers can select before purchase.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={addVariant}
+                className="bg-[var(--color-accent)] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white"
+              >
+                + Add Variant
+              </button>
+            </div>
+
+            {variants.length === 0 && (
+              <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-bg)] p-6 text-sm text-[var(--color-muted)]">
+                No sizes yet. Add a size when different sizes need separate
+                stock, pricing or product photos.
+              </div>
+            )}
+
+            <div className="space-y-5">
+              {variants.map((variant, index) => (
+                <div
+                  key={variant.id ?? `variant-${index}`}
+                  className="border border-[var(--color-border)] bg-[var(--color-bg)] p-5"
+                >
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="font-serif text-xl">
+                      Size {index + 1}
+                    </h3>
+
+                    <button
+                      type="button"
+                      onClick={() => void removeVariant(index)}
+                      className="text-xs font-semibold uppercase tracking-wider text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                    <div className="lg:col-span-2">
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                        Size *
+                      </label>
+                      <input
+                        value={variant.name}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            name: event.target.value,
+                          })
+                        }
+                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                        placeholder="Large"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                        SKU
+                      </label>
+                      <input
+                        value={variant.sku}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            sku: event.target.value,
+                          })
+                        }
+                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                        placeholder="SKU-RED-L"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                        Stock
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={variant.stockQty}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            stockQty: event.target.value,
+                          })
+                        }
+                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                        Regular Price
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={variant.regularPrice}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            regularPrice: event.target.value,
+                          })
+                        }
+                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                        Sale Price
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={variant.salePrice}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            salePrice: event.target.value,
+                          })
+                        }
+                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                        Low Stock At
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={variant.lowStockAt}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            lowStockAt: event.target.value,
+                          })
+                        }
+                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                        Weight kg
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.001"
+                        value={variant.weightKg}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            weightKg: event.target.value,
+                          })
+                        }
+                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                      />
+                    </div>
+
+                    {[
+                      ['lengthCm', 'Length cm'],
+                      ['widthCm', 'Width cm'],
+                      ['heightCm', 'Height cm'],
+                    ].map(([field, label]) => (
+                      <div key={field}>
+                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                          {label}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={
+                            variant[field as keyof VariantDraft] as string
+                          }
+                          onChange={(event) =>
+                            updateVariant(index, {
+                              [field]: event.target.value,
+                            } as Partial<VariantDraft>)
+                          }
+                          className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-5 text-sm">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={variant.trackInventory}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            trackInventory: event.target.checked,
+                          })
+                        }
+                      />
+                      Track inventory
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={variant.allowBackorder}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            allowBackorder: event.target.checked,
+                          })
+                        }
+                      />
+                      Allow backorder
+                    </label>
+
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={variant.isAvailable}
+                        onChange={(event) =>
+                          updateVariant(index, {
+                            isAvailable: event.target.checked,
+                          })
+                        }
+                      />
+                      Available on storefront
+                    </label>
+                  </div>
                 </div>
-              )}
+              ))}
             </div>
-          </div>
+          </section>
 
-          {/* Options */}
-          <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-            <h2 className="text-xl font-serif text-[var(--color-primary)] mb-4">
-              Options
-            </h2>
+          {/* Customization */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                  Customization Options
+                </h2>
+                <p className="mt-1 text-sm text-[var(--color-muted)]">
+                  Add customer-selectable options such as Size, Color or Material.
+                </p>
+              </div>
 
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
+              <button
+                type="button"
+                onClick={addCustomization}
+                className="bg-[var(--color-accent)] px-5 py-3 text-xs font-semibold uppercase tracking-wider text-white"
+              >
+                + Add Option
+              </button>
+            </div>
+
+            {customizations.length === 0 && (
+              <div className="border border-dashed border-[var(--color-border)] bg-[var(--color-bg)] p-6 text-sm text-[var(--color-muted)]">
+                No customization options configured.
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {customizations.map((item, index) => (
+                <div
+                  key={item.id ?? `custom-${index}`}
+                  className="grid gap-4 border border-[var(--color-border)] bg-[var(--color-bg)] p-5 md:grid-cols-[1fr_1fr_160px_auto]"
+                >
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                      Group
+                    </label>
+                    <input
+                      value={item.groupName}
+                      onChange={(event) =>
+                        updateCustomization(index, {
+                          groupName: event.target.value,
+                        })
+                      }
+                      className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                      placeholder="Size"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                      Option
+                    </label>
+                    <input
+                      value={item.optionLabel}
+                      onChange={(event) =>
+                        updateCustomization(index, {
+                          optionLabel: event.target.value,
+                        })
+                      }
+                      className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                      placeholder="Large"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
+                      Price Delta
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={item.priceDelta}
+                      onChange={(event) =>
+                        updateCustomization(index, {
+                          priceDelta: event.target.value,
+                        })
+                      }
+                      className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
+                    />
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => void removeCustomization(index)}
+                      className="w-full border border-red-300 px-3 py-2.5 text-xs font-semibold uppercase tracking-wider text-red-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm md:col-span-4">
+                    <input
+                      type="checkbox"
+                      checked={item.isAvailable}
+                      onChange={(event) =>
+                        updateCustomization(index, {
+                          isAvailable: event.target.checked,
+                        })
+                      }
+                    />
+                    Available to customers
+                  </label>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* SEO */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                SEO
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Optional search-engine metadata.
+              </p>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  SEO Title
+                </label>
+                <input
+                  maxLength={200}
+                  value={form.seoTitle}
+                  onChange={(event) =>
+                    updateForm('seoTitle', event.target.value)
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="Product title for search engines"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  SEO Description
+                </label>
+                <textarea
+                  rows={4}
+                  maxLength={500}
+                  value={form.seoDesc}
+                  onChange={(event) =>
+                    updateForm('seoDesc', event.target.value)
+                  }
+                  className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="Meta description..."
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Publishing */}
+          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
+                Publishing & Storefront
+              </h2>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-sm font-medium">
+                  Status
+                </label>
+                <select
+                  value={form.status}
+                  onChange={(event) =>
+                    updateForm(
+                      'status',
+                      event.target.value as ProductStatus,
+                    )
+                  }
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                >
+                  <option value="DRAFT">Draft</option>
+                  <option value="ACTIVE">Active</option>
+                  <option value="HIDDEN">Hidden</option>
+                  <option value="ARCHIVED">Archived</option>
+                </select>
+              </div>
+
+              <label className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
                 <input
                   type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                  className="w-5 h-5"
+                  checked={form.isFeatured}
+                  onChange={(event) =>
+                    updateForm('isFeatured', event.target.checked)
+                  }
+                  className="h-4 w-4"
                 />
-                <span className="text-[var(--color-text)]">Active (visible in storefront)</span>
+                <span>
+                  <span className="block text-sm font-medium">
+                    Featured product
+                  </span>
+                  <span className="block text-xs text-[var(--color-muted)]">
+                    Eligible for featured/homepage placements
+                  </span>
+                </span>
               </label>
 
-              <label className="flex items-center gap-3 cursor-pointer">
+              <label className="flex items-center gap-3 border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
                 <input
                   type="checkbox"
-                  checked={formData.isFeatured}
-                  onChange={(e) => setFormData({ ...formData, isFeatured: e.target.checked })}
-                  className="w-5 h-5"
+                  checked={form.isCustomizable}
+                  onChange={(event) =>
+                    updateForm('isCustomizable', event.target.checked)
+                  }
+                  className="h-4 w-4"
                 />
-                <span className="text-[var(--color-text)]">Featured (show on homepage)</span>
+                <span>
+                  <span className="block text-sm font-medium">
+                    Customizable
+                  </span>
+                  <span className="block text-xs text-[var(--color-muted)]">
+                    Product accepts customer options
+                  </span>
+                </span>
               </label>
             </div>
-          </div>
+          </section>
 
           {/* Actions */}
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              disabled={saving}
-              className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-strong)] text-white px-8 py-3 font-serif text-sm uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving ? 'Saving...' : isNew ? 'Create Product' : 'Update Product'}
-            </button>
-            <button
-              type="button"
-              onClick={() => router.push('/products')}
-              className="border border-[var(--color-border)] bg-[var(--color-bg)] hover:bg-[var(--color-surface)] text-[var(--color-text)] px-8 py-3 font-serif text-sm uppercase tracking-wider transition-colors"
-            >
-              Cancel
-            </button>
+          <div className="sticky bottom-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] py-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={() => router.push('/products')}
+                className="border border-[var(--color-border)] bg-[var(--color-bg)] px-6 py-3 text-sm font-serif"
+              >
+                Cancel
+              </button>
+
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-[var(--color-accent)] px-8 py-3 text-sm font-serif uppercase tracking-wider text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {saving
+                    ? 'Saving...'
+                    : isNew
+                      ? 'Create Product'
+                      : 'Save Changes'}
+                </button>
+
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => {
+                    const fakeEvent = {
+                      preventDefault() {},
+                    } as FormEvent<HTMLFormElement>;
+
+                    void handleSubmit(fakeEvent, 'ACTIVE');
+                  }}
+                  className="border border-[var(--color-accent)] px-8 py-3 text-sm font-serif uppercase tracking-wider text-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Save & Publish
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </div>

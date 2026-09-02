@@ -19,7 +19,7 @@ import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
 import { AdminUser, CategoryStatus } from '@prisma/client';
 
-// ── Admin routes: /api/v1/admin/categories ─────────────────────
+// â”€â”€ Admin routes: /api/v1/admin/categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Controller('admin/categories')
 @UseGuards(AdminJwtAuthGuard)
@@ -35,10 +35,15 @@ export class AdminCategoriesController {
   findAll(
     @Query('status') status?: CategoryStatus,
     @Query('parentId') parentId?: string,
-    @Query('skip') skip?: number,
-    @Query('take') take?: number,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
   ) {
-    return this.svc.findAllAdmin({ status, parentId, skip, take });
+    return this.svc.findAllAdmin({
+      status,
+      parentId,
+      skip: skip !== undefined ? Number(skip) : undefined,
+      take: take !== undefined ? Number(take) : undefined,
+    });
   }
 
   @Get(':id')
@@ -86,7 +91,7 @@ export class AdminCategoriesController {
   }
 }
 
-// ── Public routes: /api/v1/categories ─────────────────────────
+// â”€â”€ Public routes: /api/v1/categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 @Controller('categories')
 export class PublicCategoriesController {

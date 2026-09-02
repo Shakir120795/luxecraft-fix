@@ -160,7 +160,7 @@ async function main() {
       media: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1600166898658-7f8e40ff7c5c?w=800',
+            url: 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=800',
             altText: 'Moroccan Wool Rug',
             type: 'IMAGE',
             sortOrder: 1,
@@ -200,7 +200,7 @@ async function main() {
       media: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1600210491893-4b57891fe1c7?w=800',
+            url: 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=800',
             altText: 'Scandinavian Flat Weave',
             type: 'IMAGE',
             sortOrder: 1,
@@ -278,7 +278,7 @@ async function main() {
       media: {
         create: [
           {
-            url: 'https://images.unsplash.com/photo-1600166898665-ef7d6a79352c?w=800',
+            url: 'https://images.unsplash.com/photo-1600166898405-da9535204843?w=800',
             altText: 'Turkish Kilim Rug',
             type: 'IMAGE',
             sortOrder: 1,
@@ -317,3 +317,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

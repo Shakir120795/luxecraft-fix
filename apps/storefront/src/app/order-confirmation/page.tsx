@@ -8,6 +8,7 @@ import { getOrder, Order } from '@/lib/api';
 export default function OrderConfirmationPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const guestAccessToken = searchParams.get('access') || undefined;
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,17 +16,17 @@ export default function OrderConfirmationPage() {
 
   useEffect(() => {
     if (orderId) {
-      loadOrder(orderId);
+      loadOrder(orderId, guestAccessToken);
     } else {
       setError('Order ID not found');
       setLoading(false);
     }
-  }, [orderId]);
+  }, [orderId, guestAccessToken]);
 
-  async function loadOrder(id: string) {
+  async function loadOrder(id: string, accessToken?: string) {
     try {
       setLoading(true);
-      const data = await getOrder(id);
+      const data = await getOrder(id, accessToken);
       
       if (data) {
         setOrder(data);

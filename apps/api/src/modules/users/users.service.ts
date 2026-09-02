@@ -83,6 +83,10 @@ export class UsersService {
     });
   }
 
+  async updateProfile(userId: string, data: { firstName?: string; lastName?: string; phone?: string }): Promise<User> {
+    return this.prisma.user.update({ where: { id: userId }, data });
+  }
+
   /** Safe public projection — never return passwordHash. */
   sanitize(user: User): Omit<User, 'passwordHash'> {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

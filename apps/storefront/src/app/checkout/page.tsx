@@ -192,7 +192,9 @@ export default function CheckoutPage() {
 
       if (result.success && result.data) {
         // Redirect to order confirmation
-        router.push(`/order-confirmation?orderId=${result.data.order.id}`);
+        const confirmationQuery = new URLSearchParams({ orderId: result.data.order.id });
+        if (result.data.guestAccessToken) confirmationQuery.set('access', result.data.guestAccessToken);
+        router.push(`/order-confirmation?${confirmationQuery.toString()}`);
       } else {
         setError(result.message || 'Failed to place order');
         setSubmitting(false);

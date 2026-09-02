@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { Order, OrderStatus, PaymentStatus, FulfillmentStatus, Prisma } from '@prisma/client';
 
@@ -109,6 +110,17 @@ export class OrdersService {
     return order;
   }
 
+  async findOneForGuest(id: string, accessToken: string): Promise<Order> {
+    const order = await this.prisma.order.findFirst({
+      where: { id, userId: null },
+      include: { items: true, payments: true },
+    });
+    if (!order || !this.verifyGuestAccessToken(order.id, order.guestEmail, accessToken)) {
+      throw new NotFoundException(`Order ${id} not found.`);
+    }
+    return order;
+  }
+
   async findByOrderNumber(orderNumber: string): Promise<Order> {
     const order = await this.prisma.order.findUnique({
       where: { orderNumber },
@@ -154,5 +166,28 @@ export class OrdersService {
   private async generateOrderNumber(): Promise<string> {
     const count = await this.prisma.order.count();
     return `ORD-${(count + 1).toString().padStart(6, '0')}`;
+  }
+
+  createGuestAccessToken(order: Pick<Order, 'id' | 'guestEmail'>): string {
+    if (!order.guestEmail) throw new Error('A guest email is required.');
+    const expiresAt = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7;
+    const signature = this.signGuestAccess(`${order.id}.${order.guestEmail.toLowerCase()}.${expiresAt}`);
+    return `${expiresAt}.${signature}`;
+  }
+
+  private verifyGuestAccessToken(orderId: string, guestEmail: string | null, token: string): boolean {
+    if (!guestEmail) return false;
+    const [expiresAt, signature] = token.split('.');
+    if (!expiresAt || !signature || !/^\d+$/.test(expiresAt) || Number(expiresAt) < Date.now() / 1000) return false;
+    const expected = this.signGuestAccess(`${orderId}.${guestEmail.toLowerCase()}.${expiresAt}`);
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+    return signatureBuffer.length === expectedBuffer.length && timingSafeEqual(signatureBuffer, expectedBuffer);
+  }
+
+  private signGuestAccess(value: string): string {
+    const secret = process.env.GUEST_ORDER_ACCESS_SECRET || process.env.JWT_SECRET;
+    if (!secret) throw new Error('GUEST_ORDER_ACCESS_SECRET must be configured.');
+    return createHmac('sha256', secret).update(value).digest('base64url');
   }
 }

@@ -38,15 +38,15 @@ export class AdminProductsController {
     @Query('status') status?: ProductStatus,
     @Query('categoryId') categoryId?: string,
     @Query('isFeatured') isFeatured?: string,
-    @Query('skip') skip?: number,
-    @Query('take') take?: number,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
   ) {
     return this.svc.findAllAdmin({
       status,
       categoryId,
       isFeatured: isFeatured === 'true' ? true : undefined,
-      skip,
-      take,
+      skip: skip !== undefined && skip !== '' ? Number(skip) : 0,
+      take: take !== undefined && take !== '' ? Number(take) : 50,
     });
   }
 

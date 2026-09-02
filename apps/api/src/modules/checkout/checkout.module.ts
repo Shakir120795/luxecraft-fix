@@ -7,6 +7,7 @@ import { ShippingModule } from '../shipping/shipping.module';
 import { TaxModule } from '../tax/tax.module';
 import { OrdersModule } from '../orders/orders.module';
 import { PaymentsModule } from '../payments/payments.module';
+import { InventoryModule } from '../inventory/inventory.module';
 import { CustomRequestsModule } from '../custom-requests/custom-requests.module';
 import { CustomDesignsModule } from '../custom-designs/custom-designs.module';
 
@@ -19,6 +20,7 @@ import { CustomDesignsModule } from '../custom-designs/custom-designs.module';
     TaxModule,
     OrdersModule,
     PaymentsModule,
+    InventoryModule,
     CustomRequestsModule,
     CustomDesignsModule,
   ],

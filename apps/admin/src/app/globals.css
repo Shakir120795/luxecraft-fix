@@ -1,4 +1,8 @@
-/* LuxeCraft Admin — shares the storefront's warm luxury palette. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* LuxeCraft Admin â€” shares the storefront's warm luxury palette. */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

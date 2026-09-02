@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser, isAuthenticated, logout, User } from '@/lib/api';
+import { changePassword, getCurrentUser, isAuthenticated, logout, updateProfile, User } from '@/lib/api';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -82,14 +82,14 @@ export default function SettingsPage() {
                   <div>
                     <p className="text-luxury-charcoal font-medium mb-1">{user.email}</p>
                     <p className="text-sm text-luxury-brown">
-                      {user.isVerified ? (
+                      {user.emailVerified ? (
                         <span className="text-luxury-gold">✓ Verified</span>
                       ) : (
                         <span className="text-luxury-terracotta">Not verified</span>
                       )}
                     </p>
                   </div>
-                  {!user.isVerified && (
+                  {!user.emailVerified && (
                     <Link
                       href={`/auth/verify-email?email=${encodeURIComponent(user.email)}`}
                       className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
@@ -153,12 +153,9 @@ function ProfileForm({ user }: { user: User }) {
     setSubmitting(true);
     setSuccess(false);
 
-    // TODO: Implement profile update API call
-    setTimeout(() => {
-      setSubmitting(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    }, 1000);
+    const result = await updateProfile(formData);
+    setSubmitting(false);
+    setSuccess(result.success);
   }
 
   return (
@@ -246,13 +243,14 @@ function PasswordForm() {
 
     setSubmitting(true);
 
-    // TODO: Implement password change API call
-    setTimeout(() => {
-      setSubmitting(false);
-      setSuccess(true);
-      setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setTimeout(() => setSuccess(false), 3000);
-    }, 1000);
+    const result = await changePassword(formData.currentPassword, formData.newPassword);
+    setSubmitting(false);
+    if (!result.success) {
+      setError(result.message || 'Password change failed');
+      return;
+    }
+    setSuccess(true);
+    setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' });
   }
 
   return (

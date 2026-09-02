@@ -2,6 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType, Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import express from 'express';
+import { join } from 'node:path';
+
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
@@ -9,11 +12,13 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
   const app = await NestFactory.create(AppModule, {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    rawBody: true, // Enable raw body for webhook signature verification
   });
 
-  // ----- Security headers (Helmet) --------------------------
+  // ----- Security headers --------------------------
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -25,55 +30,99 @@ async function bootstrap() {
         },
       },
       crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: {
+        policy: 'cross-origin',
+      },
     }),
   );
 
-  // ----- Cookie parser ---------------------------------------
+  // ----- Cookie parser -----------------------------
   app.use(cookieParser());
 
-  // ----- Global prefix and API versioning ------------------
+  // ----- Static uploads ----------------------------
+  app.use(
+    '/uploads',
+    express.static(join(process.cwd(), 'uploads')),
+  );
+
+  // ----- Global prefix and API versioning ----------
   app.setGlobalPrefix('api');
+
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
 
-  // ----- CORS ----------------------------------------------
-  const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) ?? [
-    'http://localhost:3000',
-    'http://localhost:3002',
-  ];
+  // ----- CORS ---------------------------------------
+  const corsOrigins =
+    process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()) ?? [
+      'http://localhost:3000',
+      'http://localhost:3002',
+      'http://localhost:3003',
+    ];
+
   app.enableCors({
     origin: corsOrigins,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+    ],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'X-Request-ID',
+      'X-Session-Id',
+    ],
     credentials: true,
     maxAge: 86400,
   });
 
-  // ----- Global validation pipe ----------------------------
+  // ----- Global validation pipe --------------------
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
-      transformOptions: { enableImplicitConversion: true },
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  // ----- Global exception filter ---------------------------
+  // ----- Global exception filter -------------------
   app.useGlobalFilters(new AllExceptionsFilter());
 
-  // ----- Global interceptors --------------------------------
+  // ----- Global interceptors -----------------------
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.useGlobalInterceptors(new ResponseInterceptor());
 
   const port = process.env.API_PORT ?? 3001;
+
   await app.listen(port);
-  logger.log(`LuxeCraft API running on http://localhost:${port}/api/v1`);
-  logger.log(`Health:  GET http://localhost:${port}/api/v1/health`);
-  logger.log(`Auth:    POST http://localhost:${port}/api/v1/auth/register`);
-  logger.log(`Admin:   POST http://localhost:${port}/api/v1/admin/auth/login`);
+
+  logger.log(
+    `LuxeCraft API running on http://localhost:${port}/api/v1`,
+  );
+
+  logger.log(
+    `Uploads: http://localhost:${port}/uploads/products/`,
+  );
+
+  logger.log(
+    `Health: GET http://localhost:${port}/api/v1/health`,
+  );
+
+  logger.log(
+    `Auth: POST http://localhost:${port}/api/v1/auth/register`,
+  );
+
+  logger.log(
+    `Admin: POST http://localhost:${port}/api/v1/admin/auth/login`,
+  );
 }
 
 bootstrap();

@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "install:all": "npm install",
-    "dev": "npm run dev:docker && npm run dev:api & npm run dev:storefront & npm run dev:admin",
+    "dev": "npm run docker:up && npm run dev:api & npm run dev:storefront & npm run dev:admin",
     "dev:api": "npm run dev --workspace=apps/api",
     "dev:storefront": "npm run dev --workspace=apps/storefront",
     "dev:storefront:clean": "node scripts/clear-next-cache.js storefront && npm run dev:storefront",
@@ -47,5 +47,11 @@
     "health": "node scripts/health-check.js",
     "setup": "node scripts/setup.js",
     "logs": "npm run docker:logs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1123.0"
+  },
+  "devDependencies": {
+    "@types/nodemailer": "^8.0.1"
   }
 }

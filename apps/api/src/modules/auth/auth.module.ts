@@ -8,6 +8,7 @@ import { SessionService } from './session.service';
 import { PasswordResetService } from './password-reset.service';
 import { LoginAttemptService } from './login-attempt.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { EmailService } from '../email/email.service';
 
 @Module({
   imports: [
@@ -29,7 +30,9 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     PasswordResetService,
     LoginAttemptService,
     JwtStrategy,
+    EmailService,
   ],
   exports: [AuthService, SessionService, JwtModule],
 })
 export class AuthModule {}
+

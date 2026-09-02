@@ -4,12 +4,11 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThemeToggle } from './ThemeToggle';
-import { getCartTotals } from '@/lib/api';
+import { getCartTotals, getStorefrontCategories, Category, isAuthenticated } from '@/lib/api';
 
 const navigation = [
   { href: '/products', label: 'Shop' },
   { href: '/products?sort=newest', label: 'New arrivals' },
-  { href: '/products', label: 'Collections' },
 ];
 
 export function SiteHeader() {
@@ -17,10 +16,15 @@ export function SiteHeader() {
   const [cartCount, setCartCount] = useState(0);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     loadCartCount();
+    loadCategories();
+    setIsAuth(isAuthenticated());
     
     // Refresh cart count every 5 seconds when page is visible
     const interval = setInterval(loadCartCount, 5000);
@@ -33,6 +37,15 @@ export function SiteHeader() {
       setCartCount(totals.itemCount);
     } catch (error) {
       console.error('Failed to load cart count:', error);
+    }
+  }
+
+  async function loadCategories() {
+    try {
+      const cats = await getStorefrontCategories();
+      setCategories(cats.slice(0, 8)); // Show top 8 categories
+    } catch (error) {
+      console.error('Failed to load categories:', error);
     }
   }
 
@@ -68,6 +81,38 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          
+          {/* Collections Dropdown */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setCollectionsOpen(true)}
+            onMouseLeave={() => setCollectionsOpen(false)}
+          >
+            <button className="text-xs uppercase tracking-[0.16em] text-luxury-brown transition-colors hover:text-luxury-gold">
+              Collections {collectionsOpen ? '▴' : '▾'}
+            </button>
+            {collectionsOpen && categories.length > 0 && (
+              <div className="absolute left-0 top-full mt-2 w-64 border border-luxury-sand bg-luxury-cream shadow-xl z-50">
+                <div className="py-2">
+                  {categories.map((category) => (
+                    <Link
+                      key={category.id}
+                      href={`/categories/${category.slug}`}
+                      className="block px-4 py-2 text-sm text-luxury-charcoal hover:bg-luxury-beige hover:text-luxury-gold transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  ))}
+                  <Link
+                    href="/products"
+                    className="block px-4 py-2 text-sm font-serif text-luxury-gold hover:bg-luxury-beige transition-colors border-t border-luxury-sand mt-2"
+                  >
+                    View All →
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
@@ -79,6 +124,24 @@ export function SiteHeader() {
           >
             Search
           </button>
+          
+          <Link 
+            href="/wishlist" 
+            className="hidden sm:inline-flex h-9 w-9 items-center justify-center border border-luxury-sand text-luxury-charcoal transition-colors hover:border-luxury-gold hover:text-luxury-gold"
+            title="Wishlist"
+          >
+            <span className="text-base" aria-hidden="true">♡</span>
+            <span className="sr-only">Wishlist</span>
+          </Link>
+          
+          <Link 
+            href={isAuth ? '/account' : '/auth/login'} 
+            className="hidden sm:inline-flex h-9 w-9 items-center justify-center border border-luxury-sand text-luxury-charcoal transition-colors hover:border-luxury-gold hover:text-luxury-gold"
+            title={isAuth ? 'Account' : 'Login'}
+          >
+            <span className="text-base" aria-hidden="true">👤</span>
+            <span className="sr-only">{isAuth ? 'Account' : 'Login'}</span>
+          </Link>
           
           <Link href="/cart" className="inline-flex h-9 items-center border border-luxury-gold px-3 text-xs uppercase tracking-[0.14em] text-luxury-gold transition-colors hover:bg-luxury-gold hover:text-white">
             Cart {cartCount > 0 && <span className="ml-1 text-base leading-none" aria-hidden="true">{cartCount}</span>}
@@ -125,6 +188,39 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
+            
+            {/* Collections in Mobile Menu */}
+            {categories.length > 0 && (
+              <div className="border-t border-luxury-sand pt-4">
+                <div className="font-serif text-lg text-luxury-gold mb-3">Collections</div>
+                {categories.slice(0, 6).map((category) => (
+                  <Link
+                    key={category.id}
+                    href={`/categories/${category.slug}`}
+                    onClick={() => setMenuOpen(false)}
+                    className="block py-2 text-luxury-charcoal hover:text-luxury-gold transition-colors"
+                  >
+                    {category.name}
+                  </Link>
+                ))}
+              </div>
+            )}
+            
+            {/* Additional Mobile Links */}
+            <div className="border-t border-luxury-sand pt-4 space-y-3">
+              <Link href="/custom-design" onClick={() => setMenuOpen(false)} className="block text-luxury-charcoal hover:text-luxury-gold transition-colors">
+                Custom Design
+              </Link>
+              <Link href="/wishlist" onClick={() => setMenuOpen(false)} className="block text-luxury-charcoal hover:text-luxury-gold transition-colors">
+                Wishlist
+              </Link>
+              <Link href={isAuth ? '/account' : '/auth/login'} onClick={() => setMenuOpen(false)} className="block text-luxury-charcoal hover:text-luxury-gold transition-colors">
+                {isAuth ? 'My Account' : 'Login / Register'}
+              </Link>
+              <Link href="/contact" onClick={() => setMenuOpen(false)} className="block text-luxury-charcoal hover:text-luxury-gold transition-colors">
+                Contact
+              </Link>
+            </div>
           </div>
         </nav>
       )}
