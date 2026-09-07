@@ -14,6 +14,9 @@ export default function CartPage() {
   const [country, setCountry] = useState('');
   const [totals, setTotals] = useState<CartTotals | null>(null);
   const [estimatedDelivery, setEstimatedDelivery] = useState<number | null>(null);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadCart();
@@ -30,7 +33,7 @@ export default function CartPage() {
 
       const addresses = await getAddresses();
       const shippingAddress = addresses.find((address) => address.isDefault) || addresses.find((address) => address.type === 'SHIPPING' || address.type === 'BOTH');
-      setCountry(shippingAddress?.country?.toUpperCase() || ''); console.log('Cart shipping address:', shippingAddress, 'country:', shippingAddress?.country);
+      setCountry(shippingAddress?.country?.toUpperCase() || '');
     } catch (err) {
       console.error('Failed to load shipping country:', err);
       setCountry('');
@@ -64,7 +67,7 @@ export default function CartPage() {
 
         const available = methods.filter((method) => method.rate >= 0);
         const cheapest = [...available].sort((a, b) => a.rate - b.rate)[0];
-        console.log('Cart shipping methods:', methods, 'selected:', cheapest); setEstimatedDelivery(cheapest?.estimatedDays ?? null);
+        setEstimatedDelivery(cheapest?.estimatedDays ?? null);
       } catch (err) {
         if (cancelled) return;
         console.error('Failed to load shipping data:', err);
@@ -254,7 +257,7 @@ export default function CartPage() {
                 <div className="mb-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-sm text-[#59535b]">
                   <div className="flex items-center justify-between gap-4">
                     <span>Estimated delivery</span>
-                    <span className="font-medium text-[#2f2933]">{estimatedDelivery ? `${estimatedDelivery} business days` : "Checking..."}</span>
+                    <span className="font-medium text-[#2f2933]">{estimatedDelivery ? `${estimatedDelivery} business days` : country ? "Shipping unavailable" : "Add a shipping address at checkout"}</span>
                   </div>
                 </div>
 
@@ -294,8 +297,8 @@ export default function CartPage() {
                     <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><img src="https://cdn.simpleicons.org/americanexpress" alt="American Express" className="h-6 w-11 object-contain" /></span>
                     <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><svg viewBox="0 0 48 24" className="h-6 w-11" aria-label="UPI"><path d="M4 15 9 5h5l-5 10H4Z" fill="#5b8db8"/><path d="m13 15 5-10h5l-5 10h-5Z" fill="#39a94a"/><path d="m22 15 5-10h5l-5 10h-5Z" fill="#f4a21e"/><text x="31" y="15" font-size="8" font-family="Arial" font-weight="700" fill="#2b4e8a">UPI</text></svg></span>
                   </div>
-                  <button type="button" className="mt-5 flex items-center gap-3 text-sm font-semibold text-[#302b35] transition hover:text-green-700"><svg className="h-5 w-5 text-green-700" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M2.8 7.1 8.1 1.8a1.4 1.4 0 0 1 1.98 0l8.12 8.12a1.4 1.4 0 0 1 0 1.98l-5.3 5.3a1.4 1.4 0 0 1-1.98 0L2.8 9.08a1.4 1.4 0 0 1 0-1.98Z"/><circle cx="7.1" cy="7.1" r="1.2" fill="white"/></svg><span>Apply coupon code</span></button>
-                  <p className="mt-2 text-xs text-[#6a636b]">Local taxes included (where applicable)</p>
+                  
+                  <div className="mt-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] p-4"><label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#59535b]">Coupon code</label><div className="flex gap-2"><input type="text" placeholder="Enter coupon code" className="min-w-0 flex-1 rounded-md border border-[#ded8d0] bg-white px-3 py-2.5 text-sm text-[#302b35] outline-none transition focus:border-[#302b35]" /><button type="button" className="rounded-md bg-[#302b35] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#211e24]">Apply</button></div><p className="mt-2 text-xs text-[#6a636b]">Coupon discounts are applied at checkout.</p></div>                    <p className="mt-2 text-xs text-[#6a636b]">Local taxes included (where applicable)</p>
                 </div>
                 {/* Trust Badges */}
                 <div className="mt-7 border-t border-black/10 pt-6 space-y-4">
@@ -401,6 +404,12 @@ function CartItemCard({
     </div>
   );
 }
+
+
+
+
+
+
 
 
 
