@@ -89,12 +89,7 @@ export class WebhookService {
     const order = await this.prisma.order.findUnique({
       where: { id: data.orderId },
       include: {
-        items: {
-          include: {
-            variant: true,
-            product: true,
-          },
-        },
+        items: true,
         payments: true,
       },
     });
@@ -162,18 +157,16 @@ export class WebhookService {
               data: {
                 variantId: variant.id,
                 changeType: 'ORDER_DEDUCT',
-                quantityChange: -item.quantity,
-                quantityAfter: variant.stockQty - item.quantity,
+                delta: -item.quantity,
+                qtyBefore: variant.stockQty,
+                qtyAfter: variant.stockQty - item.quantity,
                 reason: `Order ${order.orderNumber} - Payment confirmed`,
-                metadata: {
-                  orderId: order.id,
-                  paymentId: payment.id,
-                  paymentIntentId: data.paymentIntentId,
-                },
+                reference: order.id,
               },
             });
           }
         } else {
+          if (!item.productId) continue;
           // Product without variants - check if product itself tracks inventory
           const product = await tx.product.findUnique({
             where: { id: item.productId },
@@ -262,11 +255,7 @@ export class WebhookService {
       include: {
         order: {
           include: {
-            items: {
-              include: {
-                variant: true,
-              },
-            },
+            items: true,
           },
         },
       },
@@ -303,7 +292,9 @@ export class WebhookService {
 
         // Restock inventory for each item
         for (const item of payment.order.items) {
-          if (item.variantId && item.variant?.trackInventory) {
+          if (!item.variantId) continue;
+          const variant = await tx.productVariant.findUnique({ where: { id: item.variantId } });
+          if (variant?.trackInventory) {
             await tx.productVariant.update({
               where: { id: item.variantId },
               data: {
@@ -318,14 +309,11 @@ export class WebhookService {
               data: {
                 variantId: item.variantId,
                 changeType: 'RETURN_RESTOCK',
-                quantityChange: item.quantity,
-                quantityAfter: item.variant.stockQty + item.quantity,
+                delta: item.quantity,
+                qtyBefore: variant.stockQty,
+                qtyAfter: variant.stockQty + item.quantity,
                 reason: `Order ${payment.order.orderNumber} - Full refund`,
-                metadata: {
-                  orderId: payment.orderId,
-                  paymentId: payment.id,
-                  refundAmount: data.refundAmount,
-                },
+                reference: payment.orderId,
               },
             });
 

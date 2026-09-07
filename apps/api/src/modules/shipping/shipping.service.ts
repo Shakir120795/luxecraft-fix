@@ -15,7 +15,6 @@ export class ShippingService {
     cartWeightKg: number;
     cartTotal: number;
   }): Promise<CalculatedShippingMethod[]> {
-    // Find zone for country
     const zones = await this.prisma.shippingZone.findMany({
       where: { isActive: true },
       include: { methods: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
@@ -24,16 +23,13 @@ export class ShippingService {
     const zone = zones.find((z) => z.countries.includes(params.country));
     if (!zone) return [];
 
-    // Calculate rate for each method
     return zone.methods.map((method) => {
       const basePrice = Number(method.basePrice);
       const weightPrice = Number(method.pricePerKg) * params.cartWeightKg;
       const totalRate = basePrice + weightPrice;
-
-      // Check free shipping threshold
       const freeShippingMin = method.freeShippingMin ? Number(method.freeShippingMin) : null;
       const finalRate =
-        freeShippingMin && params.cartTotal >= freeShippingMin ? 0 : totalRate;
+        freeShippingMin !== null && params.cartTotal >= freeShippingMin ? 0 : totalRate;
 
       return {
         ...method,
@@ -50,5 +46,108 @@ export class ShippingService {
 
     const zone = zones.find((z) => z.countries.includes(country));
     return zone?.methods || [];
+  }
+
+  async adminListZones() {
+    return this.prisma.shippingZone.findMany({
+      include: { methods: { orderBy: { sortOrder: 'asc' } } },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async adminCreateZone(data: { name: string; countries: string[]; isActive?: boolean }) {
+    return this.prisma.shippingZone.create({
+      data: {
+        name: data.name.trim(),
+        countries: [...new Set(data.countries.map((country) => country.trim().toUpperCase()).filter(Boolean))],
+        isActive: data.isActive ?? true,
+      },
+      include: { methods: true },
+    });
+  }
+
+  async adminUpdateZone(
+    id: string,
+    data: { name?: string; countries?: string[]; isActive?: boolean },
+  ) {
+    return this.prisma.shippingZone.update({
+      where: { id },
+      data: {
+        ...(data.name !== undefined && { name: data.name.trim() }),
+        ...(data.countries !== undefined && {
+          countries: [...new Set(data.countries.map((country) => country.trim().toUpperCase()).filter(Boolean))],
+        }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+      include: { methods: true },
+    });
+  }
+
+  async adminDeleteZone(id: string) {
+    await this.prisma.shippingZone.delete({ where: { id } });
+  }
+
+  async adminCreateMethod(data: {
+    zoneId: string;
+    name: string;
+    description?: string;
+    deliveryDaysMin?: number;
+    deliveryDaysMax?: number;
+    basePrice: number;
+    pricePerKg?: number;
+    freeShippingMin?: number | null;
+    isActive?: boolean;
+    sortOrder?: number;
+  }) {
+    return this.prisma.shippingMethod.create({
+      data: {
+        zoneId: data.zoneId,
+        name: data.name.trim(),
+        description: data.description?.trim() || null,
+        deliveryDaysMin: data.deliveryDaysMin ?? null,
+        deliveryDaysMax: data.deliveryDaysMax ?? null,
+        basePrice: data.basePrice,
+        pricePerKg: data.pricePerKg ?? 0,
+        freeShippingMin: data.freeShippingMin ?? null,
+        isActive: data.isActive ?? true,
+        sortOrder: data.sortOrder ?? 0,
+      },
+    });
+  }
+
+  async adminUpdateMethod(
+    id: string,
+    data: {
+      zoneId?: string;
+      name?: string;
+      description?: string | null;
+      deliveryDaysMin?: number | null;
+      deliveryDaysMax?: number | null;
+      basePrice?: number;
+      pricePerKg?: number;
+      freeShippingMin?: number | null;
+      isActive?: boolean;
+      sortOrder?: number;
+    },
+  ) {
+    return this.prisma.shippingMethod.update({
+      where: { id },
+      data: {
+        ...(data.zoneId !== undefined && { zoneId: data.zoneId }),
+        ...(data.name !== undefined && { name: data.name.trim() }),
+        ...(data.description !== undefined && { description: data.description?.trim() || null }),
+        ...(data.deliveryDaysMin !== undefined && { deliveryDaysMin: data.deliveryDaysMin }),
+        ...(data.deliveryDaysMax !== undefined && { deliveryDaysMax: data.deliveryDaysMax }),
+        ...(data.basePrice !== undefined && { basePrice: data.basePrice }),
+        ...(data.pricePerKg !== undefined && { pricePerKg: data.pricePerKg }),
+        ...(data.freeShippingMin !== undefined && { freeShippingMin: data.freeShippingMin }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+      },
+    });
+  }
+
+  async adminDeleteMethod(id: string) {
+    await this.prisma.shippingMethod.delete({ where: { id } });
   }
 }

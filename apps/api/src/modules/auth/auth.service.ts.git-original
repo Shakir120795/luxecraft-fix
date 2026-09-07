@@ -52,7 +52,7 @@ export class AuthService {
     _meta: { ipAddress?: string; userAgent?: string },
   ): Promise<{ user: Omit<User, 'passwordHash'>; message: string }> {
     const user = await this.users.create(dto);
-    // Send OTP (non-blocking â€” in production this dispatches a BullMQ email job)
+    // Send OTP (non-blocking GÇö in production this dispatches a BullMQ email job)
     const _code = await this.otp.generate(
       user.email,
       OtpPurpose.EMAIL_VERIFICATION,
@@ -91,25 +91,16 @@ export class AuthService {
         ? await this.users.verifyPassword(user, password)
         : false;
 
-    if (!user) {
+    if (!user || !validPassword) {
       await this.loginAttempts.record({
         email: normalEmail,
+        userId: user?.id,
         ...meta,
         success: false,
-        failReason: 'USER_NOT_FOUND',
+        failReason: !user ? 'USER_NOT_FOUND' : 'INVALID_PASSWORD',
       });
-      throw new UnauthorizedException('User not found. Please create an account.');
-    }
-
-    if (!validPassword) {
-      await this.loginAttempts.record({
-        email: normalEmail,
-        userId: user.id,
-        ...meta,
-        success: false,
-        failReason: 'INVALID_PASSWORD',
-      });
-      throw new UnauthorizedException('Incorrect password.');
+      // Generic message GÇö no email enumeration
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     if (user.status === UserStatus.SUSPENDED) {
@@ -170,7 +161,7 @@ export class AuthService {
 
   async resendVerification(email: string): Promise<void> {
     const user = await this.users.findByEmail(email);
-    if (!user || user.emailVerified) return; // silent â€” no enumeration
+    if (!user || user.emailVerified) return; // silent GÇö no enumeration
     const _code = await this.otp.generate(
       user.email,
       OtpPurpose.EMAIL_VERIFICATION,
@@ -188,7 +179,7 @@ export class AuthService {
     if (token) {
       await this.email.sendPasswordResetEmail(email, token);
     }
-    // Always return success â€” no email enumeration
+    // Always return success GÇö no email enumeration
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
@@ -252,7 +243,6 @@ export class AuthService {
     return parseInt(raw);
   }
 }
-
 
 
 

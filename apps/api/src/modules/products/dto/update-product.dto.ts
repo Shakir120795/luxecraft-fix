@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsBoolean, IsNumber, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ProductStatus } from '@prisma/client';
 
@@ -21,11 +21,57 @@ export class UpdateProductDto {
 
   @IsOptional()
   @IsString()
+  material?: string;
+
+  @IsOptional()
+  @IsString()
+  style?: string;
+
+  @IsOptional()
+  @IsString()
+  collection?: string;
+
+  @IsOptional()
+  @IsString()
+  color?: string;
+
+  @IsOptional()
+  @IsString()
   description?: string;
 
   @IsOptional()
   @IsString()
   shortDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  deliveryInfo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  shippingInfo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  returnsInfo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  careInstructions?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  origin?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  productNote?: string;
 
   @IsOptional()
   @Type(() => Number)

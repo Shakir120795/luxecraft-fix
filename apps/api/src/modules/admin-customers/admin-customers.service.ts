@@ -9,6 +9,9 @@ export class AdminCustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(params: { search?: string; status?: string; skip?: number; take?: number }): Promise<{ items: any[]; total: number }> {
+    const skip = Number.isFinite(params.skip) ? Math.max(0, params.skip as number) : 0;
+    const take = Number.isFinite(params.take) ? Math.min(50, Math.max(1, params.take as number)) : 50;
+
     const where: Prisma.UserWhereInput = {
       ...(params.search && {
         OR: [
@@ -23,8 +26,8 @@ export class AdminCustomersService {
     const [items, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
-        skip: params.skip ?? 0,
-        take: params.take ?? 50,
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
         select: { id: true, email: true, firstName: true, lastName: true, status: true, emailVerified: true, createdAt: true, lastLoginAt: true },
       }),
@@ -54,6 +57,24 @@ export class AdminCustomersService {
     return { ...user, totalSpent: totalSpent._sum.total ?? 0 };
   }
 
+  async deleteUnverified(id: string): Promise<{ success: boolean }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { orders: true, customRequests: true } },
+      },
+    });
+
+    if (!user) throw new NotFoundException('Customer not found.');
+    if (user.emailVerified) throw new Error('Verified customer accounts cannot be deleted.');
+    if (user._count.orders > 0 || user._count.customRequests > 0) {
+      throw new Error('Customer has existing business activity and cannot be deleted.');
+    }
+
+    await this.prisma.user.delete({ where: { id } });
+    return { success: true };
+  }
+
   async updateStatus(id: string, status: string): Promise<any> {
     return this.prisma.user.update({
       where: { id },
@@ -61,3 +82,7 @@ export class AdminCustomersService {
     });
   }
 }
+
+
+
+

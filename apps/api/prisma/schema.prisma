@@ -212,12 +212,23 @@ model Product {
   id                   String                       @id @default(cuid())
   categoryId           String?
   name                 String
+  material             String?
+  style                String?
+  collection           String?
+  color                String?
   slug                 String                       @unique
   sku                  String?                      @unique
   description          String?
   shortDescription     String?
+  deliveryInfo         String?
+  shippingInfo         String?
+  returnsInfo          String?
+  careInstructions     String?
+  origin                String?
+  productNote           String?
   regularPrice         Decimal                      @db.Decimal(12, 2)
   salePrice            Decimal?                     @db.Decimal(12, 2)
+  taxRate              Decimal                      @default(0) @db.Decimal(5, 2) @map("taxrate")
   currency             String                       @default("USD")
   status               ProductStatus                @default(DRAFT)
   weightKg             Decimal?                     @db.Decimal(8, 3)
@@ -242,6 +253,7 @@ model Product {
   variants             ProductVariant[]
   category             Category?                    @relation(fields: [categoryId], references: [id])
   reviews              Review[]
+  heroSections         HeroSection[]
   wishlistItems        WishlistItem[]
 
   @@index([categoryId])
@@ -926,3 +938,27 @@ model WebhookEvent {
   @@index([status])
   @@map("webhook_events")
 }
+model HeroSection {
+  id                 String   @id @default(cuid())
+  productId          String?
+  imageUrl           String?
+  eyebrow            String?
+  title              String
+  subtitle           String?
+  primaryCtaText     String?
+  primaryCtaLink     String?
+  secondaryCtaText   String?
+  secondaryCtaLink   String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  product            Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([productId])
+  @@index([isActive])
+  @@map("hero_sections")
+}
+
+
+

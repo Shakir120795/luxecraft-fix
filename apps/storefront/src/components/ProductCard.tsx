@@ -1,59 +1,73 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Product } from '@/lib/api';
 
 export function ProductCard({ product }: { product: Product }) {
   const mainImage = product.media?.find((m) => m.isMain) || product.media?.[0];
   const displayPrice = parseFloat(String(product.salePrice || product.regularPrice));
   const regularPrice = parseFloat(String(product.regularPrice));
-  const hasDiscount = product.salePrice && parseFloat(String(product.salePrice)) < regularPrice;
+  const hasDiscount =
+    product.salePrice &&
+    parseFloat(String(product.salePrice)) < regularPrice;
 
   return (
-    <Link href={`/products/${product.slug}`}>
-      <div className="group cursor-pointer">
-        <div className="relative mb-4 aspect-square overflow-hidden border border-luxury-sand bg-luxury-beige">
+    <Link href={`/products/${product.slug}`} className="group block">
+      <article className="min-w-0">
+        <div className="relative mb-4 aspect-square overflow-hidden rounded-xl bg-[#f1ede8]">
           {mainImage?.url ? (
             <img
               src={mainImage.url}
               alt={mainImage.altText || product.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-luxury-beige to-luxury-sand flex items-center justify-center">
-              <span className="text-luxury-brown/60 text-sm font-serif">No image</span>
+            <div className="flex h-full w-full items-center justify-center bg-[#f1ede8]">
+              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-[rgb(var(--luxecraft-muted))]">
+                No image
+              </span>
             </div>
           )}
+
           {hasDiscount && (
-            <div className="absolute top-4 right-4 bg-luxury-gold text-white px-3 py-1 text-xs font-serif tracking-wider">
-              SALE
+            <div className="absolute left-3 top-3 rounded-sm bg-white px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#9a6030] shadow-sm">
+              Sale
             </div>
           )}
+
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
         </div>
 
-        <h3 className="text-lg font-serif text-luxury-charcoal mb-2 line-clamp-2 group-hover:text-luxury-brown transition-colors">
-          {product.name}
-        </h3>
+        <div className="px-0.5">
+          <h3 className="mb-1.5 line-clamp-2 font-serif text-[19px] font-semibold leading-[1.12] text-black transition-colors duration-300 group-hover:text-[#2f6b36]">
+            {product.name}
+          </h3>
 
-        <p className="text-sm text-luxury-brown/70 mb-3 line-clamp-2">
-          {product.shortDescription || product.description}
-        </p>
+          {(product.shortDescription || product.description) && (
+            <p className="mb-2 line-clamp-1 text-[12px] leading-5 text-[#5c5752]">
+              {product.shortDescription || product.description}
+            </p>
+          )}
 
-        <div className="flex items-baseline gap-2">
-          <span className="text-xl font-serif text-luxury-charcoal">
-            ${displayPrice.toFixed(2)}
-          </span>
-          {hasDiscount && (
-            <span className="text-sm text-luxury-brown/50 line-through">
-              ${regularPrice.toFixed(2)}
+          <div className="flex items-baseline gap-2">
+            <span className="font-serif text-[19px] font-semibold text-black">
+              ${displayPrice.toFixed(2)}
             </span>
+
+            {hasDiscount && (
+              <span className="text-[12px] text-[#6d665f] line-through">
+                ${regularPrice.toFixed(2)}
+              </span>
+            )}
+          </div>
+
+          {product.variants && product.variants.length > 0 && (
+            <p className="mt-2 text-[9px] font-medium uppercase tracking-[0.13em] text-[rgb(var(--luxecraft-muted))]">
+              {product.variants.length} variant
+              {product.variants.length > 1 ? 's' : ''} available
+            </p>
           )}
         </div>
-
-        {product.variants && product.variants.length > 0 && (
-          <p className="text-xs text-luxury-brown/60 mt-2 uppercase tracking-wider">
-            {product.variants.length} variant{product.variants.length > 1 ? 's' : ''} available
-          </p>
-        )}
-      </div>
+      </article>
     </Link>
   );
 }
+

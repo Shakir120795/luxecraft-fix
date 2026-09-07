@@ -1,66 +1,294 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* LuxeCraft design tokens. Tailwind's luxury palette reads these variables. */
+/* LuxeCraft shared storefront design language */
 :root {
-  --luxury-canvas: 246 241 232;
-  --luxury-surface: 251 248 242;
-  --luxury-ink: 33 29 25;
-  --luxury-muted: 117 107 97;
-  --luxury-border: 222 213 200;
-  --luxury-terracotta: 168 111 93;
-  --luxury-gold: 179 149 90;
-  --luxury-gold-strong: 143 116 61;
-}
+  --luxecraft-bg: 255 255 255;
+  --luxecraft-cream: 247 243 239;
+  --luxecraft-surface: 250 248 245;
+  --luxecraft-ink: 0 0 0;
+  --luxecraft-muted: 103 98 92;
+  --luxecraft-border: 224 219 214;
+  --luxecraft-olive: 41 89 42;
+  --luxecraft-gold: 212 165 86;
+  --luxecraft-red: 196 80 75;
+  --luxecraft-page: 1400px;
 
-:root.dark {
-  --luxury-canvas: 23 21 19;
-  --luxury-surface: 33 30 26;
-  --luxury-ink: 242 236 226;
-  --luxury-muted: 185 174 160;
-  --luxury-border: 58 52 45;
-  --luxury-terracotta: 185 120 100;
-  --luxury-gold: 193 162 105;
-  --luxury-gold-strong: 214 184 123;
+  --font-heading-family: var(--font-cormorant), "Cormorant Garamond", serif;
+  --font-editorial-family: var(--font-playfair), "Playfair Display", serif;
+  --font-body-family: var(--font-inter), Inter, Arial, sans-serif;
 }
 
 @layer base {
-  *, *::before, *::after {
-    @apply border-luxury-sand;
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
   }
 
   html {
-    @apply bg-luxury-cream;
+    background: rgb(var(--luxecraft-bg));
+    color: rgb(var(--luxecraft-ink));
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply min-h-screen bg-luxury-cream font-sans text-luxury-charcoal antialiased;
+    min-height: 100vh;
+    margin: 0;
+    background: rgb(var(--luxecraft-bg));
+    color: rgb(var(--luxecraft-ink));
+    font-family: var(--font-body-family);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 0;
+    font-family: var(--font-heading-family);
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  h1 {
+    font-weight: 500;
+    letter-spacing: -0.035em;
+  }
+
+  h2,
+  h3 {
+    font-weight: 500;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-weight: 500;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    transition:
+      color 180ms ease,
+      opacity 180ms ease;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  img {
+    max-width: 100%;
   }
 
   ::selection {
-    @apply bg-luxury-gold text-white;
+    background: rgb(var(--luxecraft-gold));
+    color: #fff;
   }
 }
 
 @layer components {
+  .luxecraft-page {
+    width: min(100%, var(--luxecraft-page));
+    margin-inline: auto;
+    padding-inline: clamp(18px, 3vw, 40px);
+  }
+
+  .luxecraft-section {
+    padding-block: clamp(48px, 7vw, 96px);
+  }
+
+  .luxecraft-eyebrow {
+    margin-bottom: 12px;
+    color: rgb(var(--luxecraft-olive));
+    font-family: var(--font-body-family);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .luxecraft-title {
+    margin-bottom: 16px;
+    font-family: var(--font-heading-family);
+    font-size: clamp(38px, 5vw, 68px);
+    font-weight: 500;
+    line-height: 0.96;
+    letter-spacing: -0.035em;
+  }
+
+  .luxecraft-copy {
+    color: rgb(var(--luxecraft-muted));
+    font-family: var(--font-body-family);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.8;
+  }
+
+  .luxecraft-divider {
+    border-top: 1px solid rgb(var(--luxecraft-border));
+  }
+
   .btn-luxury {
-    @apply inline-flex items-center justify-center border border-luxury-gold bg-luxury-gold px-7 py-3.5 font-serif text-sm uppercase tracking-[0.14em] text-white transition duration-300 hover:bg-luxury-darkGold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-luxury-gold disabled:cursor-not-allowed disabled:opacity-50;
+    display: inline-flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgb(var(--luxecraft-gold));
+    border-radius: 0;
+    padding-inline: 24px;
+    font-family: var(--font-body-family);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    transition:
+      background-color 220ms ease,
+      color 220ms ease,
+      border-color 220ms ease,
+      transform 220ms ease;
   }
 
-  .btn-luxury-outline {
-    @apply inline-flex items-center justify-center border border-luxury-gold bg-transparent px-7 py-3.5 font-serif text-sm uppercase tracking-[0.14em] text-luxury-gold transition duration-300 hover:bg-luxury-gold hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-luxury-gold;
-  }
-
-  .card-luxury {
-    @apply border border-luxury-sand bg-luxury-beige transition-colors duration-300 hover:border-luxury-gold/70;
+  .btn-luxury:hover {
+    transform: translateY(-1px);
   }
 
   .input-luxury {
-    @apply w-full border border-luxury-sand bg-luxury-beige px-4 py-3 text-luxury-charcoal placeholder:text-luxury-brown/70 transition-colors focus:border-luxury-gold focus:outline-none focus:ring-1 focus:ring-luxury-gold;
+    min-height: 48px;
+    border: 1px solid rgb(var(--luxecraft-border));
+    border-radius: 0;
+    background: #fff;
+    padding-inline: 14px;
+    color: rgb(var(--luxecraft-ink));
+    font-family: var(--font-body-family);
+    font-size: 14px;
+    outline: none;
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease;
   }
+
+  .input-luxury:focus {
+    border-color: rgb(var(--luxecraft-gold));
+    box-shadow: 0 0 0 1px rgb(var(--luxecraft-gold));
+  }
+
+  .font-editorial {
+    font-family: var(--font-editorial-family);
+  }
+
+  .font-luxury {
+    font-family: var(--font-heading-family);
+  }
+
+  .text-nav-luxury {
+    font-family: var(--font-body-family);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+}
+
+/* LuxeCraft typography overrides */
+@layer utilities {
+  .font-serif {
+    font-family: var(--font-heading-family) !important;
+  }
+
+  .font-sans {
+    font-family: var(--font-body-family) !important;
+  }
+}
+
+/* Category navigation hover */
+.luxecraft-category-link {
+  display: inline-flex;
+  color: rgb(var(--luxecraft-ink));
+  transition: color 250ms ease, transform 250ms ease, letter-spacing 250ms ease;
+  transform-origin: center;
+}
+
+.luxecraft-category-link:hover {
+  color: #2f6b36 !important;
+  transform: scale(1.06);
+  letter-spacing: 0.195em;
+}
+
+
+/* Custom Design signature navigation */
+.luxecraft-custom-design {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #7a5a2c;
+  transition: color 280ms ease, transform 280ms ease, letter-spacing 280ms ease;
+  position: relative;
+}
+
+.luxecraft-custom-design::after {
+  content: "";
+  position: absolute;
+  left: 28px;
+  right: 0;
+  bottom: -4px;
+  height: 1px;
+  background: #c99545;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 280ms ease;
+}
+
+.luxecraft-custom-design:hover {
+  color: #2f6b36;
+  transform: translateY(-1px);
+  letter-spacing: 0.175em;
+}
+
+.luxecraft-custom-design:hover::after {
+  transform: scaleX(1);
+}
+
+.custom-design-arrow {
+  display: inline-block;
+  color: #c99545;
+  transition: transform 280ms ease, color 280ms ease;
+}
+
+.luxecraft-custom-design:hover .custom-design-arrow {
+  color: #2f6b36;
+  transform: translateX(4px);
+}
+
+
+/* Hide category navigation scrollbar while preserving horizontal scrolling */
+.luxecraft-category-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.luxecraft-category-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Featured collection slider */
+.luxecraft-collection-slider {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.luxecraft-collection-slider::-webkit-scrollbar {
+  display: none;
 }

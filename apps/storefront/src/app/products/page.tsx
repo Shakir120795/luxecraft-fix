@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { getProducts, getCategories, Product, Category } from '@/lib/api';
 import { ProductCard } from '@/components/ProductCard';
 
@@ -18,19 +17,21 @@ export default function ProductsPage() {
 
 function ProductsLoading() {
   return (
-    <div className="min-h-screen bg-luxury-cream p-4 sm:p-6 lg:p-8">
-      <div className="animate-pulse space-y-8">
-        <div className="h-12 w-48 bg-luxury-sand" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="h-96 bg-luxury-sand" />
-          <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-96 bg-luxury-sand" />
-            ))}
+    <main className="min-h-screen bg-white">
+      <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-10">
+        <div className="animate-pulse space-y-10">
+          <div className="h-12 w-56 bg-[rgb(var(--luxecraft-cream))]" />
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-4">
+            <div className="h-96 bg-[rgb(var(--luxecraft-cream))]" />
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:col-span-3">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-96 bg-[rgb(var(--luxecraft-cream))]" />
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
@@ -41,30 +42,34 @@ function ProductsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter state - initialize after mount to avoid hydration mismatch
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedMaterial, setSelectedMaterial] = useState('');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedStyle, setSelectedStyle] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedAvailability, setSelectedAvailability] = useState('');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(10000);
   const [sortBy, setSortBy] = useState('featured');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [visibleCount, setVisibleCount] = useState(16);
 
-  // Sync with URL params after mount
   useEffect(() => {
     setSearchTerm(searchParams.get('q') || '');
     setSelectedCategory(searchParams.get('category') || '');
     setSortBy(searchParams.get('sort') || 'featured');
   }, [searchParams]);
 
-  // Load data
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
+
         const [productsData, categoriesData] = await Promise.all([
           getProducts(),
           getCategories(),
         ]);
+
         setProducts(productsData);
         setCategories(categoriesData);
       } catch (err) {
@@ -73,25 +78,55 @@ function ProductsContent() {
         setLoading(false);
       }
     }
+
     loadData();
   }, []);
 
-  // Filter and sort logic
+  const filterOptions = {
+    materials: Array.from(new Set(products.map((product) => product.material?.trim()).filter(Boolean))).sort(),
+    styles: Array.from(new Set(products.map((product) => product.style?.trim()).filter(Boolean))).sort(),
+    colors: Array.from(new Set(products.map((product) => product.color?.trim()).filter(Boolean))).sort(),
+    sizes: Array.from(new Set(products.flatMap((product) => (product.variants ?? []).map((variant) => variant.name?.trim()).filter(Boolean)))).sort(),
+  };
+
   const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.description.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory = !selectedCategory || product.categoryId === selectedCategory;
+    const matchesCategory =
+      !selectedCategory || product.categoryId === selectedCategory;
 
-    const displayPrice = parseFloat(String(product.salePrice || product.regularPrice));
-    const matchesPrice = displayPrice >= minPrice && displayPrice <= maxPrice;
+    const matchesMaterial =
+      !selectedMaterial || product.material?.trim() === selectedMaterial;
 
-    return matchesSearch && matchesCategory && matchesPrice;
+    const matchesStyle =
+      !selectedStyle || product.style?.trim() === selectedStyle;
+
+    const matchesColor =
+      !selectedColor || product.color?.trim() === selectedColor;
+
+    const matchesSize =
+      !selectedSize || (product.variants ?? []).some((variant) => variant.name?.trim() === selectedSize);
+
+    const matchesAvailability =
+      !selectedAvailability ||
+      (selectedAvailability === 'in-stock'
+        ? (product.variants ?? []).some((variant) => variant.isAvailable !== false && Number(variant.stockQty ?? 0) > 0)
+        : (product.variants ?? []).every((variant) => variant.isAvailable === false || Number(variant.stockQty ?? 0) <= 0));
+
+    const displayPrice = parseFloat(
+      String(product.salePrice || product.regularPrice)
+    );
+
+    const matchesPrice =
+      displayPrice >= minPrice && displayPrice <= maxPrice;
+
+    return matchesSearch && matchesCategory && matchesMaterial && matchesStyle && matchesColor && matchesSize && matchesAvailability && matchesPrice;
   });
 
-  // Sort
   let sortedProducts = [...filteredProducts];
+
   if (sortBy === 'price-low') {
     sortedProducts.sort((a, b) => {
       const priceA = parseFloat(String(a.salePrice || a.regularPrice));
@@ -105,196 +140,112 @@ function ProductsContent() {
       return priceB - priceA;
     });
   } else if (sortBy === 'newest') {
-    sortedProducts.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    sortedProducts.sort(
+      (a, b) =>
+        new Date(b.createdAt || 0).getTime() -
+        new Date(a.createdAt || 0).getTime()
+    );
   }
-  // featured is default
-
-  // Pagination
-  const totalPages = Math.ceil(sortedProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
+  const paginatedProducts = sortedProducts.slice(0, visibleCount);
 
   return (
-    <main className="min-h-screen">
-      {/* Collection introduction */}
-      <div className="bg-luxury-beige border-b border-luxury-sand py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-3">Our Collection</h1>
-          <p className="text-luxury-brown text-lg">
-            {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
-          </p>
-        </div>
-      </div>
+    <main className="min-h-screen bg-white">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
-          {/* Sidebar - Filters */}
-          <div className="md:col-span-1">
-            <div className="space-y-10 sticky top-8">
-              {/* Search */}
-              <div>
-                <label className="block text-sm font-serif text-luxury-charcoal mb-4 tracking-wide">
-                  Search
-                </label>
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="input-luxury"
-                />
+      <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
+        <div className="w-full">
+
+          <section className="w-full">
+            {error && (
+              <div className="mb-8 border border-[rgb(var(--luxecraft-red))] bg-[rgb(var(--luxecraft-red)/0.06)] px-5 py-4 text-sm text-[rgb(var(--luxecraft-ink))]">
+                {error}
               </div>
+            )}
 
-              {/* Sort */}
-              <div>
-                <label className="block text-sm font-serif text-luxury-charcoal mb-4 tracking-wide">
-                  Sort By
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => {
-                    setSortBy(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="input-luxury"
-                >
+<div className="mb-10 border-y border-[rgb(var(--luxecraft-border))] py-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--luxecraft-muted))]">
+                  Filter by
+                </span>
+
+                <select value={selectedMaterial} onChange={(event) => { setSelectedMaterial(event.target.value); setVisibleCount(16); }} className="min-w-[150px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
+                  <option value="">Material</option>
+                  {filterOptions.materials.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+
+                <select value={selectedSize} onChange={(event) => { setSelectedSize(event.target.value); setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
+                  <option value="">Size</option>
+                  {filterOptions.sizes.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+
+                <select value={selectedStyle} onChange={(event) => { setSelectedStyle(event.target.value); setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
+                  <option value="">Style</option>
+                  {filterOptions.styles.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+
+                <select value={minPrice === 0 && maxPrice === 10000 ? '' : `${minPrice}-${maxPrice}`} onChange={(event) => { const value = event.target.value; if (!value) { setMinPrice(0); setMaxPrice(10000); } else { const [min, max] = value.split('-').map(Number); setMinPrice(min); setMaxPrice(max); } setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
+                  <option value="">Price</option>
+                  <option value="0-500">$0 – $500</option>
+                  <option value="500-1000">$500 – $1,000</option>
+                  <option value="1000-2500">$1,000 – $2,500</option>
+                  <option value="2500-5000">$2,500 – $5,000</option>
+                  <option value="5000-10000">$5,000+</option>
+                </select>
+
+                <select value={selectedColor} onChange={(event) => { setSelectedColor(event.target.value); setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
+                  <option value="">Color</option>
+                  {filterOptions.colors.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+
+                <select value={selectedAvailability} onChange={(event) => { setSelectedAvailability(event.target.value); setVisibleCount(16); }} className="min-w-[155px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
+                  <option value="">Availability</option>
+                  <option value="in-stock">In Stock</option>
+                  <option value="out-of-stock">Out of Stock</option>
+                </select>
+
+                <button type="button" onClick={() => { setSelectedMaterial(''); setSelectedSize(''); setSelectedStyle(''); setSelectedColor(''); setSelectedAvailability(''); setMinPrice(0); setMaxPrice(10000); setVisibleCount(16); }} className="ml-auto px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[rgb(var(--luxecraft-olive))] transition-colors hover:text-[rgb(var(--luxecraft-ink))]">
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="mb-8 flex items-center justify-between border-b border-[rgb(var(--luxecraft-border))] pb-4">
+              <div className="flex items-center gap-4">
+                <span className="text-sm text-[rgb(var(--luxecraft-ink))]">{sortedProducts.length} products</span>
+              </div>
+              <label className="flex items-center gap-2 text-sm text-[rgb(var(--luxecraft-ink))]">Sort by:
+                <select value={sortBy} onChange={(event) => { setSortBy(event.target.value); setVisibleCount(16); }} className="border-0 bg-transparent py-1 pr-2 text-sm font-medium outline-none">
                   <option value="featured">Featured</option>
                   <option value="newest">Newest</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                 </select>
-              </div>
-
-              {/* Categories */}
-              {categories.length > 0 && (
-                <div>
-                  <label className="block text-sm font-serif text-luxury-charcoal mb-4 tracking-wide">
-                    Category
-                  </label>
-                  <div className="space-y-3">
-                    <label className="flex items-center group cursor-pointer">
-                      <input
-                        type="radio"
-                        name="category"
-                        value=""
-                        checked={selectedCategory === ''}
-                        onChange={(e) => {
-                          setSelectedCategory(e.target.value);
-                          setCurrentPage(1);
-                        }}
-                        className="w-4 h-4 text-luxury-gold border-luxury-sand focus:ring-luxury-gold"
-                      />
-                      <span className="ml-3 text-sm text-luxury-brown group-hover:text-luxury-charcoal transition-colors">All Categories</span>
-                    </label>
-                    {categories.map((cat) => (
-                      <label key={cat.id} className="flex items-center group cursor-pointer">
-                        <input
-                          type="radio"
-                          name="category"
-                          value={cat.id}
-                          checked={selectedCategory === cat.id}
-                          onChange={(e) => {
-                            setSelectedCategory(e.target.value);
-                            setCurrentPage(1);
-                          }}
-                          className="w-4 h-4 text-luxury-gold border-luxury-sand focus:ring-luxury-gold"
-                        />
-                        <span className="ml-3 text-sm text-luxury-brown group-hover:text-luxury-charcoal transition-colors">{cat.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Price Range */}
-              <div>
-                <label className="block text-sm font-serif text-luxury-charcoal mb-4 tracking-wide">
-                  Price Range
-                </label>
-                <div className="space-y-5">
-                  <div>
-                    <label className="text-xs text-luxury-brown uppercase tracking-wider">Min: ${minPrice}</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="10000"
-                      step="100"
-                      value={minPrice}
-                      onChange={(e) => {
-                        setMinPrice(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="w-full h-1 bg-luxury-sand appearance-none cursor-pointer accent-luxury-gold"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-luxury-brown uppercase tracking-wider">Max: ${maxPrice}</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="10000"
-                      step="100"
-                      value={maxPrice}
-                      onChange={(e) => {
-                        setMaxPrice(Number(e.target.value));
-                        setCurrentPage(1);
-                      }}
-                      className="w-full h-1 bg-luxury-sand appearance-none cursor-pointer accent-luxury-gold"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Clear Filters */}
-              {(searchTerm || selectedCategory || minPrice > 0 || maxPrice < 10000) && (
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setSelectedCategory('');
-                    setMinPrice(0);
-                    setMaxPrice(10000);
-                    setSortBy('featured');
-                    setCurrentPage(1);
-                  }}
-                  className="w-full border border-luxury-sand bg-luxury-beige px-5 py-3 text-sm font-serif tracking-wide text-luxury-brown transition-colors hover:bg-luxury-sand"
-                >
-                  Clear Filters
-                </button>
-              )}
+              </label>
             </div>
-          </div>
-
-          {/* Main Content - Products */}
-          <div className="md:col-span-3">
-            {error && (
-              <div className="mb-10 border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-6 py-4 text-luxury-charcoal">
-                {error}
-              </div>
-            )}
 
             {loading ? (
-              <div className="text-center py-20">
-                <div className="inline-flex items-center gap-3 text-luxury-brown">
-                  <div className="w-4 h-4 bg-luxury-gold rounded-full animate-pulse" />
-                  <span className="font-serif">Loading products...</span>
+              <div className="flex min-h-[400px] items-center justify-center">
+                <div className="flex items-center gap-3 text-[rgb(var(--luxecraft-muted))]">
+                  <div className="h-3 w-3 animate-pulse rounded-full bg-[rgb(var(--luxecraft-gold))]" />
+                  <span className="font-serif">
+                    Loading products...
+                  </span>
                 </div>
               </div>
             ) : paginatedProducts.length === 0 ? (
-              <div className="text-center py-20">
-                <p className="text-luxury-brown text-lg mb-6">No products found matching your criteria.</p>
+              <div className="border-y border-[rgb(var(--luxecraft-border))] py-20 text-center">
+                <p className="mb-6 font-serif text-xl text-[rgb(var(--luxecraft-ink))]">
+                  No products found matching your criteria.
+                </p>
+
                 <button
+                  type="button"
                   onClick={() => {
                     setSearchTerm('');
                     setSelectedCategory('');
                     setMinPrice(0);
                     setMaxPrice(10000);
                     setSortBy('featured');
-                    setCurrentPage(1);
+                    setVisibleCount(16);
                   }}
                   className="btn-luxury"
                 >
@@ -303,56 +254,36 @@ function ProductsContent() {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 mb-16">
+                <div className="mb-16 grid grid-cols-1 gap-x-7 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
                   {paginatedProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-3 py-12 border-t border-luxury-sand">
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                      className="border border-luxury-sand bg-luxury-beige px-5 py-3 font-serif text-luxury-brown transition-colors hover:border-luxury-gold disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Previous
-                    </button>
-
-                    {[...Array(totalPages)].map((_, i) => {
-                      const pageNum = i + 1;
-                      const isActive = pageNum === currentPage;
-
-                      return (
-                        <button
-                          key={pageNum}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`px-5 py-3 font-serif transition-colors ${
-                            isActive
-                              ? 'bg-luxury-gold text-white'
-                              : 'border border-luxury-sand bg-luxury-beige hover:border-luxury-gold text-luxury-brown'
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                      className="border border-luxury-sand bg-luxury-beige px-5 py-3 font-serif text-luxury-brown transition-colors hover:border-luxury-gold disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Next
+                {visibleCount < sortedProducts.length && (
+                  <div className="flex justify-center border-t border-[rgb(var(--luxecraft-border))] pt-10">
+                    <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + 16, sortedProducts.length))} className="border border-black bg-black px-8 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-black">
+                      Load more
                     </button>
                   </div>
                 )}
               </>
             )}
-          </div>
+          </section>
         </div>
       </div>
     </main>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

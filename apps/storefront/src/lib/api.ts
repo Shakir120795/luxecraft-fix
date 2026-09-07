@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
 
 export interface Product {
   id: string;
@@ -12,15 +12,39 @@ export interface Product {
   isFeatured: boolean;
   status: string;
   weightKg: number | null;
+  taxRate: number | string;
   lengthCm: number | null;
   widthCm: number | null;
   heightCm: number | null;
   categoryId?: string | null;
+  material?: string | null;
+  style?: string | null;
+  collection?: string | null;
+  color?: string | null;
+  deliveryInfo?: string | null;
+  shippingInfo?: string | null;
+  returnsInfo?: string | null;
+  careInstructions?: string | null;
+  origin?: string | null;
+  productNote?: string | null;
+  reviews?: ProductReview[];
   media: ProductMedia[];
   variants: ProductVariant[];
   createdAt?: string;
 }
 
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userId?: string | null;
+  rating: number;
+  title?: string | null;
+  content?: string | null;
+  status?: string;
+  isFeatured?: boolean;
+  createdAt: string;
+}
 
 export interface ProductMedia {
   id: string;
@@ -48,6 +72,18 @@ export interface ProductVariant {
   isAvailable?: boolean;
 }
 
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  userId?: string | null;
+  rating: number;
+  title?: string | null;
+  content?: string | null;
+  status?: string;
+  isFeatured?: boolean;
+  createdAt: string;
+}
 
 export interface ProductMedia {
   id: string;
@@ -84,10 +120,43 @@ export interface Category {
   status: string;
 }
 
-export async function getProducts(limit?: number): Promise<Product[]> {
+export interface HeroSection {
+  id: string;
+  productId: string | null;
+  imageUrl: string | null;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  primaryCtaText: string | null;
+  primaryCtaLink: string | null;
+  secondaryCtaText: string | null;
+  secondaryCtaLink: string | null;
+  isActive: boolean;
+  product?: Product | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getHero(): Promise<HeroSection | null> {
+  try {
+    const res = await fetch(`${API_URL}/storefront/hero`, {
+      cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+
+    return data.success ? data.data : null;
+  } catch (error) {
+    console.error('Failed to fetch hero:', error);
+    return null;
+  }
+}
+export async function getProducts(limit?: number, categoryId?: string): Promise<Product[]> {
   try {
     const url = new URL(`${API_URL}/storefront/products`);
-    if (limit) url.searchParams.append('limit', limit.toString());
+    if (limit) url.searchParams.append('take', limit.toString());
+    if (categoryId) url.searchParams.append('categoryId', categoryId);
 
     const res = await fetch(url.toString(), {
       cache: 'no-store',
@@ -160,6 +229,9 @@ export interface Cart {
 
 export interface CartTotals {
   subtotal: number;
+  shipping: number;
+  tax: number;
+  total: number;
   itemCount: number;
   currency: string;
 }
@@ -204,25 +276,26 @@ export async function getCart(): Promise<Cart | null> {
   }
 }
 
-export async function getCartTotals(): Promise<CartTotals> {
+export async function getCartTotals(country?: string): Promise<CartTotals> {
   try {
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
-    
-    const res = await fetch(`${API_URL}/cart/totals`, {
+    const url = new URL(`${API_URL}/cart/totals`);
+    if (country) url.searchParams.append('country', country.toUpperCase());
+
+    const res = await fetch(url.toString(), {
       headers: {
         ...headers,
         'X-Session-Id': sessionId,
       },
       cache: 'no-store',
     });
-
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : { subtotal: 0, itemCount: 0, currency: 'USD' };
+    return data.success ? data.data : { subtotal: 0, shipping: 0, tax: 0, total: 0, itemCount: 0, currency: 'USD' };
   } catch (error) {
     console.error('Failed to fetch cart totals:', error);
-    return { subtotal: 0, itemCount: 0, currency: 'USD' };
+    return { subtotal: 0, shipping: 0, tax: 0, total: 0, itemCount: 0, currency: 'USD' };
   }
 }
 

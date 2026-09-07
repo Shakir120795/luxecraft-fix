@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Category, Product, ProductStatus, CategoryStatus } from '@prisma/client';
 
@@ -6,7 +6,25 @@ import { Category, Product, ProductStatus, CategoryStatus } from '@prisma/client
 export class StorefrontService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ── Categories ─────────────────────────────────────────────────
+  async getHero() {
+    const hero = await this.prisma.heroSection.findFirst({
+      where: { isActive: true },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        product: {
+          where: { status: ProductStatus.ACTIVE, deletedAt: null },
+          include: {
+            media: {
+              where: { type: 'IMAGE' },
+              orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+            },
+          },
+        },
+      },
+    });
+
+    return hero;
+  }
 
   async getCategories(): Promise<Category[]> {
     return this.prisma.category.findMany({
@@ -31,11 +49,10 @@ export class StorefrontService {
         },
       },
     });
+
     if (!cat) throw new NotFoundException(`Category "${slug}" not found.`);
     return cat;
   }
-
-  // ── Products ───────────────────────────────────────────────────
 
   async getProducts(params: {
     categoryId?: string;
@@ -95,11 +112,10 @@ export class StorefrontService {
         },
       },
     });
+
     if (!product) throw new NotFoundException(`Product "${slug}" not found.`);
     return product;
   }
-
-  // ── Featured products ──────────────────────────────────────────
 
   async getFeaturedProducts(take = 8): Promise<Product[]> {
     return this.prisma.product.findMany({

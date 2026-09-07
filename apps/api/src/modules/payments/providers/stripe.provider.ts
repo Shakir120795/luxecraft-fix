@@ -22,7 +22,7 @@ export interface RefundResult {
 @Injectable()
 export class StripeProvider {
   private readonly logger = new Logger(StripeProvider.name);
-  private readonly stripe: Stripe;
+  private readonly stripe: Stripe | null;
   private readonly webhookSecret: string;
 
   constructor(private readonly config: ConfigService) {
@@ -31,10 +31,10 @@ export class StripeProvider {
       this.logger.warn('Stripe secret key not configured - payment processing will fail');
     }
     
-    this.stripe = new Stripe(secretKey || '', {
-      apiVersion: '2024-12-18.acacia',
+    this.stripe = secretKey ? new Stripe(secretKey, {
+      apiVersion: '2025-02-24.acacia',
       typescript: true,
-    });
+    }) : null;
 
     this.webhookSecret = this.config.get<string>('stripe.webhookSecret') || '';
   }
@@ -46,6 +46,13 @@ export class StripeProvider {
    * @param currency - Currency code (usd, inr, eur, etc.)
    * @param metadata - Additional metadata to attach
    */
+  private getStripeClient(): Stripe {
+    if (!this.stripe) {
+      throw new BadRequestException('Stripe is not configured');
+    }
+    return this.stripe;
+  }
+
   async createPaymentIntent(
     orderId: string,
     amount: number,
@@ -60,7 +67,7 @@ export class StripeProvider {
         `Creating Stripe payment intent: ${amountInCents} ${currency} for order ${orderId}`,
       );
 
-      const paymentIntent = await this.stripe.paymentIntents.create({
+      const paymentIntent = await this.getStripeClient().paymentIntents.create({
         amount: amountInCents,
         currency: currency.toLowerCase(),
         automatic_payment_methods: {
@@ -92,7 +99,7 @@ export class StripeProvider {
    */
   async getPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
     try {
-      return await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      return await this.getStripeClient().paymentIntents.retrieve(paymentIntentId);
     } catch (error) {
       this.logger.error(`Failed to retrieve payment intent: ${error.message}`);
       throw new BadRequestException('Failed to retrieve payment intent');
@@ -121,14 +128,14 @@ export class StripeProvider {
         `Creating refund for payment intent ${paymentIntentId}: ${amount ? amount : 'full'}`,
       );
 
-      const refund = await this.stripe.refunds.create(refundParams);
+      const refund = await this.getStripeClient().refunds.create(refundParams);
 
       this.logger.log(`Refund created: ${refund.id} - ${refund.status}`);
 
       return {
         refundId: refund.id,
         amount: refund.amount / 100, // Convert back to major currency unit
-        status: refund.status,
+        status: refund.status ?? 'unknown',
       };
     } catch (error) {
       this.logger.error(`Failed to create refund: ${error.message}`, error.stack);
@@ -148,7 +155,7 @@ export class StripeProvider {
     }
 
     try {
-      const event = this.stripe.webhooks.constructEvent(
+      const event = this.getStripeClient().webhooks.constructEvent(
         rawBody,
         signature,
         this.webhookSecret,
@@ -168,7 +175,7 @@ export class StripeProvider {
   async cancelPaymentIntent(paymentIntentId: string): Promise<Stripe.PaymentIntent> {
     try {
       this.logger.log(`Canceling payment intent: ${paymentIntentId}`);
-      return await this.stripe.paymentIntents.cancel(paymentIntentId);
+      return await this.getStripeClient().paymentIntents.cancel(paymentIntentId);
     } catch (error) {
       this.logger.error(`Failed to cancel payment intent: ${error.message}`);
       throw new BadRequestException('Failed to cancel payment intent');

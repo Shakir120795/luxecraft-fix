@@ -1,9 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCart, updateCartItem, removeCartItem, clearCart, Cart, CartItem } from '@/lib/api';
+import { getCart, updateCartItem, removeCartItem, clearCart, getAddresses, getCartTotals, getShippingMethods, isAuthenticated, Cart, CartItem, CartTotals } from '@/lib/api';
 
 export default function CartPage() {
   const router = useRouter();
@@ -11,10 +11,74 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
+  const [country, setCountry] = useState('');
+  const [totals, setTotals] = useState<CartTotals | null>(null);
+  const [estimatedDelivery, setEstimatedDelivery] = useState<number | null>(null);
 
   useEffect(() => {
     loadCart();
+    loadShippingCountry();
   }, []);
+
+  async function loadShippingCountry() {
+    try {
+      const authenticated = isAuthenticated();
+      if (!authenticated) {
+        setCountry('');
+        return;
+      }
+
+      const addresses = await getAddresses();
+      const shippingAddress = addresses.find((address) => address.isDefault) || addresses.find((address) => address.type === 'SHIPPING' || address.type === 'BOTH');
+      setCountry(shippingAddress?.country?.toUpperCase() || ''); console.log('Cart shipping address:', shippingAddress, 'country:', shippingAddress?.country);
+    } catch (err) {
+      console.error('Failed to load shipping country:', err);
+      setCountry('');
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadShippingData() {
+      if (!cart || cart.items.length === 0 || !country) {
+        setTotals(null);
+        setEstimatedDelivery(null);
+        return;
+      }
+
+      const subtotal = cart.items.reduce(
+        (sum, item) => sum + (Number(item.priceSnapshot) || 0) * Number(item.quantity),
+        0,
+      );
+
+      try {
+        const [cartTotals, methods] = await Promise.all([
+          getCartTotals(country),
+          getShippingMethods({ country, orderValue: subtotal }),
+        ]);
+
+        if (cancelled) return;
+
+        setTotals(cartTotals);
+
+        const available = methods.filter((method) => method.rate >= 0);
+        const cheapest = [...available].sort((a, b) => a.rate - b.rate)[0];
+        console.log('Cart shipping methods:', methods, 'selected:', cheapest); setEstimatedDelivery(cheapest?.estimatedDays ?? null);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Failed to load shipping data:', err);
+        setTotals(null);
+        setEstimatedDelivery(null);
+      }
+    }
+
+    void loadShippingData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [cart, country]);
 
   async function loadCart() {
     try {
@@ -95,20 +159,23 @@ export default function CartPage() {
 
   const subtotal = cart?.items.reduce((sum, item) => sum + (Number(item.priceSnapshot) || 0) * Number(item.quantity), 0) || 0;
   const itemCount = cart?.items.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
+  const shipping = totals?.shipping ?? 0;
+  const tax = totals?.tax ?? 0;
+  const total = totals?.total ?? subtotal;
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-[#f8f6f2] font-sans">
       {/* Header */}
-      <div className="bg-luxury-beige border-b border-luxury-sand py-12 px-4 sm:px-6 lg:px-8">
+      <div className="border-b border-[#ded8d0] bg-[#f8f6f2] px-4 py-6 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-3">Shopping Cart</h1>
-          <p className="text-luxury-brown text-lg">
+          <h1 className="mb-1 font-serif text-3xl font-light tracking-tight text-luxury-charcoal sm:text-4xl">Shopping Cart</h1>
+          <p className="text-sm text-luxury-brown">
             {itemCount} {itemCount === 1 ? 'item' : 'items'} in your cart
           </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="mx-auto max-w-[1180px] px-4 py-8 sm:px-6 lg:px-8">
         {error && (
           <div className="mb-8 border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-6 py-4 text-luxury-charcoal">
             {error}
@@ -119,21 +186,27 @@ export default function CartPage() {
           // Empty Cart State
           <div className="text-center py-20">
             <div className="mb-8">
-              <span className="text-8xl text-luxury-gold/30">ðŸ›’</span>
+              <span className="text-8xl text-luxury-gold/30">ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂºÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢</span>
             </div>
             <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">Your cart is empty</h2>
             <p className="text-luxury-brown mb-8 text-lg">
               Discover our curated collection of luxury pieces
             </p>
             <Link href="/products" className="btn-luxury px-10 py-4">
-              Continue Shopping â†’
+              Continue Shopping
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:gap-8">
             {/* Cart Items */}
-            <div className="lg:col-span-2">
-              <div className="space-y-6">
+            <div className="min-w-0">
+              <div className="overflow-hidden rounded-lg border border-[#ded8d0] bg-white">
+                <div className="border-b border-[#ded8d0] px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-[#302b35]">LuxeCraft</div>
+                    <button type="button" className="text-xs text-[#59535b]">...</button>
+                  </div>
+                </div>
                 {cart.items.map((item) => (
                   <CartItemCard
                     key={item.id}
@@ -159,28 +232,35 @@ export default function CartPage() {
             </div>
 
             {/* Cart Summary */}
-            <div className="lg:col-span-1">
-              <div className="sticky top-24 border border-luxury-sand bg-luxury-beige p-8">
-                <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Order Summary</h2>
+            <div className="min-w-0">
+              <div className="sticky top-24 rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-7 shadow-sm">
+                <h2 className="mb-5 text-xl font-semibold text-[#2f2933]">Order Summary</h2>
 
-                <div className="space-y-4 mb-6 pb-6 border-b border-luxury-sand">
+                <div className="mb-6 space-y-4 border-b border-[#ded8d0] pb-6">
                   <div className="flex justify-between text-luxury-brown">
                     <span>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
                     <span>${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-luxury-brown text-sm">
                     <span>Shipping</span>
-                    <span>Calculated at checkout</span>
+                    <span>${shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-luxury-brown text-sm">
                     <span>Tax</span>
-                    <span>Calculated at checkout</span>
+                    <span>${tax.toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div className="flex justify-between text-2xl font-serif text-luxury-charcoal mb-8">
+                <div className="mb-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-sm text-[#59535b]">
+                  <div className="flex items-center justify-between gap-4">
+                    <span>Estimated delivery</span>
+                    <span className="font-medium text-[#2f2933]">{estimatedDelivery ? `${estimatedDelivery} business days` : "Checking..."}</span>
+                  </div>
+                </div>
+
+                <div className="mb-7 flex justify-between text-xl font-semibold text-[#2f2933]">
                   <span>Total</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>${total.toFixed(2)}</span>
                 </div>
 
                 <button
@@ -193,30 +273,42 @@ export default function CartPage() {
                       router.push('/auth/login?redirect=/checkout');
                     }
                   }}
-                  className="btn-luxury w-full px-8 py-4 text-base mb-4"
+                  className="mb-4 w-full rounded-md bg-[#302b35] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#211e24]"
                 >
-                  Proceed to Checkout â†’
+                  Proceed to Checkout
                 </button>
 
                 <Link
                   href="/products"
-                  className="block text-center text-sm text-luxury-brown hover:text-luxury-gold transition-colors underline"
+                  className="block text-center text-sm font-medium text-[#302b35] underline underline-offset-4 transition hover:text-black"
                 >
                   Continue Shopping
                 </Link>
 
+
+                <div className="mt-6 border-t border-[#ded8d0] pt-5">
+                  <div className="text-sm font-semibold text-[#302b35]">Secure options in checkout</div>
+                  <div className="mt-3 flex w-full items-center justify-between gap-2">
+                    <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><img src="https://cdn.simpleicons.org/visa" alt="Visa" className="h-6 w-11 object-contain" /></span>
+                    <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><img src="https://cdn.simpleicons.org/mastercard" alt="Mastercard" className="h-6 w-11 object-contain" /></span>
+                    <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><img src="https://cdn.simpleicons.org/americanexpress" alt="American Express" className="h-6 w-11 object-contain" /></span>
+                    <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><svg viewBox="0 0 48 24" className="h-6 w-11" aria-label="UPI"><path d="M4 15 9 5h5l-5 10H4Z" fill="#5b8db8"/><path d="m13 15 5-10h5l-5 10h-5Z" fill="#39a94a"/><path d="m22 15 5-10h5l-5 10h-5Z" fill="#f4a21e"/><text x="31" y="15" font-size="8" font-family="Arial" font-weight="700" fill="#2b4e8a">UPI</text></svg></span>
+                  </div>
+                  <button type="button" className="mt-5 flex items-center gap-3 text-sm font-semibold text-[#302b35] transition hover:text-green-700"><svg className="h-5 w-5 text-green-700" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M2.8 7.1 8.1 1.8a1.4 1.4 0 0 1 1.98 0l8.12 8.12a1.4 1.4 0 0 1 0 1.98l-5.3 5.3a1.4 1.4 0 0 1-1.98 0L2.8 9.08a1.4 1.4 0 0 1 0-1.98Z"/><circle cx="7.1" cy="7.1" r="1.2" fill="white"/></svg><span>Apply coupon code</span></button>
+                  <p className="mt-2 text-xs text-[#6a636b]">Local taxes included (where applicable)</p>
+                </div>
                 {/* Trust Badges */}
-                <div className="mt-10 pt-8 border-t border-luxury-sand space-y-4">
+                <div className="mt-7 border-t border-black/10 pt-6 space-y-4">
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
-                    <span className="text-xl text-luxury-gold">âœ“</span>
+                    <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <span>Secure checkout</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
-                    <span className="text-xl text-luxury-gold">âœ“</span>
+                    <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <span>Free worldwide shipping</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
-                    <span className="text-xl text-luxury-gold">âœ“</span>
+                    <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     <span>Easy returns within 30 days</span>
                   </div>
                 </div>
@@ -245,11 +337,11 @@ function CartItemCard({
   const itemTotal = price * Number(item.quantity);
 
   return (
-    <div className={`border border-luxury-sand bg-luxury-beige p-6 transition-opacity ${isUpdating ? 'opacity-50' : ''}`}>
-      <div className="flex gap-6">
+    <div className={`border-b border-[#ded8d0] p-4 transition-opacity sm:p-5 ${isUpdating ? 'opacity-50' : ''}`}>
+      <div className="flex gap-4 sm:gap-5">
         {/* Product Image */}
         <Link href={`/products/${item.product.slug}`} className="shrink-0">
-          <div className="w-32 h-32 border border-luxury-sand bg-luxury-cream overflow-hidden">
+          <div className="h-28 w-28 overflow-hidden rounded-md border border-[#ded8d0] bg-[#f6f2ec] sm:h-32 sm:w-32">
             {mainImage?.url ? (
               <img
                 src={mainImage.url}
@@ -279,9 +371,6 @@ function CartItemCard({
                   Variant: {item.variant.name}
                 </p>
               )}
-              <p className="text-sm text-luxury-brown/50 mt-1">
-                SKU: {item.variant?.sku || item.product.sku}
-              </p>
             </div>
 
             <div className="text-right">
@@ -294,35 +383,18 @@ function CartItemCard({
             </div>
           </div>
 
-          {/* Quantity Controls & Remove */}
-          <div className="flex items-center justify-between mt-6">
+          {/* Quantity Controls */}
+          <div className="mt-6">
             <div className="flex items-center gap-3">
-              <button
-                onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
-                disabled={isUpdating || item.quantity <= 1}
-                className="h-10 w-10 border border-luxury-sand bg-luxury-cream text-luxury-brown transition-colors hover:border-luxury-gold disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                âˆ’
-              </button>
-              <span className="text-lg font-serif w-12 text-center text-luxury-charcoal">
-                {item.quantity}
-              </span>
-              <button
-                onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                disabled={isUpdating}
-                className="h-10 w-10 border border-luxury-sand bg-luxury-cream text-luxury-brown transition-colors hover:border-luxury-gold disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                +
-              </button>
+              <button onClick={() => onUpdateQuantity(item.id, item.quantity - 1)} disabled={isUpdating || item.quantity <= 1} className="h-8 w-8 border border-[#cfc8c0] bg-white text-base font-light text-[#302b35] transition hover:bg-[#302b35] hover:text-white disabled:cursor-not-allowed disabled:opacity-40">-</button>
+              <span className="w-8 text-center text-sm text-[#302b35]">{item.quantity}</span>
+              <button onClick={() => onUpdateQuantity(item.id, item.quantity + 1)} disabled={isUpdating} className="h-8 w-8 border border-[#cfc8c0] bg-white text-base font-light text-[#302b35] transition hover:bg-[#302b35] hover:text-white disabled:cursor-not-allowed disabled:opacity-40">+</button>
             </div>
-
-            <button
-              onClick={() => onRemove(item.id)}
-              disabled={isUpdating}
-              className="text-sm text-luxury-brown hover:text-luxury-terracotta transition-colors underline disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Remove
-            </button>
+            <div className="mt-3 flex w-full items-center justify-between text-xs font-medium text-[#59535b]">
+              <Link href={`/products/${item.product.slug}`} className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38]">Edit</Link>
+              <button type="button" className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38]">Save for later</button>
+              <button type="button" onClick={() => onRemove(item.id)} disabled={isUpdating} className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38] disabled:cursor-not-allowed disabled:opacity-40">Remove</button>
+            </div>
           </div>
         </div>
       </div>

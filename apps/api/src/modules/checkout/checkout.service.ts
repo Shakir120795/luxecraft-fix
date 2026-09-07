@@ -84,7 +84,7 @@ export class CheckoutService {
     const persistedItems = await this.prisma.cartItem.findMany({
       where: { cartId: cart.id },
       include: {
-        product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true } },
+        product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, taxRate: true } },
         variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, trackInventory: true, stockQty: true, reservedQty: true, allowBackorder: true } },
       },
     });
@@ -122,12 +122,11 @@ export class CheckoutService {
     const shippingMethod = methods.find((method) => method.id === input.dto.shippingMethodId);
     if (!shippingMethod) throw new BadRequestException('Shipping method is unavailable for this address.');
 
-    const tax = await this.tax.calculateTax({
-      country,
-      stateProvince: shippingAddress.stateProvince ?? undefined,
-      amount: subtotal + shippingMethod.calculatedRate,
-    });
-    const total = subtotal + shippingMethod.calculatedRate + tax.taxAmount;
+    const taxAmount = cartItems.reduce((sum, item) => {
+      const rate = Number(item.product.taxRate ?? 0);
+      return sum + (Number(item.priceSnapshot) * item.quantity * rate) / 100;
+    }, 0);
+    const total = subtotal + shippingMethod.calculatedRate + taxAmount;
 
     // 2. Reserve inventory stock (transaction for atomicity)
     const reservedItems: { variantId: string; quantity: number }[] = [];
@@ -152,14 +151,11 @@ export class CheckoutService {
                 productId: item.productId,
                 variantId: item.variantId,
                 changeType: 'ORDER_RESERVE',
-                quantityChange: -item.quantity,
-                quantityAfter: item.variant.stockQty,
+                delta: -item.quantity,
+                qtyBefore: item.variant.stockQty,
+                qtyAfter: item.variant.stockQty - item.quantity,
                 reason: 'Checkout - Stock reserved',
-                metadata: {
-                  cartId: cart.id,
-                  userId: input.userId,
-                  sessionId: input.sessionId,
-                },
+                reference: cart.id,
               },
             });
 
@@ -191,7 +187,7 @@ export class CheckoutService {
         shippingMethodId: shippingMethod.id,
         shippingMethodName: shippingMethod.name,
         shippingCost: shippingMethod.calculatedRate,
-        taxAmount: tax.taxAmount,
+        taxAmount,
         subtotal,
         total,
         currency: cart.currency,
@@ -202,10 +198,6 @@ export class CheckoutService {
         orderId: order.id,
         amount: total,
         currency: cart.currency,
-        metadata: {
-          orderNumber: order.orderNumber,
-          userId: input.userId || 'guest',
-        },
       });
 
       payment = paymentResult.payment;

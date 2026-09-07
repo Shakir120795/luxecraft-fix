@@ -15,7 +15,7 @@ export class AdminDashboardService {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const [todayOrders, todayRevenue, newCustomers, failedPayments, lowStockAlerts, pendingCustomRequests, pendingQuotes] = await Promise.all([
+    const [todayOrders, todayRevenue, totalCustomers, totalProducts, newCustomers, failedPayments, lowStockAlerts, pendingCustomRequests, pendingQuotes] = await Promise.all([
       this.prisma.order.count({
         where: { createdAt: { gte: today, lt: tomorrow }, orderStatus: { not: OrderStatus.CANCELLED } },
       }),
@@ -23,6 +23,8 @@ export class AdminDashboardService {
         where: { createdAt: { gte: today, lt: tomorrow }, paymentStatus: PaymentStatus.PAID },
         _sum: { total: true },
       }),
+      this.prisma.user.count(),
+      this.prisma.product.count({ where: { deletedAt: null } }),
       this.prisma.user.count({
         where: { createdAt: { gte: today, lt: tomorrow } },
       }),
@@ -45,6 +47,8 @@ export class AdminDashboardService {
     return {
       todayOrders,
       todayRevenue: todayRevenue._sum.total ?? 0,
+      totalCustomers,
+      totalProducts,
       newCustomers,
       alerts: {
         failedPayments,
@@ -91,3 +95,4 @@ export class AdminDashboardService {
     return { pending, paymentConfirmed, processing, shipped, delivered };
   }
 }
+

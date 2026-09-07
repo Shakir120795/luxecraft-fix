@@ -4,6 +4,110 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
+  // 4. Create default shipping zone and methods
+  const shippingZone = await prisma.shippingZone.upsert({
+    where: { id: 'seed-worldwide-zone' },
+    update: {
+      name: 'Worldwide',
+      countries: ['US', 'CA', 'GB', 'AU', 'IN'],
+      isActive: true,
+    },
+    create: {
+      id: 'seed-worldwide-zone',
+      name: 'Worldwide',
+      countries: ['US', 'CA', 'GB', 'AU', 'IN'],
+      isActive: true,
+    },
+  });
+
+  await prisma.shippingMethod.upsert({
+    where: { id: 'seed-standard-shipping' },
+    update: {
+      zoneId: shippingZone.id,
+      name: 'Standard Shipping',
+      description: 'Reliable standard delivery',
+      deliveryDaysMin: 5,
+      deliveryDaysMax: 10,
+      basePrice: 25,
+      pricePerKg: 1.5,
+      freeShippingMin: null,
+      isActive: true,
+      sortOrder: 1,
+    },
+    create: {
+      id: 'seed-standard-shipping',
+      zoneId: shippingZone.id,
+      name: 'Standard Shipping',
+      description: 'Reliable standard delivery',
+      deliveryDaysMin: 5,
+      deliveryDaysMax: 10,
+      basePrice: 25,
+      pricePerKg: 1.5,
+      freeShippingMin: null,
+      isActive: true,
+      sortOrder: 1,
+    },
+  });
+
+  await prisma.shippingMethod.upsert({
+    where: { id: 'seed-express-shipping' },
+    update: {
+      zoneId: shippingZone.id,
+      name: 'Express Shipping',
+      description: 'Faster delivery for urgent orders',
+      deliveryDaysMin: 2,
+      deliveryDaysMax: 5,
+      basePrice: 60,
+      pricePerKg: 2.5,
+      freeShippingMin: null,
+      isActive: true,
+      sortOrder: 2,
+    },
+    create: {
+      id: 'seed-express-shipping',
+      zoneId: shippingZone.id,
+      name: 'Express Shipping',
+      description: 'Faster delivery for urgent orders',
+      deliveryDaysMin: 2,
+      deliveryDaysMax: 5,
+      basePrice: 60,
+      pricePerKg: 2.5,
+      freeShippingMin: null,
+      isActive: true,
+      sortOrder: 2,
+    },
+  });
+
+  await prisma.shippingMethod.upsert({
+    where: { id: 'seed-free-shipping' },
+    update: {
+      zoneId: shippingZone.id,
+      name: 'Free Shipping',
+      description: 'Free shipping on qualifying orders',
+      deliveryDaysMin: 7,
+      deliveryDaysMax: 14,
+      basePrice: 0,
+      pricePerKg: 0,
+      freeShippingMin: 5000,
+      isActive: true,
+      sortOrder: 3,
+    },
+    create: {
+      id: 'seed-free-shipping',
+      zoneId: shippingZone.id,
+      name: 'Free Shipping',
+      description: 'Free shipping on qualifying orders',
+      deliveryDaysMin: 7,
+      deliveryDaysMax: 14,
+      basePrice: 0,
+      pricePerKg: 0,
+      freeShippingMin: 5000,
+      isActive: true,
+      sortOrder: 3,
+    },
+  });
+
+  console.log('Shipping configuration ready: 1 zone, 3 methods');
   console.log('🌱 Seeding database...');
 
   // 1. Create Admin User

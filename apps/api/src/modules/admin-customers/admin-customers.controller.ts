@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Patch, Query, UseGuards, Body } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, UseGuards, Body, Delete } from '@nestjs/common';
 import { AdminCustomersService } from './admin-customers.service';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 
@@ -17,8 +17,14 @@ export class AdminCustomersController {
     return this.svc.findOne(id);
   }
 
+  @Delete(':id')
+  deleteCustomer(@Param('id') id: string) {
+    return this.svc.deleteUnverified(id);
+  }
+
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() data: { status: string }) {
     return this.svc.updateStatus(id, data.status);
   }
 }
+

@@ -68,6 +68,7 @@ export interface Admin {
   firstName: string;
   lastName: string;
   role: 'SUPER_ADMIN' | 'ADMIN';
+  emailVerified: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -123,12 +124,24 @@ export interface Product {
   sku: string;
   description: string;
   shortDescription: string | null;
+  material: string | null;
+  style: string | null;
+  collection: string | null;
+  color: string | null;
+  deliveryInfo: string | null;
+  shippingInfo: string | null;
+  returnsInfo: string | null;
+  careInstructions: string | null;
+  origin: string | null;
+  productNote: string | null;
 
   regularPrice: number;
   salePrice: number | null;
+  taxRate: number;
   currency: string;
 
   status: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
+  emailVerified: boolean;
   isActive: boolean;
   isFeatured: boolean;
   isCustomizable: boolean;
@@ -162,6 +175,7 @@ export interface Category {
   description: string | null;
   imageUrl: string | null;
   parentId: string | null;
+  emailVerified: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -210,6 +224,7 @@ export interface Customer {
   firstName: string;
   lastName: string;
   phoneNumber: string | null;
+  emailVerified: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -410,7 +425,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   return {
     totalRevenue: Number(data.todayRevenue ?? 0),
     totalOrders: data.todayOrders ?? 0,
-    totalCustomers: data.newCustomers ?? 0,
+    totalCustomers: data.totalCustomers ?? 0,
     totalProducts: data.alerts?.lowStockItems ?? 0,
     pendingOrders: 0,
     pendingCustomRequests: data.alerts?.pendingCustomRequests ?? 0,
@@ -438,12 +453,22 @@ export interface CreateProductRequest {
   sku?: string;
   description?: string;
   shortDescription?: string;
+  deliveryInfo?: string;
+  shippingInfo?: string;
+  returnsInfo?: string;
+  careInstructions?: string;
+  origin?: string;
+  productNote?: string;
 
   regularPrice: number;
   salePrice?: number;
   currency?: string;
 
   categoryId?: string;
+  material?: string;
+  style?: string;
+  collection?: string;
+  color?: string;
   status?: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
 
   weightKg?: number;
@@ -546,11 +571,15 @@ export async function updateOrderStatus(id: string, status: string): Promise<Ord
 
 export async function getCustomers(): Promise<Customer[]> {
   const data = await adminApi.get<{ items: Customer[] }>('/admin/customers');
-  return data.items;
+  return data.items.map((customer: any) => ({ ...customer, phoneNumber: customer.phoneNumber ?? customer.phone ?? null, isActive: customer.status === 'ACTIVE' }));
 }
 
 export async function getCustomer(id: string): Promise<Customer> {
   return adminApi.get<Customer>(`/admin/customers/${id}`);
+}
+
+export async function deleteCustomer(id: string): Promise<{ success: boolean }> {
+  return adminApi.delete<{ success: boolean }>('/admin/customers/' + id);
 }
 
 export async function updateCustomerStatus(id: string, isActive: boolean): Promise<Customer> {
@@ -743,4 +772,170 @@ export async function deleteCustomizationOption(
   return adminApi.delete<void>(
     `/admin/products/customization-options/${optionId}`,
   );
+}
+
+
+
+
+
+
+
+
+export interface HeroSection {
+  id: string;
+  productId: string | null;
+  imageUrl: string | null;
+  eyebrow: string | null;
+  title: string;
+  subtitle: string | null;
+  primaryCtaText: string | null;
+  primaryCtaLink: string | null;
+  secondaryCtaText: string | null;
+  secondaryCtaLink: string | null;
+  isActive: boolean;
+  product?: Product | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateHeroRequest {
+  productId?: string | null;
+  imageUrl?: string | null;
+  eyebrow?: string | null;
+  title: string;
+  subtitle?: string | null;
+  primaryCtaText?: string | null;
+  primaryCtaLink?: string | null;
+  secondaryCtaText?: string | null;
+  secondaryCtaLink?: string | null;
+  isActive?: boolean;
+}
+
+export async function getHero(): Promise<HeroSection | null> {
+  return adminApi.get<HeroSection | null>('/admin/cms/hero');
+}
+
+export async function updateHero(data: UpdateHeroRequest): Promise<HeroSection> {
+  return adminApi.put<HeroSection>('/admin/cms/hero', data);
+}
+
+export interface ShippingMethod {
+  id: string;
+  zoneId: string;
+  name: string;
+  description?: string | null;
+  deliveryDaysMin?: number | null;
+  deliveryDaysMax?: number | null;
+  basePrice: number;
+  pricePerKg: number;
+  freeShippingMin?: number | null;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+export interface ShippingZone {
+  id: string;
+  name: string;
+  countries: string[];
+  isActive: boolean;
+  methods: ShippingMethod[];
+}
+
+export interface ShippingZoneRequest {
+  name: string;
+  countries: string[];
+  isActive?: boolean;
+}
+
+export interface ShippingMethodRequest {
+  zoneId: string;
+  name: string;
+  description?: string;
+  deliveryDaysMin?: number;
+  deliveryDaysMax?: number;
+  basePrice: number;
+  pricePerKg?: number;
+  freeShippingMin?: number | null;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  currency: string;
+  minOrderAmount: number | null;
+  maxUsageCount: number | null;
+  usedCount: number;
+  maxPerCustomer: number | null;
+  validFrom: string;
+  validTo: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CouponRequest {
+  code: string;
+  discountType: string;
+  discountValue: number;
+  validFrom: string;
+  validTo?: string;
+  minOrderAmount?: number;
+  maxUsageCount?: number;
+  maxPerCustomer?: number;
+}
+
+export async function getCoupons(): Promise<{ items: Coupon[]; total: number }> {
+  return adminApi.get<{ items: Coupon[]; total: number }>('/admin/coupons');
+}
+
+export async function createCoupon(data: CouponRequest): Promise<Coupon> {
+  return adminApi.post<Coupon>('/admin/coupons', data);
+}
+
+export async function updateCoupon(
+  id: string,
+  data: Partial<CouponRequest> & { isActive?: boolean },
+): Promise<Coupon> {
+  return adminApi.patch<Coupon>(`/admin/coupons/${id}`, data);
+}
+
+export async function deactivateCoupon(id: string): Promise<Coupon> {
+  return adminApi.patch<Coupon>(`/admin/coupons/${id}/deactivate`, {});
+}
+export async function getShippingZones(): Promise<ShippingZone[]> {
+  return adminApi.get<ShippingZone[]>('/admin/shipping/zones');
+}
+
+export async function createShippingZone(data: ShippingZoneRequest): Promise<ShippingZone> {
+  return adminApi.post<ShippingZone>('/admin/shipping/zones', data);
+}
+
+export async function updateShippingZone(
+  id: string,
+  data: Partial<ShippingZoneRequest>,
+): Promise<ShippingZone> {
+  return adminApi.patch<ShippingZone>(`/admin/shipping/zones/${id}`, data);
+}
+
+export async function deleteShippingZone(id: string): Promise<void> {
+  return adminApi.delete<void>(`/admin/shipping/zones/${id}`);
+}
+
+export async function createShippingMethod(data: ShippingMethodRequest): Promise<ShippingMethod> {
+  return adminApi.post<ShippingMethod>('/admin/shipping/methods', data);
+}
+
+export async function updateShippingMethod(
+  id: string,
+  data: Partial<ShippingMethodRequest>,
+): Promise<ShippingMethod> {
+  return adminApi.patch<ShippingMethod>(`/admin/shipping/methods/${id}`, data);
+}
+
+export async function deleteShippingMethod(id: string): Promise<void> {
+  return adminApi.delete<void>(`/admin/shipping/methods/${id}`);
 }

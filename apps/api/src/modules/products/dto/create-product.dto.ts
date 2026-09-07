@@ -30,6 +30,25 @@ export class CreateProductDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  material?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  style?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  collection?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  color?: string;
+  @IsOptional()
+  @IsString()
   @MaxLength(20000)
   description?: string;
 
@@ -37,6 +56,36 @@ export class CreateProductDto {
   @IsString()
   @MaxLength(500)
   shortDescription?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  deliveryInfo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  shippingInfo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  returnsInfo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(5000)
+  careInstructions?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  origin?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  productNote?: string;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

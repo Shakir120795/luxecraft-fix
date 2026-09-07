@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/AdminLayout';
-import { getCustomers, updateCustomerStatus, Customer } from '@/lib/api';
+import { getCustomers, updateCustomerStatus, deleteCustomer, Customer } from '@/lib/api';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -23,6 +23,18 @@ export default function CustomersPage() {
       console.error('Failed to load customers:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDeleteCustomer(id: string, email: string) {
+    if (!window.confirm('Delete unverified customer ' + email + '? This will allow the email to register again.')) return;
+
+    try {
+      await deleteCustomer(id);
+      setCustomers(current => current.filter(customer => customer.id !== id));
+    } catch (error) {
+      console.error('Failed to delete customer:', error);
+      alert('This customer cannot be deleted. Verified or active business accounts are protected.');
     }
   }
 
@@ -190,6 +202,14 @@ export default function CustomersPage() {
                         >
                           {customer.isActive ? 'Deactivate' : 'Activate'}
                         </button>
+                        {!customer.emailVerified && (
+                          <button
+                            onClick={() => handleDeleteCustomer(customer.id, customer.email)}
+                            className="text-red-600 hover:text-red-800 ml-2"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -213,3 +233,9 @@ export default function CustomersPage() {
     </AdminLayout>
   );
 }
+
+
+
+
+
+

@@ -5,6 +5,7 @@ import {
   Patch,
   Delete,
   Body,
+  Query,
   Param,
   UseGuards,
   Req,
@@ -34,10 +35,10 @@ export class CartController {
   }
 
   @Get('totals')
-  getCartTotals(@Req() req: RequestWithUser) {
+  getCartTotals(@Req() req: RequestWithUser, @Query('country') country?: string) {
     const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
-    return this.svc.calculateCartTotals(userId, sessionId as string);
+    return this.svc.calculateCartTotals(userId, sessionId as string, country);
   }
 
   @Post('items')

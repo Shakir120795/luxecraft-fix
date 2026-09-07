@@ -8,15 +8,16 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Cart, CartItem, Prisma } from '@prisma/client';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
+import { ShippingService } from '../shipping/shipping.service';
 
 @Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name);
   private readonly GUEST_CART_TTL_DAYS = 30;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly shipping: ShippingService) {}
 
-  // ── Get or create cart ─────────────────────────────────────────
+  // â”€â”€ Get or create cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async getOrCreateCart(
     userId?: string,
@@ -33,7 +34,7 @@ export class CartService {
         include: {
           items: {
             include: {
-              product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, status: true } },
+              product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, taxRate: true, status: true, media: { select: { id: true, url: true, altText: true, isMain: true, sortOrder: true } } } },
               variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, isAvailable: true } },
             },
           },
@@ -46,7 +47,7 @@ export class CartService {
           include: {
             items: {
               include: {
-                product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } },
+                product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true, media: { select: { id: true, url: true, altText: true, isMain: true, sortOrder: true } } } },
                 variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } },
               },
             },
@@ -63,7 +64,7 @@ export class CartService {
       include: {
         items: {
           include: {
-            product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } },
+            product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true, media: { select: { id: true, url: true, altText: true, isMain: true, sortOrder: true } } } },
             variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } },
           },
         },
@@ -79,7 +80,7 @@ export class CartService {
         include: {
           items: {
             include: {
-              product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, status: true } },
+              product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, taxRate: true, status: true, media: { select: { id: true, url: true, altText: true, isMain: true, sortOrder: true } } } },
               variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, isAvailable: true } },
             },
           },
@@ -144,7 +145,7 @@ export class CartService {
     // Inventory is therefore enforced only when a specific size/variant is selected.
   }
 
-  // ── Add to cart ────────────────────────────────────────────────
+  // â”€â”€ Add to cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async addToCart(
     dto: AddToCartDto,
@@ -272,7 +273,7 @@ export class CartService {
     });
   }
 
-  // ── Update cart item ───────────────────────────────────────────
+  // â”€â”€ Update cart item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async updateCartItem(
     itemId: string,
@@ -338,7 +339,7 @@ export class CartService {
     });
   }
 
-  // ── Remove cart item ───────────────────────────────────────────
+  // â”€â”€ Remove cart item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async removeCartItem(
     itemId: string,
@@ -357,14 +358,14 @@ export class CartService {
     await this.prisma.cartItem.delete({ where: { id: itemId } });
   }
 
-  // ── Clear cart ─────────────────────────────────────────────────
+  // â”€â”€ Clear cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async clearCart(userId?: string, sessionId?: string): Promise<void> {
     const cart = await this.getOrCreateCart(userId, sessionId);
     await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
   }
 
-  // ── Get cart ───────────────────────────────────────────────────
+  // â”€â”€ Get cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async getCart(
     userId?: string,
@@ -373,7 +374,7 @@ export class CartService {
     return this.getOrCreateCart(userId, sessionId);
   }
 
-  // ── Merge guest cart into customer cart on login ───────────────
+  // â”€â”€ Merge guest cart into customer cart on login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async mergeGuestCartIntoCustomerCart(
     userId: string,
@@ -426,26 +427,73 @@ export class CartService {
     return this.getOrCreateCart(userId);
   }
 
-  // ── Calculate cart totals ──────────────────────────────────────
+  // â”€â”€ Calculate cart totals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  async calculateCartTotals(userId?: string, sessionId?: string): Promise<{
+  async calculateCartTotals(
+    userId?: string,
+    sessionId?: string,
+    country?: string,
+  ): Promise<{
     subtotal: number;
+    shipping: number;
+    tax: number;
+    total: number;
     itemCount: number;
     currency: string;
   }> {
     const cart = await this.getOrCreateCart(userId, sessionId);
+    const items = await this.prisma.cartItem.findMany({
+      where: { cartId: cart.id },
+      include: {
+        product: { select: { weightKg: true, taxRate: true } },
+        variant: { select: { weightKg: true } },
+      },
+    });
+
 
     let subtotal = 0;
     let itemCount = 0;
+    let tax = 0;
+    let totalWeightKg = 0;
 
-    for (const item of cart.items) {
+    for (const item of items) {
       const itemPrice = Number(item.priceSnapshot);
-      subtotal += itemPrice * item.quantity;
-      itemCount += item.quantity;
+      const quantity = Number(item.quantity);
+      const lineTotal = itemPrice * quantity;
+
+      subtotal += lineTotal;
+      itemCount += quantity;
+
+      const taxRate = Number(item.product.taxRate ?? 0);
+      tax += (lineTotal * taxRate) / 100;
+
+      const itemWeight =
+        item.variant?.weightKg != null
+          ? Number(item.variant.weightKg)
+          : Number(item.product.weightKg ?? 0);
+
+      totalWeightKg += Math.max(0, itemWeight) * quantity;
+    }
+
+    let shipping = 0;
+
+    if (country && country.length === 2 && itemCount > 0) {
+      const shippingMethods = await this.shipping.calculateShippingRate({
+        country: country.toUpperCase(),
+        cartWeightKg: totalWeightKg,
+        cartTotal: subtotal,
+      });
+
+      if (shippingMethods.length > 0) {
+        shipping = Math.min(...shippingMethods.map((method) => method.calculatedRate));
+      }
     }
 
     return {
       subtotal,
+      shipping,
+      tax,
+      total: subtotal + shipping + tax,
       itemCount,
       currency: cart.currency,
     };

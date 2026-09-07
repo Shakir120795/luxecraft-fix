@@ -38,11 +38,21 @@ type FormState = {
   slug: string;
   sku: string;
   categoryId: string;
+  material: string;
+  style: string;
+  color: string;
   shortDescription: string;
+  deliveryInfo: string;
+  shippingInfo: string;
+  returnsInfo: string;
+  careInstructions: string;
+  origin: string;
+  productNote: string;
   description: string;
 
   regularPrice: string;
   salePrice: string;
+  taxRate: string;
   currency: string;
 
   stockQuantity: string;
@@ -108,11 +118,21 @@ function emptyForm(): FormState {
     slug: '',
     sku: '',
     categoryId: '',
+    material: '',
+    style: '',
+    color: '',
     shortDescription: '',
+    deliveryInfo: '',
+    shippingInfo: '',
+    returnsInfo: '',
+    careInstructions: '',
+    origin: '',
+    productNote: '',
     description: '',
 
     regularPrice: '',
     salePrice: '',
+    taxRate: '0',
     currency: 'USD',
 
     stockQuantity: '0',
@@ -236,11 +256,21 @@ export default function ProductEditPage() {
       slug: product.slug ?? '',
       sku: product.sku ?? '',
       categoryId: product.categoryId ?? '',
+      material: product.material ?? '',
+      style: product.style ?? '',
+      color: product.color ?? '',
       shortDescription: product.shortDescription ?? '',
+      deliveryInfo: product.deliveryInfo ?? '',
+      shippingInfo: product.shippingInfo ?? '',
+      returnsInfo: product.returnsInfo ?? '',
+      careInstructions: product.careInstructions ?? '',
+      origin: product.origin ?? '',
+      productNote: product.productNote ?? '',
       description: product.description ?? '',
 
       regularPrice: String(product.regularPrice ?? ''),
       salePrice: product.salePrice == null ? '' : String(product.salePrice),
+      taxRate: String(product.taxRate ?? 0),
       currency: product.currency ?? 'USD',
 
       stockQuantity: String(product.stockQuantity ?? 0),
@@ -601,8 +631,17 @@ export default function ProductEditPage() {
       slug: form.slug.trim() || undefined,
       sku: form.sku.trim() || undefined,
       categoryId: form.categoryId,
+      material: form.material.trim() || undefined,
+      style: form.style.trim() || undefined,
+      color: form.color.trim() || undefined,
       description: form.description.trim() || undefined,
       shortDescription: form.shortDescription.trim() || undefined,
+      deliveryInfo: form.deliveryInfo.trim() || undefined,
+      shippingInfo: form.shippingInfo.trim() || undefined,
+      returnsInfo: form.returnsInfo.trim() || undefined,
+      careInstructions: form.careInstructions.trim() || undefined,
+      origin: form.origin.trim() || undefined,
+      productNote: form.productNote.trim() || undefined,
 
       regularPrice,
       salePrice: positiveNumber(form.salePrice),
@@ -1024,6 +1063,24 @@ export default function ProductEditPage() {
               </div>
 
               <div>
+                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">Filter Attributes</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Material</label>
+                    <input value={form.material} onChange={(event) => updateForm('material', event.target.value)} className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]" placeholder="e.g. Wool" />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Style</label>
+                    <input value={form.style} onChange={(event) => updateForm('style', event.target.value)} className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]" placeholder="e.g. Contemporary" />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Color</label>
+                    <input value={form.color} onChange={(event) => updateForm('color', event.target.value)} className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]" placeholder="e.g. Ivory" />
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <label className="mb-2 block text-sm font-medium">
                   Short Description
                 </label>
@@ -1037,23 +1094,73 @@ export default function ProductEditPage() {
                 />
               </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Description
-                </label>
-                <textarea
-                  rows={7}
-                  value={form.description}
-                  onChange={(event) =>
-                    updateForm('description', event.target.value)
-                  }
-                  className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
-                  placeholder="Detailed product description..."
-                />
+              <div className="border-t border-[var(--color-border)] pt-5">
+                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">Product Details</h3>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Delivery Information</label>
+                    <textarea
+                      rows={4}
+                      value={form.deliveryInfo}
+                      onChange={(event) => updateForm('deliveryInfo', event.target.value)}
+                      className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                      placeholder="e.g. Made to order and delivered within 3–4 weeks."
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Shipping Information</label>
+                    <textarea
+                      rows={4}
+                      value={form.shippingInfo}
+                      onChange={(event) => updateForm('shippingInfo', event.target.value)}
+                      className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                      placeholder="Shipping method, estimated transit time and handling details."
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Returns Information</label>
+                    <textarea
+                      rows={4}
+                      value={form.returnsInfo}
+                      onChange={(event) => updateForm('returnsInfo', event.target.value)}
+                      className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                      placeholder="Return eligibility and conditions."
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Care Instructions</label>
+                    <textarea
+                      rows={4}
+                      value={form.careInstructions}
+                      onChange={(event) => updateForm('careInstructions', event.target.value)}
+                      className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                      placeholder="Cleaning, maintenance and care instructions."
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Origin</label>
+                    <input
+                      value={form.origin}
+                      onChange={(event) => updateForm('origin', event.target.value)}
+                      className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                      placeholder="e.g. Handcrafted in Jaipur, India"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">Product Note</label>
+                    <textarea
+                      rows={4}
+                      value={form.productNote}
+                      onChange={(event) => updateForm('productNote', event.target.value)}
+                      className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                      placeholder="Special notes or information to highlight to customers."
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
 
+              </div>
+           </section>
           {/* Pricing */}
           <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
             <div className="mb-6">
@@ -1199,84 +1306,6 @@ export default function ProductEditPage() {
                   </span>
                 </span>
               </label>
-            </div>
-          </section>
-
-          {/* Physical Details */}
-          <section className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-serif text-[var(--color-primary)]">
-                Physical Details
-              </h2>
-              <p className="mt-1 text-sm text-[var(--color-muted)]">
-                Optional product measurements for shipping and product details.
-              </p>
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-4">
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Weight (kg)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.001"
-                  value={form.weightKg}
-                  onChange={(event) =>
-                    updateForm('weightKg', event.target.value)
-                  }
-                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Length (cm)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.lengthCm}
-                  onChange={(event) =>
-                    updateForm('lengthCm', event.target.value)
-                  }
-                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Width (cm)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.widthCm}
-                  onChange={(event) =>
-                    updateForm('widthCm', event.target.value)
-                  }
-                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium">
-                  Height (cm)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.heightCm}
-                  onChange={(event) =>
-                    updateForm('heightCm', event.target.value)
-                  }
-                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
-                />
-              </div>
             </div>
           </section>
 
@@ -1537,7 +1566,7 @@ export default function ProductEditPage() {
                           })
                         }
                         className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
-                        placeholder="Large"
+                        placeholder="12 x 12"
                       />
                     </div>
 
@@ -1628,49 +1657,6 @@ export default function ProductEditPage() {
                       />
                     </div>
 
-                    <div>
-                      <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
-                        Weight kg
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.001"
-                        value={variant.weightKg}
-                        onChange={(event) =>
-                          updateVariant(index, {
-                            weightKg: event.target.value,
-                          })
-                        }
-                        className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
-                      />
-                    </div>
-
-                    {[
-                      ['lengthCm', 'Length cm'],
-                      ['widthCm', 'Width cm'],
-                      ['heightCm', 'Height cm'],
-                    ].map(([field, label]) => (
-                      <div key={field}>
-                        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
-                          {label}
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={
-                            variant[field as keyof VariantDraft] as string
-                          }
-                          onChange={(event) =>
-                            updateVariant(index, {
-                              [field]: event.target.value,
-                            } as Partial<VariantDraft>)
-                          }
-                          className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
-                        />
-                      </div>
-                    ))}
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-5 text-sm">
@@ -1988,3 +1974,9 @@ export default function ProductEditPage() {
     </AdminLayout>
   );
 }
+
+
+
+
+
+

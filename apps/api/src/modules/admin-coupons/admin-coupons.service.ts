@@ -32,10 +32,13 @@ export class AdminCouponsService {
   }
 
   async findAll(params: { skip?: number; take?: number }): Promise<{ items: any[]; total: number }> {
+    const skip = Number.isFinite(params.skip) && (params.skip as number) >= 0 ? (params.skip as number) : 0;
+    const take = Number.isFinite(params.take) && (params.take as number) > 0 ? (params.take as number) : 50;
+
     const [items, total] = await Promise.all([
       this.prisma.coupon.findMany({
-        skip: params.skip ?? 0,
-        take: params.take ?? 50,
+        skip,
+        take,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.coupon.count(),
