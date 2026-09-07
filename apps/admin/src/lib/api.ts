@@ -426,7 +426,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     totalRevenue: Number(data.todayRevenue ?? 0),
     totalOrders: data.todayOrders ?? 0,
     totalCustomers: data.totalCustomers ?? 0,
-    totalProducts: data.alerts?.lowStockItems ?? 0,
+    totalProducts: Number(data.totalProducts ?? 0),
     pendingOrders: 0,
     pendingCustomRequests: data.alerts?.pendingCustomRequests ?? 0,
     revenueChange: 0,
@@ -939,3 +939,4 @@ export async function updateShippingMethod(
 export async function deleteShippingMethod(id: string): Promise<void> {
   return adminApi.delete<void>(`/admin/shipping/methods/${id}`);
 }
+
