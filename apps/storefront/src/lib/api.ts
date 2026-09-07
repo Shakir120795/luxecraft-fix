@@ -636,6 +636,24 @@ export function getCurrentUser(): User | null {
   }
 }
 
+export async function getFreshCurrentUser(): Promise<User | null> {
+  try {
+    const res = await fetch(`${API_URL}/auth/me`, {
+      headers: await getAuthHeaders(),
+      cache: 'no-store',
+    });
+    if (!res.ok) return getCurrentUser();
+    const response = await res.json();
+    const user = response?.data ?? response;
+    if (user?.id) {
+      localStorage.setItem('user', JSON.stringify(user));
+      return user as User;
+    }
+    return getCurrentUser();
+  } catch {
+    return getCurrentUser();
+  }
+}
 export function isAuthenticated(): boolean {
   return !!localStorage.getItem('accessToken');
 }
@@ -1283,4 +1301,5 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
     return { success: false, message: 'Failed to clear wishlist' };
   }
 }
+
 

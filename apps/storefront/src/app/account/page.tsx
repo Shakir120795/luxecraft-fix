@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getCurrentUser, getOrders, isAuthenticated, logout, User, Order } from '@/lib/api';
+import { getFreshCurrentUser, getOrders, isAuthenticated, logout, User, Order } from '@/lib/api';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function AccountPage() {
   async function loadAccountData() {
     try {
       setLoading(true);
-      const userData = getCurrentUser();
+      const userData = await getFreshCurrentUser();
       setUser(userData);
 
       const orders = await getOrders();
@@ -251,3 +251,4 @@ function AccountNav() {
     </nav>
   );
 }
+
