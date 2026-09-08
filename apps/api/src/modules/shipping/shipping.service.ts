@@ -1,8 +1,12 @@
-import { Injectable, Logger } from '@nestjs/common';
+﻿import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ShippingMethod } from '@prisma/client';
 
-export type CalculatedShippingMethod = ShippingMethod & { calculatedRate: number };
+export type CalculatedShippingMethod = ShippingMethod & { calculatedRate: number; currency: string };
+
+const COUNTRY_CURRENCY: Record<string, string> = { IN: 'INR', US: 'USD', CA: 'CAD', GB: 'GBP', AU: 'AUD', AE: 'AED', EU: 'EUR', DE: 'EUR', FR: 'EUR', IT: 'EUR', ES: 'EUR', JP: 'JPY', SG: 'SGD', NZ: 'NZD', CH: 'CHF', CN: 'CNY' };
+
+function currencyForCountry(country: string): string { return COUNTRY_CURRENCY[country.toUpperCase()] ?? 'USD'; }
 
 @Injectable()
 export class ShippingService {
@@ -28,12 +32,12 @@ export class ShippingService {
       const weightPrice = Number(method.pricePerKg) * params.cartWeightKg;
       const totalRate = basePrice + weightPrice;
       const freeShippingMin = method.freeShippingMin ? Number(method.freeShippingMin) : null;
-      const finalRate =
-        freeShippingMin !== null && params.cartTotal >= freeShippingMin ? 0 : totalRate;
+      const finalRate = 0;
 
       return {
         ...method,
         calculatedRate: finalRate,
+        currency: currencyForCountry(params.country),
       } as CalculatedShippingMethod;
     });
   }
@@ -56,10 +60,17 @@ export class ShippingService {
   }
 
   async adminCreateZone(data: { name: string; countries: string[]; isActive?: boolean }) {
+    const countries = [...new Set(data.countries.map((country) => country.trim().toUpperCase()).filter(Boolean))];
+    if (countries.length !== 1) throw new BadRequestException('Each shipping country must have its own shipping rate.' );
+    const existingZone = await this.prisma.shippingZone.findFirst({
+      where: { countries: { has: countries[0] } },
+    });
+    if (existingZone) throw new BadRequestException(`Shipping for ${countries[0]} already exists.`);
+
     return this.prisma.shippingZone.create({
       data: {
         name: data.name.trim(),
-        countries: [...new Set(data.countries.map((country) => country.trim().toUpperCase()).filter(Boolean))],
+        countries,
         isActive: data.isActive ?? true,
       },
       include: { methods: true },
@@ -151,3 +162,8 @@ export class ShippingService {
     await this.prisma.shippingMethod.delete({ where: { id } });
   }
 }
+
+
+
+
+
