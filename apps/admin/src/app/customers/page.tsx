@@ -106,7 +106,7 @@ export default function CustomersPage() {
           </div>
         ) : filteredCustomers.length === 0 ? (
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-12 text-center">
-            <div className="text-4xl mb-4">👥</div>
+            <div className="text-4xl mb-4"></div>
             <h3 className="text-xl font-serif text-[var(--color-primary)] mb-2">
               {searchTerm || filterStatus !== 'all' ? 'No Customers Found' : 'No Customers Yet'}
             </h3>

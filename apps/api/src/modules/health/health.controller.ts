@@ -3,8 +3,8 @@ import { HealthService } from './health.service';
 
 /**
  * Health check endpoints.
- * GET /api/v1/health       — full health status
- * GET /api/v1/health/ping  — simple liveness probe
+ * GET /api/v1/health        full health status
+ * GET /api/v1/health/ping   simple liveness probe
  */
 @Controller('health')
 export class HealthController {

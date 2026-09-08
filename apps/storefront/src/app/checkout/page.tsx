@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -20,6 +20,9 @@ import {
 } from '@/lib/api';
 
 type CheckoutStep = 'customer' | 'address' | 'shipping' | 'payment' | 'review';
+
+const CURRENCY_SYMBOLS: Record<string,string> = { USD:'$', INR:'₹', CAD:'C$', GBP:'£', AUD:'A$', AED:'د.إ', EUR:'€', JPY:'¥', SGD:'S$', NZD:'NZ$', CHF:'CHF ', CNY:'¥' };
+function money(amount:number,currency:string){return (CURRENCY_SYMBOLS[currency] ?? (currency + ' ')) + amount.toFixed(2);}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -47,7 +50,7 @@ export default function CheckoutPage() {
 
   // Shipping
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
-  const [selectedShippingMethodId, setSelectedShippingMethodId] = useState<string>('');
+  const [shippingMethod, setShippingMethod] = useState<ShippingMethod | null>(null);
 
   // Payment provider state
   const [paymentProvider, setPaymentProvider] = useState('none');
@@ -162,7 +165,7 @@ export default function CheckoutPage() {
       setShippingMethods(methods);
       
       if (methods.length > 0) {
-        setSelectedShippingMethodId(methods[0].id);
+        setShippingMethod(methods[0]);
       }
     }
 
@@ -173,7 +176,7 @@ export default function CheckoutPage() {
     e.preventDefault();
     setError(null);
 
-    if (!selectedShippingMethodId) {
+    if (!shippingMethod) {
       setError('Please select a shipping method');
       return;
     }
@@ -188,7 +191,10 @@ export default function CheckoutPage() {
   }
 
   async function handlePlaceOrder() {
-    if (!cart) return;
+    if (!cart || !shippingMethod) {
+      setError('Shipping is unavailable for this address.');
+      return;
+    }
 
     setError(null);
     setSubmitting(true);
@@ -196,7 +202,7 @@ export default function CheckoutPage() {
     try {
       const result = await createOrder({
         shippingAddressId: selectedShippingAddressId || undefined,
-        shippingMethodId: selectedShippingMethodId,
+        shippingMethodId: shippingMethod.id,
         guestEmail: isGuest ? guestEmail : undefined,
         guestShippingAddress: isGuest
           ? {
@@ -253,14 +259,15 @@ export default function CheckoutPage() {
     return null;
   }
 
-  const subtotal = cart.items.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0);
-  const selectedShippingMethod = shippingMethods.find(m => m.id === selectedShippingMethodId);
-  const shippingCost = selectedShippingMethod?.rate || 0;
-  const taxAmount = 0; // TODO: Calculate tax
-  const total = subtotal + shippingCost + taxAmount;
+  const originalTotal = cart.items.reduce((sum, item) => sum + (Number(item.product.regularPrice) || Number(item.priceSnapshot) || 0) * item.quantity, 0);
+  const subtotal = cart.items.reduce((sum, item) => sum + Number(item.priceSnapshot) * item.quantity, 0);
+  const shopDiscount = Math.max(0, originalTotal - subtotal);
+  const selectedShippingMethod = shippingMethod;
+  const shippingCost = selectedShippingMethod?.rate ?? 0;
+  const total = subtotal + shippingCost;
 
   return (
-    <main className="min-h-screen bg-white px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+    <main className="min-h-screen bg-[#f8f6f2] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
       <div className="mx-auto max-w-[1200px]">
         {/* Header */}
         <div className="mb-10 text-center">
@@ -287,7 +294,7 @@ export default function CheckoutPage() {
           <div className="min-w-0">
             {/* Customer Info Step */}
             {currentStep === 'customer' && (
-              <div className="border border-black/10 bg-white p-6 sm:p-8">
+              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
                 <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Contact Information</h2>
                 <form onSubmit={handleCustomerInfoSubmit} className="space-y-5">
                   <div>
@@ -297,7 +304,7 @@ export default function CheckoutPage() {
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
                       required
-                      className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black"
+                      className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]"
                       placeholder="you@example.com"
                     />
                   </div>
@@ -310,7 +317,7 @@ export default function CheckoutPage() {
                         value={guestFirstName}
                         onChange={(e) => setGuestFirstName(e.target.value)}
                         required
-                        className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black"
+                        className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]"
                         placeholder="John"
                       />
                     </div>
@@ -321,13 +328,13 @@ export default function CheckoutPage() {
                         value={guestLastName}
                         onChange={(e) => setGuestLastName(e.target.value)}
                         required
-                        className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black"
+                        className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]"
                         placeholder="Doe"
                       />
                     </div>
                   </div>
 
-                  <button type="submit" className="w-full border-2 border-black bg-black px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:bg-luxury-charcoal">
+                  <button type="submit" className="w-full rounded-md bg-[#302b35] px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24]">
                     Continue to Address -&gt;
                   </button>
                 </form>
@@ -336,9 +343,9 @@ export default function CheckoutPage() {
 
             {/* Address Step */}
             {currentStep === 'address' && (
-              <div className="border border-black/10 bg-white p-6 sm:p-8">
+              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
                 <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Shipping Address</h2>
-                <form onSubmit={handleAddressSubmit} className="space-y-6">
+                <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-6">
                   {isGuest ? (
                     <AddressForm
                       guestMode
@@ -381,7 +388,7 @@ export default function CheckoutPage() {
                     onClick={() => setShowNewAddressForm(!showNewAddressForm)}
                     className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
                   >
-                    {showNewAddressForm ? 'ÃƒÆ’Ã‚Â¢Ãƒâ€¹Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ Cancel' : '+ Add New Address'}
+                    {showNewAddressForm ? '-- Cancel' : '+ Add New Address'}
                   </button>}
 
                   {!isGuest && showNewAddressForm && <AddressForm onSuccess={() => { loadCheckoutData(); setShowNewAddressForm(false); }} />}
@@ -399,67 +406,58 @@ export default function CheckoutPage() {
                     </label>
                   </div>}
 
-                  <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={() => setCurrentStep('customer')} className="border-2 border-black/20 bg-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-luxury-charcoal transition hover:bg-black hover:text-white">
-                      ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Ãƒâ€šÃ‚Â Back
-                    </button>
-                    <button type="submit" className="flex-1 border-2 border-black bg-black px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:bg-luxury-charcoal">
-                      Continue to Shipping -&gt;
-                    </button>
-                  </div>
                 </form>
               </div>
             )}
 
             {/* Shipping Step */}
             {currentStep === 'shipping' && (
-              <div className="border border-black/10 bg-white p-6 sm:p-8">
-                <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Shipping Method</h2>
-                <form onSubmit={handleShippingSubmit} className="space-y-6">
-                  {shippingMethods.length > 0 ? (
-                    <div className="space-y-3">
-                      {shippingMethods.map(method => (
-                        <label key={method.id} className="flex items-center justify-between p-4 border border-black/10 bg-white transition hover:border-black/40 cursor-pointer">
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="radio"
-                              name="shippingMethod"
-                              value={method.id}
-                              checked={selectedShippingMethodId === method.id}
-                              onChange={(e) => setSelectedShippingMethodId(e.target.value)}
-                            />
-                            <div>
-                              <p className="font-medium text-luxury-charcoal">{method.name}</p>
-                              {method.description && (
-                                <p className="text-sm text-luxury-brown">{method.description}</p>
-                              )}
-                              {method.estimatedDays && (
-                                <p className="text-sm text-luxury-brown/70">Estimated delivery: {method.estimatedDays} days</p>
-                              )}
-                            </div>
-                          </div>
-                          <p className="font-serif text-luxury-charcoal">${method.rate.toFixed(2)}</p>
-                        </label>
-                      ))}
+              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
+                <h2 className="mb-2 font-serif text-2xl font-normal text-luxury-charcoal">Shipping</h2>
+                <p className="mb-7 text-sm text-luxury-brown">
+                  Shipping is calculated automatically for your delivery country.
+                </p>
+
+                <form id="shipping-form" onSubmit={handleShippingSubmit} className="space-y-6">
+                  {shippingMethod ? (
+                    <div className="rounded-md border border-[#ded8d0] bg-[#faf9f7] p-5">
+                      <div className="flex items-start justify-between gap-6">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-luxury-brown/70">
+                            Shipping to {shippingMethod.name.replace(' Shipping', '')}
+                          </p>
+                          <p className="mt-2 font-medium text-luxury-charcoal">
+                            {shippingMethod.description || 'Country-based shipping'}
+                          </p>
+                          {shippingMethod.estimatedDays && (
+                            <p className="mt-1 text-sm text-luxury-brown">
+                              Estimated delivery: {shippingMethod.estimatedDays} business days
+                            </p>
+                          )}
+                        </div>
+                        <p className="font-serif text-xl text-luxury-charcoal">
+                          {shippingMethod.currency === 'INR' ? '₹' :
+                           shippingMethod.currency === 'USD' ? '$' :
+                           shippingMethod.currency === 'CAD' ? 'C$' :
+                           shippingMethod.currency === 'GBP' ? '£' :
+                           shippingMethod.currency === 'EUR' ? '€' :
+                           shippingMethod.currency === 'AUD' ? 'A$' :
+                           `${shippingMethod.currency} `}
+                          {shippingMethod.rate.toFixed(2)}
+                        </p>
+                      </div>
                     </div>
                   ) : (
-                    <p className="text-luxury-brown">No shipping methods available for your location.</p>
+                    <p className="text-luxury-brown">
+                      No shipping available for your delivery country.
+                    </p>
                   )}
 
-                  <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={() => setCurrentStep('address')} className="border-2 border-black/20 bg-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-luxury-charcoal transition hover:bg-black hover:text-white">
-                      ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â Ãƒâ€šÃ‚Â Back
-                    </button>
-                    <button type="submit" className="flex-1 border-2 border-black bg-black px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-white transition hover:bg-luxury-charcoal" disabled={shippingMethods.length === 0}>
-                      Continue to Payment -&gt;
-                    </button>
-                  </div>
                 </form>
               </div>
-            )}
-            {/* Payment Step */}
+            )}            {/* Payment Step */}
             {currentStep === 'payment' && (
-              <div className="border border-black/10 bg-white p-6 sm:p-8">
+              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
                 <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Payment</h2>
 
                 {paymentProvider === 'stripe' && paymentConfigured ? (
@@ -489,10 +487,10 @@ export default function CheckoutPage() {
                         <button
                           type="button"
                           onClick={() => setCurrentStep('shipping')}
-                          className="border-2 border-black/20 bg-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-luxury-charcoal transition hover:bg-black hover:text-white"
+                          className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white"
                           disabled={submitting}
                         >
-                          ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â  Back
+                          ' Back
                         </button>
                       </div>
                     </div>
@@ -508,9 +506,9 @@ export default function CheckoutPage() {
                       <button
                         type="button"
                         onClick={() => setCurrentStep('shipping')}
-                        className="border-2 border-black/20 bg-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-luxury-charcoal transition hover:bg-black hover:text-white"
+                        className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white"
                       >
-                        ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â  Back
+                        ' Back
                       </button>
                     </div>
                   </div>
@@ -519,8 +517,8 @@ export default function CheckoutPage() {
             )}
           </div>
           {/* Order Summary */}
-          <div className="min-w-0">
-            <div className="sticky top-24 border border-black/10 bg-[#f7f4ef] p-6">
+          <div className="sticky top-24 min-w-0">
+            <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-7 shadow-sm">
               <h2 className="mb-6 font-serif text-2xl font-normal text-luxury-charcoal">Order Summary</h2>
 
               <div className="space-y-4 mb-6 pb-6 border-b border-luxury-sand">
@@ -537,52 +535,70 @@ export default function CheckoutPage() {
                       <p className="text-sm text-luxury-charcoal line-clamp-1">{item.product.name}</p>
                       <p className="text-xs text-luxury-brown">Qty: {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-serif text-luxury-charcoal">${(item.priceSnapshot * item.quantity).toFixed(2)}</p>
+                    <p className="text-sm font-serif text-luxury-charcoal">{money(item.priceSnapshot * item.quantity, shippingMethod?.currency ?? cart.currency)}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="space-y-3 mb-6 pb-6 border-b border-luxury-sand text-sm">
-                <div className="flex justify-between text-luxury-brown">
+              <div className="space-y-3 mb-6 pb-6 border-b border-[#ded8d0] text-sm">
+                <div className="flex justify-between text-[#59535b]">
+                  <span>Item(s) total</span>
+                  <span>${originalTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[#59535b]">
+                  <span>Shop discount</span>
+                  <span className="font-medium text-green-700">-${shopDiscount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[#59535b]">
                   <span>Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-luxury-brown">
-                  <span>Shipping</span>
-                  <span>{shippingCost > 0 ? `$${shippingCost.toFixed(2)}` : 'TBD'}</span>
-                </div>
-                <div className="flex justify-between text-luxury-brown">
-                  <span>Tax</span>
-                  <span>TBD</span>
+                <div className="flex justify-between text-[#59535b]">
+                  <span>Delivery</span>
+                  <span className="font-semibold text-green-700">{shippingCost === 0 ? "FREE" : "$" + shippingCost.toFixed(2)}</span>
                 </div>
               </div>
-
               <div className="flex justify-between text-2xl font-serif text-luxury-charcoal">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span className="text-2xl font-medium text-luxury-charcoal">${total.toFixed(2)}</span>
               </div>
             </div>
+            {currentStep === "address" && (
+              <div className="mt-4 flex gap-3">
+                <button type="button" onClick={() => setCurrentStep("customer")} className="rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white">
+                  Back
+                </button>
+                <button type="submit" form="address-form" className="flex-1 rounded-md bg-[#302b35] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#211e24]">
+                  Continue to Shipping →
+                </button>
+              </div>
+            )}
+            {currentStep === "shipping" && (
+              <div className="mt-4 flex gap-3">
+                <button type="button" onClick={() => setCurrentStep("address")} className="rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white">
+                  Back
+                </button>
+                <button type="submit" form="shipping-form" disabled={!shippingMethod} className="flex-1 rounded-md bg-[#302b35] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-50">
+                  Continue to Payment →
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </main>
   );
 }
-
 function StepIndicator({ step, label, current, completed }: { step: number; label: string; current: boolean; completed: boolean }) {
   return (
-    <div className="flex flex-col items-center">
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-serif transition-colors ${
-        current ? 'bg-luxury-gold text-white' : completed ? 'bg-luxury-gold/70 text-white' : 'bg-luxury-sand text-luxury-brown'
-      }`}>
-        {completed ? 'ÃƒÆ’Ã‚Â¢Ãƒâ€¦Ã¢â‚¬Å“ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œ' : step}
+    <button type="button" aria-current={current ? "step" : undefined} className={current ? "flex min-w-[88px] flex-col items-center rounded-md border border-luxury-gold bg-luxury-gold/10 px-4 py-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-luxury-gold/30" : completed ? "flex min-w-[88px] flex-col items-center rounded-md border border-[#d9c79a] bg-[#faf7ef] px-4 py-2 transition-all hover:border-luxury-gold focus:outline-none focus:ring-2 focus:ring-luxury-gold/30" : "flex min-w-[88px] flex-col items-center rounded-md border border-[#ded8d0] bg-white px-4 py-2 transition-all hover:border-luxury-gold hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-luxury-gold/30"}>
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-serif transition-colors ${current ? "bg-luxury-gold text-white" : completed ? "bg-luxury-gold/70 text-white" : "bg-luxury-sand text-luxury-brown"}`}>
+        {completed ? "✓" : step}
       </div>
-      <span className={`text-xs mt-2 ${current ? 'text-luxury-charcoal font-medium' : 'text-luxury-brown'}`}>{label}</span>
-    </div>
+      <span className={`text-xs mt-2 ${current ? "font-semibold text-luxury-charcoal" : "text-luxury-brown"}`}>{label}</span>
+    </button>
   );
 }
-
-
 function StripePaymentForm({
   returnUrl,
   onSuccess,
@@ -711,25 +727,25 @@ function AddressForm({
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <input name="firstName" placeholder="First Name *" value={formData.firstName} onChange={handleChange} required className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
-        <input name="lastName" placeholder="Last Name *" value={formData.lastName} onChange={handleChange} required className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
+        <input name="firstName" placeholder="First Name *" value={formData.firstName} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+        <input name="lastName" placeholder="Last Name *" value={formData.lastName} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
       </div>
 
-      <input name="company" placeholder="Company (optional)" value={formData.company} onChange={handleChange} className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
-      <input name="addressLine1" placeholder="Address Line 1 *" value={formData.addressLine1} onChange={handleChange} required className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
-      <input name="addressLine2" placeholder="Address Line 2" value={formData.addressLine2} onChange={handleChange} className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
+      <input name="company" placeholder="Company (optional)" value={formData.company} onChange={handleChange} className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+      <input name="addressLine1" placeholder="Address Line 1 *" value={formData.addressLine1} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+      <input name="addressLine2" placeholder="Address Line 2" value={formData.addressLine2} onChange={handleChange} className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
 
       <div className="grid grid-cols-2 gap-3">
-        <input name="city" placeholder="City *" value={formData.city} onChange={handleChange} required className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
-        <input name="stateProvince" placeholder="State" value={formData.stateProvince} onChange={handleChange} className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
+        <input name="city" placeholder="City *" value={formData.city} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+        <input name="stateProvince" placeholder="State" value={formData.stateProvince} onChange={handleChange} className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <input name="postalCode" placeholder="Postal Code *" value={formData.postalCode} onChange={handleChange} required className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
-        <input name="country" placeholder="Country *" value={formData.country} onChange={handleChange} required className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
+        <input name="postalCode" placeholder="Postal Code *" value={formData.postalCode} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+        <input name="country" placeholder="Country *" value={formData.country} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
       </div>
 
-      <input name="phone" type="tel" placeholder="Phone *" value={formData.phone} onChange={handleChange} required className="w-full border border-black/15 bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-black" />
+      <input name="phone" type="tel" placeholder="Phone *" value={formData.phone} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
 
       <button type="submit" disabled={submitting} className="btn-luxury w-full px-6 py-3 text-sm disabled:opacity-50">
         {submitting ? 'Saving...' : guestMode ? 'Use This Address' : 'Save Address'}
@@ -737,3 +753,23 @@ function AddressForm({
     </form>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -86,7 +86,7 @@ export default function Error({
             href="/contact"
             className="text-luxury-gold hover:text-luxury-brown transition-colors underline"
           >
-            Contact Support →
+            Contact Support 
           </Link>
         </div>
       </div>

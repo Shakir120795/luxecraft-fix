@@ -61,7 +61,7 @@ export default function OrderConfirmationPage() {
           <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-4">Order Not Found</h1>
           <p className="text-luxury-brown mb-8">{error || 'The order could not be found'}</p>
           <Link href="/" className="btn-luxury px-10 py-4 inline-block">
-            Back to Home →
+            Back to Home 
           </Link>
         </div>
       </div>
@@ -74,7 +74,7 @@ export default function OrderConfirmationPage() {
         {/* Success Message */}
         <div className="text-center mb-12">
           <div className="mb-6">
-            <span className="text-7xl">✓</span>
+            <span className="text-7xl"></span>
           </div>
           <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-4">Order Confirmed</h1>
           <p className="text-luxury-brown text-lg mb-2">
@@ -185,7 +185,7 @@ export default function OrderConfirmationPage() {
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Link href="/account/orders" className="btn-luxury px-10 py-4 text-center">
-            View Order Details →
+            View Order Details 
           </Link>
           <Link href="/products" className="btn-luxury-outline px-10 py-4 text-center">
             Continue Shopping

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -9,15 +9,16 @@ import { Cart, CartItem, Prisma } from '@prisma/client';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { ShippingService } from '../shipping/shipping.service';
+import { CurrencyService } from '../currency/currency.service';
 
 @Injectable()
 export class CartService {
   private readonly logger = new Logger(CartService.name);
   private readonly GUEST_CART_TTL_DAYS = 30;
 
-  constructor(private readonly prisma: PrismaService, private readonly shipping: ShippingService) {}
+  constructor(private readonly prisma: PrismaService, private readonly shipping: ShippingService, private readonly currency: CurrencyService) {}
 
-  // â”€â”€ Get or create cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Get or create cart 
 
   async getOrCreateCart(
     userId?: string,
@@ -145,7 +146,7 @@ export class CartService {
     // Inventory is therefore enforced only when a specific size/variant is selected.
   }
 
-  // â”€â”€ Add to cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Add to cart 
 
   async addToCart(
     dto: AddToCartDto,
@@ -273,7 +274,7 @@ export class CartService {
     });
   }
 
-  // â”€â”€ Update cart item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Update cart item 
 
   async updateCartItem(
     itemId: string,
@@ -339,7 +340,7 @@ export class CartService {
     });
   }
 
-  // â”€â”€ Remove cart item â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Remove cart item 
 
   async removeCartItem(
     itemId: string,
@@ -358,23 +359,33 @@ export class CartService {
     await this.prisma.cartItem.delete({ where: { id: itemId } });
   }
 
-  // â”€â”€ Clear cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Clear cart 
 
   async clearCart(userId?: string, sessionId?: string): Promise<void> {
     const cart = await this.getOrCreateCart(userId, sessionId);
     await this.prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
   }
 
-  // â”€â”€ Get cart â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Get cart 
 
   async getCart(
     userId?: string,
     sessionId?: string,
-  ): Promise<Cart & { items: CartItem[] }> {
-    return this.getOrCreateCart(userId, sessionId);
+    country?: string,
+  ): Promise<Cart & { items: (CartItem & { displayPrice: number })[] }> {
+    const cart = await this.getOrCreateCart(userId, sessionId);
+    const customerCurrency = country ? this.currency.getCurrencyForCountry(country) : cart.currency.toUpperCase();
+    const rate = await this.currency.getRate(cart.currency.toUpperCase(), customerCurrency);
+    return {
+      ...cart,
+      items: cart.items.map((item) => ({
+        ...item,
+        displayPrice: Math.round(Number(item.priceSnapshot) * rate * 100) / 100,
+      })),
+    };
   }
 
-  // â”€â”€ Merge guest cart into customer cart on login â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Merge guest cart into customer cart on login 
 
   async mergeGuestCartIntoCustomerCart(
     userId: string,
@@ -427,8 +438,66 @@ export class CartService {
     return this.getOrCreateCart(userId);
   }
 
-  // â”€â”€ Calculate cart totals â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  //  Calculate cart totals 
 
+  async validateCoupon(code: string, subtotal: number, productIds: string[]): Promise<{
+    code: string;
+    discountType: string;
+    discountValue: number;
+    discountAmount: number;
+    subtotal: number;
+  }> {
+    const normalizedCode = code.trim().toUpperCase();
+    if (!normalizedCode) throw new BadRequestException('Coupon code is required.');
+
+    const coupon = await this.prisma.coupon.findUnique({ where: { code: normalizedCode } });
+    if (!coupon || !coupon.isActive) throw new BadRequestException('Invalid or inactive coupon code.');
+
+    const now = new Date();
+    if (coupon.validFrom > now || (coupon.validTo && coupon.validTo < now)) {
+      throw new BadRequestException('This coupon is not currently valid.');
+    }
+
+    if (coupon.maxUsageCount != null && coupon.usedCount >= coupon.maxUsageCount) {
+      throw new BadRequestException('This coupon has reached its usage limit.');
+    }
+
+    const orderSubtotal = Math.max(0, Number(subtotal) || 0);
+    if (coupon.minOrderAmount != null && orderSubtotal < Number(coupon.minOrderAmount)) {
+      throw new BadRequestException(`Minimum order amount for this coupon is $${Number(coupon.minOrderAmount).toFixed(2)}.`);
+    }
+
+    const allowedProducts = Array.isArray(coupon.applicableProducts) ? coupon.applicableProducts : [];
+    const allowedCategories = Array.isArray(coupon.applicableCategories) ? coupon.applicableCategories : [];
+
+    if (allowedProducts.length > 0 || allowedCategories.length > 0) {
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: productIds }, deletedAt: null },
+        select: { id: true, categoryId: true },
+      });
+
+      const matchesProduct = allowedProducts.some((id) => products.some((product) => product.id === id));
+      const matchesCategory = allowedCategories.some((id) => products.some((product) => product.categoryId === id));
+
+      if (!matchesProduct && !matchesCategory) {
+        throw new BadRequestException('This coupon does not apply to the items in your cart.');
+      }
+    }
+
+    let discountAmount = String(coupon.discountType).toUpperCase() === 'FIXED'
+      ? Number(coupon.discountValue)
+      : (orderSubtotal * Number(coupon.discountValue)) / 100;
+
+    discountAmount = Math.min(Math.max(0, discountAmount), orderSubtotal);
+
+    return {
+      code: coupon.code,
+      discountType: coupon.discountType,
+      discountValue: Number(coupon.discountValue),
+      discountAmount: Number(discountAmount.toFixed(2)),
+      subtotal: orderSubtotal,
+    };
+  }
   async calculateCartTotals(
     userId?: string,
     sessionId?: string,
@@ -450,6 +519,10 @@ export class CartService {
       },
     });
 
+    const baseCurrency = cart.currency.toUpperCase();
+    const customerCurrency = country
+      ? this.currency.getCurrencyForCountry(country)
+      : baseCurrency;
 
     let subtotal = 0;
     let itemCount = 0;
@@ -475,6 +548,10 @@ export class CartService {
       totalWeightKg += Math.max(0, itemWeight) * quantity;
     }
 
+    const rate = await this.currency.getRate(baseCurrency, customerCurrency);
+    subtotal = Math.round(subtotal * rate * 100) / 100;
+    tax = Math.round(tax * rate * 100) / 100;
+
     let shipping = 0;
 
     if (country && country.length === 2 && itemCount > 0) {
@@ -493,9 +570,15 @@ export class CartService {
       subtotal,
       shipping,
       tax,
-      total: subtotal + shipping + tax,
+      total: Math.round((subtotal + shipping + tax) * 100) / 100,
       itemCount,
-      currency: cart.currency,
+      currency: customerCurrency,
     };
   }
+
 }
+
+
+
+
+

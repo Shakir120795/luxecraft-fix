@@ -257,7 +257,7 @@ export default function CustomDesignPage() {
             </div>
 
             <div className="border border-luxury-gold/30 bg-luxury-gold/5 p-6">
-              <h3 className="font-serif text-lg text-luxury-charcoal mb-3">📎 Reference Files</h3>
+              <h3 className="font-serif text-lg text-luxury-charcoal mb-3"> Reference Files</h3>
               <p className="text-sm text-luxury-brown mb-4">
                 After submitting, you'll be able to upload reference images and files in the conversation thread.
               </p>
@@ -268,7 +268,7 @@ export default function CustomDesignPage() {
               disabled={submitting}
               className="btn-luxury w-full px-10 py-5 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Submitting Request...' : 'Submit Design Request →'}
+              {submitting ? 'Submitting Request...' : 'Submit Design Request '}
             </button>
 
             <p className="text-xs text-luxury-brown/70 text-center">
@@ -285,7 +285,7 @@ export default function CustomDesignPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             <div className="text-center">
-              <div className="text-5xl mb-4">🎨</div>
+              <div className="text-5xl mb-4"></div>
               <h3 className="text-xl font-serif text-luxury-charcoal mb-3">Master Craftsmanship</h3>
               <p className="text-luxury-brown">
                 Decades of artisan experience in every piece
@@ -293,7 +293,7 @@ export default function CustomDesignPage() {
             </div>
 
             <div className="text-center">
-              <div className="text-5xl mb-4">✓</div>
+              <div className="text-5xl mb-4"></div>
               <h3 className="text-xl font-serif text-luxury-charcoal mb-3">No Commitment Quote</h3>
               <p className="text-luxury-brown">
                 Free consultation and transparent pricing
@@ -301,7 +301,7 @@ export default function CustomDesignPage() {
             </div>
 
             <div className="text-center">
-              <div className="text-5xl mb-4">🌍</div>
+              <div className="text-5xl mb-4"></div>
               <h3 className="text-xl font-serif text-luxury-charcoal mb-3">Global Delivery</h3>
               <p className="text-luxury-brown">
                 White-glove shipping to your door anywhere

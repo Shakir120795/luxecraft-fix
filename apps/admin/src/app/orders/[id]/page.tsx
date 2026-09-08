@@ -77,7 +77,7 @@ export default function OrderDetailPage() {
             onClick={() => router.push('/orders')}
             className="text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
           >
-            ← Back to Orders
+             Back to Orders
           </button>
         </div>
       </AdminLayout>
@@ -94,7 +94,7 @@ export default function OrderDetailPage() {
               onClick={() => router.push('/orders')}
               className="text-[var(--color-muted)] hover:text-[var(--color-accent)] mb-2 text-sm"
             >
-              ← Back to Orders
+               Back to Orders
             </button>
             <h1 className="text-3xl font-serif text-[var(--color-primary)]">
               Order #{order.orderNumber}
@@ -135,7 +135,7 @@ export default function OrderDetailPage() {
                         />
                       ) : (
                         <div className="w-20 h-20 bg-[var(--color-border)] flex items-center justify-center">
-                          📦
+                          
                         </div>
                       )}
                       <div className="flex-1">
@@ -146,7 +146,7 @@ export default function OrderDetailPage() {
                           SKU: {item.product?.sku || 'N/A'}
                         </div>
                         <div className="text-sm text-[var(--color-muted)] mt-1">
-                          Quantity: {item.quantity} × ${Number(item.price).toFixed(2)}
+                          Quantity: {item.quantity}  ${Number(item.price).toFixed(2)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -210,11 +210,11 @@ export default function OrderDetailPage() {
               <div className="mt-4 text-sm text-[var(--color-muted)]">
                 <p><strong>Status Guide:</strong></p>
                 <ul className="mt-2 space-y-1 ml-4">
-                  <li>• <strong>PENDING</strong> - Order received, awaiting processing</li>
-                  <li>• <strong>PROCESSING</strong> - Order is being prepared</li>
-                  <li>• <strong>SHIPPED</strong> - Order has been shipped to customer</li>
-                  <li>• <strong>DELIVERED</strong> - Order received by customer</li>
-                  <li>• <strong>CANCELLED</strong> - Order cancelled</li>
+                  <li> <strong>PENDING</strong> - Order received, awaiting processing</li>
+                  <li> <strong>PROCESSING</strong> - Order is being prepared</li>
+                  <li> <strong>SHIPPED</strong> - Order has been shipped to customer</li>
+                  <li> <strong>DELIVERED</strong> - Order received by customer</li>
+                  <li> <strong>CANCELLED</strong> - Order cancelled</li>
                 </ul>
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function OrderDetailPage() {
                     onClick={() => router.push(`/customers/${order.userId}`)}
                     className="text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
                   >
-                    View Customer Profile →
+                    View Customer Profile 
                   </button>
                 </div>
               ) : (

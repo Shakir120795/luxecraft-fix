@@ -212,7 +212,7 @@ export default function ReturnsPage() {
                 <li>Once your refund is processed, place a new order</li>
               </ol>
               <p className="mt-4">
-                For size or color variations within the same product line, contact us—we may be 
+                For size or color variations within the same product line, contact uswe may be 
                 able to arrange a direct exchange.
               </p>
             </div>
@@ -325,7 +325,7 @@ export default function ReturnsPage() {
           </p>
           <div className="text-center">
             <Link href="/terms" className="text-luxury-gold underline hover:text-luxury-brown">
-              Read Full Warranty Terms →
+              Read Full Warranty Terms 
             </Link>
           </div>
         </div>
@@ -353,16 +353,16 @@ export default function ReturnsPage() {
           <h3 className="text-2xl font-serif text-luxury-charcoal mb-6">Related Policies</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <Link href="/shipping" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Shipping Information
+               Shipping Information
             </Link>
             <Link href="/terms" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Terms & Conditions
+               Terms & Conditions
             </Link>
             <Link href="/privacy" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Privacy Policy
+               Privacy Policy
             </Link>
             <Link href="/account/orders" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → View Your Orders
+               View Your Orders
             </Link>
           </div>
         </div>

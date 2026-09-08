@@ -174,7 +174,7 @@ export default function FAQPage() {
                   </h3>
                 </div>
                 <div className="text-2xl text-luxury-gold">
-                  {openIndex === index ? '−' : '+'}
+                  {openIndex === index ? '' : '+'}
                 </div>
               </button>
               

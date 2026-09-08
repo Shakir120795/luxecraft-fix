@@ -314,16 +314,16 @@ export default function PrivacyPage() {
           <h3 className="text-2xl font-serif text-luxury-charcoal mb-6">Related Policies</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <Link href="/terms" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Terms & Conditions
+               Terms & Conditions
             </Link>
             <Link href="/shipping" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Shipping Policy
+               Shipping Policy
             </Link>
             <Link href="/returns" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Returns Policy
+               Returns Policy
             </Link>
             <Link href="/contact" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Contact Us
+               Contact Us
             </Link>
           </div>
         </div>

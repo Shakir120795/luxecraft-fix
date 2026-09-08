@@ -52,7 +52,7 @@ export class AuthService {
     _meta: { ipAddress?: string; userAgent?: string },
   ): Promise<{ user: Omit<User, 'passwordHash'>; message: string }> {
     const user = await this.users.create(dto);
-    // Send OTP (non-blocking — in production this dispatches a BullMQ email job)
+    // Send OTP (non-blocking  in production this dispatches a BullMQ email job)
     const _code = await this.otp.generate(
       user.email,
       OtpPurpose.EMAIL_VERIFICATION,
@@ -170,7 +170,7 @@ export class AuthService {
 
   async resendVerification(email: string): Promise<void> {
     const user = await this.users.findByEmail(email);
-    if (!user || user.emailVerified) return; // silent — no enumeration
+    if (!user || user.emailVerified) return; // silent  no enumeration
     const _code = await this.otp.generate(
       user.email,
       OtpPurpose.EMAIL_VERIFICATION,
@@ -188,7 +188,7 @@ export class AuthService {
     if (token) {
       await this.email.sendPasswordResetEmail(email, token);
     }
-    // Always return success — no email enumeration
+    // Always return success  no email enumeration
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {

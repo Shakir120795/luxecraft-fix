@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
@@ -56,7 +56,7 @@ function ResetPasswordForm() {
         <div className="w-full max-w-md">
           <div className="text-center mb-10">
             <div className="mb-6">
-              <span className="text-6xl">✓</span>
+              <span className="text-6xl"></span>
             </div>
             <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-3">Password Reset</h1>
             <p className="text-luxury-brown">
@@ -72,7 +72,7 @@ function ResetPasswordForm() {
               href="/auth/login"
               className="btn-luxury px-8 py-4 inline-block"
             >
-              Go to Login →
+              Go to Login 
             </Link>
           </div>
         </div>
@@ -111,7 +111,7 @@ function ResetPasswordForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="input-luxury"
-                placeholder="••••••••"
+                placeholder=""
                 autoComplete="new-password"
               />
               <p className="text-xs text-luxury-brown/70 mt-1">Minimum 8 characters</p>
@@ -128,7 +128,7 @@ function ResetPasswordForm() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
                 className="input-luxury"
-                placeholder="••••••••"
+                placeholder=""
                 autoComplete="new-password"
               />
             </div>
@@ -138,7 +138,7 @@ function ResetPasswordForm() {
               disabled={loading}
               className="btn-luxury w-full px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Resetting...' : 'Reset Password →'}
+              {loading ? 'Resetting...' : 'Reset Password '}
             </button>
           </form>
 
@@ -158,7 +158,7 @@ function ResetPasswordForm() {
             href="/"
             className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
           >
-            ← Back to Home
+             Back to Home
           </Link>
         </div>
       </div>

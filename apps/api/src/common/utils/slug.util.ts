@@ -2,7 +2,7 @@ import slugify from 'slugify';
 
 /**
  * Generate a URL-safe slug from any string.
- * e.g. "Hand Knotted Rugs" → "hand-knotted-rugs"
+ * e.g. "Hand Knotted Rugs"  "hand-knotted-rugs"
  */
 export function generateSlug(input: string): string {
   return slugify(input, {

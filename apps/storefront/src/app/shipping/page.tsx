@@ -144,7 +144,7 @@ export default function ShippingPage() {
               </ul>
               <p className="mt-6">
                 <Link href="/account/orders" className="text-luxury-gold underline hover:text-luxury-brown">
-                  Track your orders →
+                  Track your orders 
                 </Link>
               </p>
             </div>
@@ -278,16 +278,16 @@ export default function ShippingPage() {
           <h3 className="text-2xl font-serif text-luxury-charcoal mb-6">Related Policies</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <Link href="/returns" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Returns Policy
+               Returns Policy
             </Link>
             <Link href="/terms" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Terms & Conditions
+               Terms & Conditions
             </Link>
             <Link href="/privacy" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Privacy Policy
+               Privacy Policy
             </Link>
             <Link href="/account/orders" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-              → Track Orders
+               Track Orders
             </Link>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import {
+﻿import {
   BadRequestException,
   Body,
   Controller,
@@ -39,7 +39,7 @@ export class ShippingController {
       description: method.description,
       estimatedDays: method.deliveryDaysMax ?? method.deliveryDaysMin ?? null,
       rate: method.calculatedRate,
-      currency: 'USD',
+      currency: method.currency,
     }));
   }
 
@@ -60,7 +60,7 @@ export class ShippingController {
     const method = methods.find((candidate) => candidate.id === body.shippingMethodId);
     if (!method) throw new BadRequestException('Shipping method is unavailable for this address.');
 
-    return { rate: method.calculatedRate, currency: 'USD' };
+    return { rate: method.calculatedRate, currency: method.currency };
   }
 
   private positiveNumber(value: string | number | undefined, field: string, fallback: number): number {

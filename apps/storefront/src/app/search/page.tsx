@@ -84,12 +84,12 @@ function SearchContent() {
       <div className="min-h-screen bg-luxury-cream flex items-center justify-center py-16 px-4">
         <div className="w-full max-w-md text-center">
           <div className="mb-8">
-            <span className="text-7xl">🔍</span>
+            <span className="text-7xl"></span>
           </div>
           <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-4">Search LuxeCraft</h1>
           <p className="text-luxury-brown mb-8">Enter a search term to find products</p>
           <Link href="/products" className="btn-luxury px-10 py-4 inline-block">
-            Browse All Products →
+            Browse All Products 
           </Link>
         </div>
       </div>
@@ -225,7 +225,7 @@ function SearchContent() {
         ) : (
           <div className="text-center py-20 border border-luxury-sand bg-luxury-beige">
             <div className="mb-8">
-              <span className="text-7xl">🔍</span>
+              <span className="text-7xl"></span>
             </div>
             <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">
               No Results Found
@@ -236,7 +236,7 @@ function SearchContent() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/products" className="btn-luxury px-8 py-3 inline-block">
-                Browse All Products →
+                Browse All Products 
               </Link>
               <Link href="/" className="btn-luxury-outline px-8 py-3 inline-block">
                 Back to Home
@@ -250,10 +250,10 @@ function SearchContent() {
           <div className="mt-12 border border-luxury-sand bg-luxury-beige p-8">
             <h3 className="font-serif text-xl text-luxury-charcoal mb-4">Search Tips</h3>
             <ul className="space-y-2 text-luxury-brown">
-              <li>• Check your spelling</li>
-              <li>• Try more general keywords</li>
-              <li>• Try different keywords</li>
-              <li>• Browse by category instead</li>
+              <li> Check your spelling</li>
+              <li> Try more general keywords</li>
+              <li> Try different keywords</li>
+              <li> Browse by category instead</li>
             </ul>
           </div>
         )}

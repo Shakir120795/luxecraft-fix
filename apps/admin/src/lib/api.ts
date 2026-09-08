@@ -1,4 +1,4 @@
-/**
+﻿/**
  * LuxeCraft Admin API client foundation.
  * Admin uses a separate auth boundary (Phase 2).
  */
@@ -80,6 +80,7 @@ export interface ProductVariant {
   name: string;
   sku: string | null;
   sortOrder: number;
+    currency?: string;
   regularPrice: number | null;
   salePrice: number | null;
   weightKg: number | null;
@@ -831,6 +832,7 @@ export interface ShippingMethod {
   freeShippingMin?: number | null;
   isActive: boolean;
   sortOrder: number;
+  currency?: string;
 }
 
 export interface ShippingZone {
@@ -940,3 +942,13 @@ export async function deleteShippingMethod(id: string): Promise<void> {
   return adminApi.delete<void>(`/admin/shipping/methods/${id}`);
 }
 
+
+
+
+export async function getDefaultCurrency(): Promise<string> {
+  return adminApi.get<string>('/admin/settings/currency');
+}
+
+export async function updateDefaultCurrency(currency: string): Promise<string> {
+  return adminApi.put<string>('/admin/settings/currency', { currency });
+}

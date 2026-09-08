@@ -93,7 +93,7 @@ export default function OrdersPage() {
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-12 text-center">
-            <div className="text-4xl mb-4">🛒</div>
+            <div className="text-4xl mb-4"></div>
             <h3 className="text-xl font-serif text-[var(--color-primary)] mb-2">
               {searchTerm || filterStatus !== 'all' ? 'No Orders Found' : 'No Orders Yet'}
             </h3>
@@ -179,7 +179,7 @@ export default function OrdersPage() {
                           href={`/orders/${order.id}`}
                           className="text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
                         >
-                          View Details →
+                          View Details 
                         </Link>
                       </td>
                     </tr>

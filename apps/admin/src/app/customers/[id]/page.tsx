@@ -70,7 +70,7 @@ export default function CustomerDetailPage() {
             onClick={() => router.push('/customers')}
             className="text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
           >
-            ← Back to Customers
+             Back to Customers
           </button>
         </div>
       </AdminLayout>
@@ -89,7 +89,7 @@ export default function CustomerDetailPage() {
               onClick={() => router.push('/customers')}
               className="text-[var(--color-muted)] hover:text-[var(--color-accent)] mb-2 text-sm"
             >
-              ← Back to Customers
+               Back to Customers
             </button>
             <h1 className="text-3xl font-serif text-[var(--color-primary)]">
               {customer.firstName} {customer.lastName}
@@ -152,7 +152,7 @@ export default function CustomerDetailPage() {
                     href="/orders"
                     className="text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
                   >
-                    View All Orders →
+                    View All Orders 
                   </Link>
                 )}
               </div>
@@ -253,7 +253,7 @@ export default function CustomerDetailPage() {
                 <div>
                   <div className="text-[var(--color-muted)]">Status</div>
                   <div className="font-medium text-[var(--color-text)]">
-                    {customer.isActive ? '✓ Active' : '✗ Inactive'}
+                    {customer.isActive ? ' Active' : ' Inactive'}
                   </div>
                 </div>
               </div>

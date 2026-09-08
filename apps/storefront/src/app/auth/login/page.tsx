@@ -75,7 +75,7 @@ function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="input-luxury"
-                placeholder="••••••••"
+                placeholder=""
                 autoComplete="current-password"
               />
             </div>
@@ -102,7 +102,7 @@ function LoginForm() {
               disabled={loading}
               className="btn-luxury w-full px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Signing in...' : 'Sign In →'}
+              {loading ? 'Signing in...' : 'Sign In '}
             </button>
           </form>
 
@@ -136,7 +136,7 @@ function LoginForm() {
               href="/checkout?guest=true"
               className="text-sm text-luxury-gold hover:text-luxury-darkGold transition-colors underline"
             >
-              Continue as Guest →
+              Continue as Guest 
             </Link>
           </div>
         )}
@@ -147,7 +147,7 @@ function LoginForm() {
             href="/"
             className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
           >
-            ← Back to Home
+             Back to Home
           </Link>
         </div>
       </div>

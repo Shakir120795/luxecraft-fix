@@ -5,7 +5,7 @@ import Redis from 'ioredis';
 /**
  * RedisService manages the ioredis client.
  * Use this for direct cache operations.
- * BullMQ uses its own connection — see QueueModule.
+ * BullMQ uses its own connection  see QueueModule.
  */
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {

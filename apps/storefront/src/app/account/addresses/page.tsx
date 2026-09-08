@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -61,7 +61,7 @@ export default function AddressesPage() {
           <div className="lg:col-span-1">
             <div className="border border-luxury-sand bg-luxury-beige p-6 sticky top-24">
               <Link href="/account" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline mb-6 block">
-                ← Back to Account
+                 Back to Account
               </Link>
               
               <button
@@ -139,7 +139,7 @@ export default function AddressesPage() {
             ) : (
               <div className="border border-luxury-sand bg-luxury-beige p-12 text-center">
                 <div className="mb-6">
-                  <span className="text-7xl">📍</span>
+                  <span className="text-7xl"></span>
                 </div>
                 <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">
                   No Addresses Saved
@@ -151,7 +151,7 @@ export default function AddressesPage() {
                   onClick={() => setShowForm(true)}
                   className="btn-luxury px-8 py-3"
                 >
-                  Add Address →
+                  Add Address 
                 </button>
               </div>
             )}
@@ -255,7 +255,7 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
         </div>
         <div>
           <label className="block text-sm font-serif text-luxury-charcoal mb-2">Country *</label>
-          <input name="country" value={formData.country} onChange={handleChange} required className="input-luxury" />
+          <select name="country" value={formData.country} onChange={handleChange} required className="input-luxury"><option value="IN">India</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option></select>
         </div>
       </div>
 
@@ -293,3 +293,4 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
     </form>
   );
 }
+

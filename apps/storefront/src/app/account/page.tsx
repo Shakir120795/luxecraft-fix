@@ -82,14 +82,14 @@ export default function AccountPage() {
             {!user.emailVerified && (
               <div className="border border-luxury-gold/50 bg-luxury-gold/10 p-6">
                 <div className="flex items-start gap-4">
-                  <span className="text-2xl">⚠️</span>
+                  <span className="text-2xl"></span>
                   <div className="flex-1">
                     <h3 className="font-serif text-lg text-luxury-charcoal mb-2">Email Not Verified</h3>
                     <p className="text-luxury-brown mb-4">
                       Please verify your email address to access all features.
                     </p>
                     <Link href="/auth/verify-email" className="text-luxury-gold hover:text-luxury-darkGold underline">
-                      Verify Email →
+                      Verify Email 
                     </Link>
                   </div>
                 </div>
@@ -105,13 +105,13 @@ export default function AccountPage() {
               </Link>
 
               <Link href="/account/addresses" className="border border-luxury-sand bg-luxury-beige p-6 hover:border-luxury-gold transition-colors">
-                <div className="text-4xl font-serif text-luxury-gold mb-3">📍</div>
+                <div className="text-4xl font-serif text-luxury-gold mb-3"></div>
                 <h3 className="font-serif text-lg text-luxury-charcoal mb-2">Addresses</h3>
                 <p className="text-sm text-luxury-brown">Manage shipping addresses</p>
               </Link>
 
               <Link href="/account/settings" className="border border-luxury-sand bg-luxury-beige p-6 hover:border-luxury-gold transition-colors">
-                <div className="text-4xl font-serif text-luxury-gold mb-3">⚙️</div>
+                <div className="text-4xl font-serif text-luxury-gold mb-3"></div>
                 <h3 className="font-serif text-lg text-luxury-charcoal mb-2">Settings</h3>
                 <p className="text-sm text-luxury-brown">Update your profile</p>
               </Link>
@@ -122,7 +122,7 @@ export default function AccountPage() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-serif text-luxury-charcoal">Recent Orders</h2>
                 <Link href="/account/orders" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline">
-                  View All →
+                  View All 
                 </Link>
               </div>
 
@@ -161,7 +161,7 @@ export default function AccountPage() {
                 <div className="text-center py-12">
                   <p className="text-luxury-brown mb-6">You haven't placed any orders yet</p>
                   <Link href="/products" className="btn-luxury px-8 py-3 inline-block">
-                    Start Shopping →
+                    Start Shopping 
                   </Link>
                 </div>
               )}
@@ -172,17 +172,17 @@ export default function AccountPage() {
               <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link href="/wishlist" className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-gold transition-colors text-center">
-                  <span className="text-2xl block mb-2">♡</span>
+                  <span className="text-2xl block mb-2"></span>
                   <span className="text-sm text-luxury-brown">View Wishlist</span>
                 </Link>
                 
                 <Link href="/custom-design" className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-gold transition-colors text-center">
-                  <span className="text-2xl block mb-2">✏️</span>
+                  <span className="text-2xl block mb-2"></span>
                   <span className="text-sm text-luxury-brown">Custom Design</span>
                 </Link>
                 
                 <Link href="/account/addresses" className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-gold transition-colors text-center">
-                  <span className="text-2xl block mb-2">📍</span>
+                  <span className="text-2xl block mb-2"></span>
                   <span className="text-sm text-luxury-brown">Add Address</span>
                 </Link>
                 
@@ -190,7 +190,7 @@ export default function AccountPage() {
                   onClick={handleLogout}
                   className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-terracotta transition-colors text-center"
                 >
-                  <span className="text-2xl block mb-2">🚪</span>
+                  <span className="text-2xl block mb-2"></span>
                   <span className="text-sm text-luxury-brown">Logout</span>
                 </button>
               </div>

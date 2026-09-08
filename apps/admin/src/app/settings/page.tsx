@@ -10,6 +10,8 @@ import {
   Admin,
   Product,
   HeroSection,
+  getDefaultCurrency,
+  updateDefaultCurrency,
 } from '@/lib/api';
 
 export default function SettingsPage() {
@@ -19,6 +21,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [savingHero, setSavingHero] = useState(false);
   const [heroMessage, setHeroMessage] = useState('');
+  const [defaultCurrency, setDefaultCurrency] = useState('USD');
+  const [savingCurrency, setSavingCurrency] = useState(false);
+  const [currencyMessage, setCurrencyMessage] = useState('');
   const [form, setForm] = useState({
     productId: '',
     imageUrl: '',
@@ -41,13 +46,15 @@ export default function SettingsPage() {
     try {
       setLoading(true);
 
-      const [profile, productList, heroData] = await Promise.all([
+      const [profile, productList, heroData, currencyData] = await Promise.all([
         getAdminProfile(),
         getProducts(),
         getHero(),
+        getDefaultCurrency(),
       ]);
 
       setAdmin(profile);
+      setDefaultCurrency(currencyData);
       setProducts(productList);
 
       if (heroData) {
@@ -121,6 +128,21 @@ export default function SettingsPage() {
     }
   }
 
+  async function saveCurrency() {
+    try {
+      setSavingCurrency(true);
+      setCurrencyMessage('');
+      const saved = await updateDefaultCurrency(defaultCurrency);
+      setDefaultCurrency(saved);
+      setCurrencyMessage(`Default currency saved as ${saved}.`);
+    } catch (error) {
+      console.error('Failed to save currency:', error);
+      setCurrencyMessage('Failed to save default currency.');
+    } finally {
+      setSavingCurrency(false);
+    }
+  }
+
   const selectedProduct = products.find(
     (product) => product.id === form.productId
   );
@@ -149,6 +171,60 @@ export default function SettingsPage() {
           </p>
         </div>
 
+        {/* STORE CURRENCY */}
+        <div className="border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="border-b border-[var(--color-border)] px-6 py-5">
+            <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Store Preferences
+            </p>
+            <h2 className="mt-1 text-2xl font-serif text-[var(--color-primary)]">
+              Default Currency
+            </h2>
+            <p className="mt-1 text-sm text-[var(--color-muted)]">
+              This is the base currency used for LuxeCraft product pricing.
+              Customer prices will be converted to their local currency.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-end">
+            <div className="max-w-sm flex-1">
+              <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                Base Currency
+              </label>
+              <select
+                value={defaultCurrency}
+                onChange={(e) => setDefaultCurrency(e.target.value)}
+                className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+              >
+                <option value="USD">USD ï¿½ US Dollar</option>
+                <option value="INR">INR ï¿½ Indian Rupee</option>
+                <option value="EUR">EUR ï¿½ Euro</option>
+                <option value="GBP">GBP ï¿½ British Pound</option>
+                <option value="CAD">CAD ï¿½ Canadian Dollar</option>
+                <option value="AUD">AUD ï¿½ Australian Dollar</option>
+                <option value="AED">AED ï¿½ UAE Dirham</option>
+                <option value="JPY">JPY ï¿½ Japanese Yen</option>
+                <option value="SGD">SGD ï¿½ Singapore Dollar</option>
+                <option value="CHF">CHF ï¿½ Swiss Franc</option>
+              </select>
+            </div>
+
+            <button
+              type="button"
+              onClick={saveCurrency}
+              disabled={savingCurrency}
+              className="border border-[var(--color-primary)] bg-[var(--color-primary)] px-6 py-3 text-xs uppercase tracking-[0.15em] text-white disabled:opacity-50"
+            >
+              {savingCurrency ? 'Saving...' : 'Save Currency'}
+            </button>
+
+            {currencyMessage && (
+              <p className="text-sm text-[var(--color-muted)]">
+                {currencyMessage}
+              </p>
+            )}
+          </div>
+        </div>
         {/* HERO MANAGEMENT */}
         <div className="border border-[var(--color-border)] bg-[var(--color-surface)]">
           <div className="border-b border-[var(--color-border)] px-6 py-5">
@@ -510,9 +586,9 @@ export default function SettingsPage() {
                   </div>
                   <div className="text-[var(--color-text)]">
                     {admin.isActive ? (
-                      <span className="text-green-600">✓ Active</span>
+                      <span className="text-green-600"> Active</span>
                     ) : (
-                      <span className="text-red-600">✗ Inactive</span>
+                      <span className="text-red-600"> Inactive</span>
                     )}
                   </div>
                 </div>
@@ -555,7 +631,7 @@ export default function SettingsPage() {
             </div>
             <div className="flex justify-between py-2">
               <span className="text-[var(--color-muted)]">API Status</span>
-              <span className="font-medium text-green-600">● Connected</span>
+              <span className="font-medium text-green-600"> Connected</span>
             </div>
           </div>
         </div>
@@ -576,13 +652,13 @@ export default function SettingsPage() {
                 href="mailto:support@luxecraft.com"
                 className="text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
               >
-                → Email Support
+                 Email Support
               </a>
               <a
                 href="#"
                 className="text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
               >
-                → Documentation
+                 Documentation
               </a>
             </div>
           </div>
@@ -591,3 +667,7 @@ export default function SettingsPage() {
     </AdminLayout>
   );
 }
+
+
+
+

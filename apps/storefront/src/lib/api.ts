@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
+﻿const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
 
 export interface Product {
   id: string;
@@ -212,6 +212,7 @@ export interface CartItem {
   variantId: string | null;
   quantity: number;
   priceSnapshot: number;
+  displayPrice?: number;
   customization: Record<string, any> | null;
   product: Product;
   variant: ProductVariant | null;
@@ -299,6 +300,37 @@ export async function getCartTotals(country?: string): Promise<CartTotals> {
   }
 }
 
+export interface CouponValidation {
+  code: string;
+  discountType: string;
+  discountValue: number;
+  discountAmount: number;
+  subtotal: number;
+}
+
+export async function validateCoupon(code: string, subtotal: number, productIds: string[]): Promise<CouponValidation> {
+  const headers = await getAuthHeaders();
+  const sessionId = getSessionId();
+
+  const res = await fetch(`${API_URL}/cart/coupon/validate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+      'X-Session-Id': sessionId,
+    },
+    body: JSON.stringify({ code, subtotal, productIds }),
+    cache: 'no-store',
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || !data.success) {
+    throw new Error(data.message || 'Unable to apply coupon.');
+  }
+
+  return data.data;
+}
 export async function addToCart(params: {
   productId: string;
   variantId?: string | null;
@@ -1301,5 +1333,7 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
     return { success: false, message: 'Failed to clear wishlist' };
   }
 }
+
+
 
 

@@ -18,7 +18,7 @@ export class InventoryService {
     private readonly audit: AuditService,
   ) {}
 
-  // ── Admin: Manual adjust ───────────────────────────────────────
+  //  Admin: Manual adjust 
 
   async adjust(dto: AdjustInventoryDto, adminId: string): Promise<InventoryLog> {
     const variant = await this.prisma.productVariant.findFirst({
@@ -75,7 +75,7 @@ export class InventoryService {
     return log;
   }
 
-  // ── Reserve & Release (for order processing) ───────────────────
+  //  Reserve & Release (for order processing) 
 
   async reserve(variantId: string, qty: number, reference: string): Promise<InventoryLog> {
     if (qty <= 0) throw new BadRequestException('Reserve quantity must be positive.');
@@ -201,7 +201,7 @@ export class InventoryService {
     return log;
   }
 
-  // ── Low-stock detection ────────────────────────────────────────
+  //  Low-stock detection 
 
   async findLowStock(): Promise<ProductVariant[]> {
     const variants = await this.prisma.productVariant.findMany({
@@ -217,7 +217,7 @@ export class InventoryService {
     return variants.filter((v) => v.lowStockAt && v.stockQty <= v.lowStockAt);
   }
 
-  // ── History ────────────────────────────────────────────────────
+  //  History 
 
   async findLogs(params: {
     productId?: string;

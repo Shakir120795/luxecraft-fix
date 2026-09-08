@@ -78,7 +78,7 @@ export default function CategoriesPage() {
           </div>
         ) : filteredCategories.length === 0 ? (
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-12 text-center">
-            <div className="text-4xl mb-4">🏷️</div>
+            <div className="text-4xl mb-4"></div>
             <h3 className="text-xl font-serif text-[var(--color-primary)] mb-2">
               {searchTerm ? 'No Categories Found' : 'No Categories Yet'}
             </h3>
@@ -112,7 +112,7 @@ export default function CategoriesPage() {
                   />
                 ) : (
                   <div className="w-full h-48 bg-[var(--color-border)] flex items-center justify-center text-4xl">
-                    🏷️
+                    
                   </div>
                 )}
 

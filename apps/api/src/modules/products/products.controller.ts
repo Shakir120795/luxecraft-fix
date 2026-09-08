@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -21,7 +21,7 @@ import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
 import { AdminUser, ProductStatus } from '@prisma/client';
 
-// ── Admin routes: /api/v1/admin/products ───────────────────────
+//  Admin routes: /api/v1/admin/products 
 
 @Controller('admin/products')
 @UseGuards(AdminJwtAuthGuard)
@@ -94,7 +94,7 @@ export class AdminProductsController {
     return this.svc.softDelete(id, admin.id);
   }
 
-  // ── Variants ─────────────────────────────────────────────────
+  //  Variants 
 
   @Post(':id/variants')
   addVariant(
@@ -123,7 +123,7 @@ export class AdminProductsController {
     return this.svc.deleteVariant(variantId, admin.id);
   }
 
-  // ── Media ────────────────────────────────────────────────────
+  //  Media 
 
   @Post(':id/media')
   addMedia(
@@ -149,7 +149,7 @@ export class AdminProductsController {
     return this.svc.deleteMedia(mediaId, admin.id);
   }
 
-  // ── Customization Options ────────────────────────────────────
+  //  Customization Options 
 
   @Post(':id/customization-options')
   addCustomizationOption(
@@ -179,7 +179,7 @@ export class AdminProductsController {
   }
 }
 
-// ── Public routes: /api/v1/products ────────────────────────────
+//  Public routes: /api/v1/products 
 
 @Controller('products')
 export class PublicProductsController {
@@ -189,14 +189,15 @@ export class PublicProductsController {
   findAll(
     @Query('categoryId') categoryId?: string,
     @Query('isFeatured') isFeatured?: string,
-    @Query('skip') skip?: number,
-    @Query('take') take?: number,
+    @Query('skip') skip?: string,
+    @Query('take') take?: string,
+    @Query('limit') limit?: string,
   ) {
     return this.svc.findAllPublic({
       categoryId,
       isFeatured: isFeatured === 'true' ? true : undefined,
-      skip,
-      take,
+      skip: skip !== undefined && skip !== '' && Number.isFinite(Number(skip)) ? Number(skip) : 0,
+      take: take !== undefined && take !== '' && Number.isFinite(Number(take)) ? Number(take) : (limit !== undefined && limit !== '' && Number.isFinite(Number(limit)) ? Number(limit) : 24),
     });
   }
 
@@ -205,3 +206,4 @@ export class PublicProductsController {
     return this.svc.findOneBySlugPublic(slug);
   }
 }
+

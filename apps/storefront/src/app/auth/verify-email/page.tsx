@@ -63,7 +63,7 @@ function VerifyEmailForm() {
         {/* Header */}
         <div className="text-center mb-10">
           <div className="mb-6">
-            <span className="text-6xl">📧</span>
+            <span className="text-6xl"></span>
           </div>
           <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-3">Verify Your Email</h1>
           <p className="text-luxury-brown">
@@ -125,7 +125,7 @@ function VerifyEmailForm() {
               disabled={loading || code.length !== 6}
               className="btn-luxury w-full px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Verifying...' : 'Verify Email →'}
+              {loading ? 'Verifying...' : 'Verify Email '}
             </button>
           </form>
 
@@ -148,7 +148,7 @@ function VerifyEmailForm() {
             href="/account"
             className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
           >
-            Skip for now (verify later) →
+            Skip for now (verify later) 
           </Link>
         </div>
 
@@ -158,7 +158,7 @@ function VerifyEmailForm() {
             href="/auth/login"
             className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
           >
-            ← Back to Login
+             Back to Login
           </Link>
         </div>
       </div>

@@ -29,10 +29,10 @@ export class TaxService {
 
     let taxAmount: number;
     if (isInclusive) {
-      // Tax already included in price — extract it
+      // Tax already included in price  extract it
       taxAmount = params.amount - params.amount / (1 + taxRate / 100);
     } else {
-      // Tax exclusive — add it
+      // Tax exclusive  add it
       taxAmount = params.amount * (taxRate / 100);
     }
 

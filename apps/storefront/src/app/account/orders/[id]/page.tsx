@@ -63,7 +63,7 @@ export default function OrderDetailPage() {
           <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-4">Order Not Found</h1>
           <p className="text-luxury-brown mb-8">{error || 'The order could not be found'}</p>
           <Link href="/account/orders" className="btn-luxury px-10 py-4 inline-block">
-            Back to Orders →
+            Back to Orders 
           </Link>
         </div>
       </div>
@@ -77,7 +77,7 @@ export default function OrderDetailPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
             <Link href="/account/orders" className="text-luxury-gold hover:text-luxury-darkGold">
-              ← Back
+               Back
             </Link>
           </div>
           <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-3">
@@ -262,7 +262,7 @@ function OrderTimeline({ status, createdAt }: { status: string; createdAt: strin
           <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
             item.completed ? 'bg-luxury-gold text-white' : 'bg-luxury-sand text-luxury-brown'
           }`}>
-            {item.completed ? '✓' : idx + 1}
+            {item.completed ? '' : idx + 1}
           </div>
           <div className="flex-1">
             <p className={`text-sm ${item.completed ? 'text-luxury-charcoal font-medium' : 'text-luxury-brown'}`}>

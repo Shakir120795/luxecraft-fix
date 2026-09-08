@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -27,7 +27,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'LuxeCraft — Worldwide Luxury Ecommerce',
+    default: 'LuxeCraft  Worldwide Luxury Ecommerce',
     template: '%s | LuxeCraft',
   },
   description:

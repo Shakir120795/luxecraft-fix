@@ -62,7 +62,7 @@ export default function CustomRequestsPage() {
             href="/account"
             className="text-luxury-gold hover:text-luxury-darkGold underline"
           >
-            ← Back to Account
+             Back to Account
           </Link>
 
           <Link
@@ -124,7 +124,7 @@ export default function CustomRequestsPage() {
 
                 <div className="flex items-center gap-6 text-sm text-luxury-brown/70">
                   {request.desiredDimensions && (
-                    <span>📐 {request.desiredDimensions}</span>
+                    <span> {request.desiredDimensions}</span>
                   )}
                   {request.quantity > 1 && (
                     <span>Qty: {request.quantity}</span>
@@ -136,7 +136,7 @@ export default function CustomRequestsPage() {
         ) : (
           <div className="border border-luxury-sand bg-luxury-beige p-16 text-center">
             <div className="mb-6">
-              <span className="text-8xl">✏️</span>
+              <span className="text-8xl"></span>
             </div>
             <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">
               No Custom Requests Yet
@@ -148,7 +148,7 @@ export default function CustomRequestsPage() {
               href="/custom-design"
               className="btn-luxury px-10 py-4 inline-block"
             >
-              Create Custom Design →
+              Create Custom Design 
             </Link>
           </div>
         )}

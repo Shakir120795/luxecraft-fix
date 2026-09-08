@@ -88,7 +88,7 @@ export default function AdminLoginPage() {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full px-4 py-3 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
-                placeholder="••••••••"
+                placeholder=""
               />
             </div>
 

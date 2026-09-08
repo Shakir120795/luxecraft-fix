@@ -59,7 +59,7 @@ export default function SettingsPage() {
           <div className="lg:col-span-1">
             <div className="border border-luxury-sand bg-luxury-beige p-6 sticky top-24">
               <Link href="/account" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline">
-                ← Back to Account
+                 Back to Account
               </Link>
             </div>
           </div>
@@ -83,7 +83,7 @@ export default function SettingsPage() {
                     <p className="text-luxury-charcoal font-medium mb-1">{user.email}</p>
                     <p className="text-sm text-luxury-brown">
                       {user.emailVerified ? (
-                        <span className="text-luxury-gold">✓ Verified</span>
+                        <span className="text-luxury-gold"> Verified</span>
                       ) : (
                         <span className="text-luxury-terracotta">Not verified</span>
                       )}
@@ -94,7 +94,7 @@ export default function SettingsPage() {
                       href={`/auth/verify-email?email=${encodeURIComponent(user.email)}`}
                       className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
                     >
-                      Verify Now →
+                      Verify Now 
                     </Link>
                   )}
                 </div>

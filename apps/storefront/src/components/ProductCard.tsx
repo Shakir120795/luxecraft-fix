@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { Product } from '@/lib/api';
 
 export function ProductCard({ product }: { product: Product }) {

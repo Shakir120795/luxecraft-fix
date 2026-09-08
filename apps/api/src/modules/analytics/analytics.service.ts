@@ -38,7 +38,7 @@ export class AnalyticsService {
       });
     } catch (err) {
       this.logger.warn(`Failed to track event: ${data.eventType}`, err);
-      // Don't throw — analytics should never break main flow
+      // Don't throw  analytics should never break main flow
     }
   }
 

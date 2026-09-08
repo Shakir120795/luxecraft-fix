@@ -53,11 +53,11 @@ export default function DashboardPage() {
           {/* Total Revenue */}
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-2xl">💰</div>
+              <div className="text-2xl"></div>
               <div className={`text-sm font-medium ${
                 (stats?.revenueChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
-                {(stats?.revenueChange ?? 0) >= 0 ? '↑' : '↓'} {Math.abs(stats?.revenueChange ?? 0)}%
+                {(stats?.revenueChange ?? 0) >= 0 ? '' : ''} {Math.abs(stats?.revenueChange ?? 0)}%
               </div>
             </div>
             <div className="text-3xl font-serif text-[var(--color-primary)] mb-1">
@@ -69,11 +69,11 @@ export default function DashboardPage() {
           {/* Total Orders */}
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-2xl">🛒</div>
+              <div className="text-2xl"></div>
               <div className={`text-sm font-medium ${
                 (stats?.ordersChange ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
-                {(stats?.ordersChange ?? 0) >= 0 ? '↑' : '↓'} {Math.abs(stats?.ordersChange ?? 0)}%
+                {(stats?.ordersChange ?? 0) >= 0 ? '' : ''} {Math.abs(stats?.ordersChange ?? 0)}%
               </div>
             </div>
             <div className="text-3xl font-serif text-[var(--color-primary)] mb-1">
@@ -85,7 +85,7 @@ export default function DashboardPage() {
           {/* Total Customers */}
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-2xl">👥</div>
+              <div className="text-2xl"></div>
               <div className="text-sm text-[var(--color-muted)]">Active</div>
             </div>
             <div className="text-3xl font-serif text-[var(--color-primary)] mb-1">
@@ -97,7 +97,7 @@ export default function DashboardPage() {
           {/* Total Products */}
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-2xl">📦</div>
+              <div className="text-2xl"></div>
               <div className="text-sm text-[var(--color-muted)]">In Stock</div>
             </div>
             <div className="text-3xl font-serif text-[var(--color-primary)] mb-1">
@@ -120,7 +120,7 @@ export default function DashboardPage() {
                 className="flex items-center justify-between p-4 border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="text-xl">📋</div>
+                  <div className="text-xl"></div>
                   <div>
                     <div className="font-medium text-[var(--color-text)]">Pending Orders</div>
                     <div className="text-sm text-[var(--color-muted)]">Require processing</div>
@@ -136,7 +136,7 @@ export default function DashboardPage() {
                 className="flex items-center justify-between p-4 border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <div className="text-xl">✨</div>
+                  <div className="text-xl"></div>
                   <div>
                     <div className="font-medium text-[var(--color-text)]">Custom Requests</div>
                     <div className="text-sm text-[var(--color-muted)]">Awaiting response</div>
@@ -159,28 +159,28 @@ export default function DashboardPage() {
                 href="/products/new"
                 className="p-4 border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-colors text-center"
               >
-                <div className="text-2xl mb-2">➕</div>
+                <div className="text-2xl mb-2"></div>
                 <div className="text-sm font-medium text-[var(--color-text)]">Add Product</div>
               </Link>
               <Link
                 href="/categories/new"
                 className="p-4 border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-colors text-center"
               >
-                <div className="text-2xl mb-2">🏷️</div>
+                <div className="text-2xl mb-2"></div>
                 <div className="text-sm font-medium text-[var(--color-text)]">Add Category</div>
               </Link>
               <Link
                 href="/orders"
                 className="p-4 border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-colors text-center"
               >
-                <div className="text-2xl mb-2">📦</div>
+                <div className="text-2xl mb-2"></div>
                 <div className="text-sm font-medium text-[var(--color-text)]">View Orders</div>
               </Link>
               <Link
                 href="/customers"
                 className="p-4 border border-[var(--color-border)] hover:border-[var(--color-accent)] transition-colors text-center"
               >
-                <div className="text-2xl mb-2">👥</div>
+                <div className="text-2xl mb-2"></div>
                 <div className="text-sm font-medium text-[var(--color-text)]">View Customers</div>
               </Link>
             </div>

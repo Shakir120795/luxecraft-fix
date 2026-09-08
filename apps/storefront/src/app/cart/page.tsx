@@ -1,9 +1,12 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCart, updateCartItem, removeCartItem, clearCart, getAddresses, getCartTotals, getShippingMethods, isAuthenticated, Cart, CartItem, CartTotals } from '@/lib/api';
+import { getCart, updateCartItem, removeCartItem, clearCart, getAddresses, getCartTotals, getShippingMethods, isAuthenticated, validateCoupon, Cart, CartItem, CartTotals } from '@/lib/api';
+
+const CURRENCY_SYMBOLS: Record<string,string> = { USD:'$', INR:'₹', CAD:'C$', GBP:'£', AUD:'A$', AED:'د.إ', EUR:'€', JPY:'¥', SGD:'S$', NZD:'NZ$', CHF:'CHF ', CNY:'¥' };
+function money(amount:number,currency:string){return (CURRENCY_SYMBOLS[currency] ?? (currency + ' ')) + amount.toFixed(2);}
 
 export default function CartPage() {
   const router = useRouter();
@@ -12,11 +15,14 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
   const [country, setCountry] = useState('');
+  const [shippingAddressLabel, setShippingAddressLabel] = useState('');
   const [totals, setTotals] = useState<CartTotals | null>(null);
   const [estimatedDelivery, setEstimatedDelivery] = useState<number | null>(null);
+  const [shippingCurrency, setShippingCurrency] = useState('USD');
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
 
   useEffect(() => {
     loadCart();
@@ -33,7 +39,14 @@ export default function CartPage() {
 
       const addresses = await getAddresses();
       const shippingAddress = addresses.find((address) => address.isDefault) || addresses.find((address) => address.type === 'SHIPPING' || address.type === 'BOTH');
-      setCountry(shippingAddress?.country?.toUpperCase() || '');
+      const addressCountry = shippingAddress?.country?.toUpperCase() || '';
+      setCountry(addressCountry);
+      if (shippingAddress) {
+        const countryName = new Intl.DisplayNames(['en'], { type: 'region' }).of(addressCountry) || addressCountry;
+        setShippingAddressLabel('To ' + countryName + ', ' + shippingAddress.postalCode);
+      } else {
+        setShippingAddressLabel('');
+      }
     } catch (err) {
       console.error('Failed to load shipping country:', err);
       setCountry('');
@@ -57,7 +70,7 @@ export default function CartPage() {
 
       try {
         const [cartTotals, methods] = await Promise.all([
-          getCartTotals(country),
+          getCartTotals(),
           getShippingMethods({ country, orderValue: subtotal }),
         ]);
 
@@ -68,6 +81,7 @@ export default function CartPage() {
         const available = methods.filter((method) => method.rate >= 0);
         const cheapest = [...available].sort((a, b) => a.rate - b.rate)[0];
         setEstimatedDelivery(cheapest?.estimatedDays ?? null);
+        setShippingCurrency(cheapest?.currency ?? 'USD');
       } catch (err) {
         if (cancelled) return;
         console.error('Failed to load shipping data:', err);
@@ -97,6 +111,36 @@ export default function CartPage() {
     }
   }
 
+  async function handleApplyCoupon() {
+    const code = couponCode.trim();
+    if (!code) {
+      setCouponMessage('Enter a coupon code.');
+      setCouponDiscount(0);
+      return;
+    }
+
+    if (!cart || cart.items.length === 0) {
+      setCouponMessage('Your cart is empty.');
+      setCouponDiscount(0);
+      return;
+    }
+
+    const cartSubtotal = cart.items.reduce(
+      (sum, item) => sum + (Number(item.priceSnapshot) || 0) * Number(item.quantity),
+      0,
+    );
+    const productIds = cart.items.map((item) => item.productId);
+
+    try {
+      const result = await validateCoupon(code, cartSubtotal, productIds);
+      setCouponDiscount(result.discountAmount);
+      setCouponCode(result.code);
+      setCouponMessage(`Coupon applied. You save $${result.discountAmount.toFixed(2)}.`);
+    } catch (err) {
+      setCouponDiscount(0);
+      setCouponMessage(err instanceof Error ? err.message : 'Unable to apply coupon.');
+    }
+  }
   async function handleUpdateQuantity(itemId: string, newQuantity: number) {
     if (newQuantity < 1) return;
 
@@ -160,10 +204,11 @@ export default function CartPage() {
     );
   }
 
-  const subtotal = cart?.items.reduce((sum, item) => sum + (Number(item.priceSnapshot) || 0) * Number(item.quantity), 0) || 0;
+  const subtotal = totals?.subtotal ?? 0;
   const itemCount = cart?.items.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
+  const originalTotal = cart?.items.reduce((sum, item) => sum + (Number(item.product.regularPrice) || 0) * Number(item.quantity), 0) || 0;
+  const shopDiscount = Math.max(0, originalTotal - subtotal);
   const shipping = totals?.shipping ?? 0;
-  const tax = totals?.tax ?? 0;
   const total = totals?.total ?? subtotal;
 
   return (
@@ -189,7 +234,7 @@ export default function CartPage() {
           // Empty Cart State
           <div className="text-center py-20">
             <div className="mb-8">
-              <span className="text-8xl text-luxury-gold/30">ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â°ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚ÂºÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢</span>
+              <span className="text-8xl text-luxury-gold/30">''-'-'--</span>
             </div>
             <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">Your cart is empty</h2>
             <p className="text-luxury-brown mb-8 text-lg">
@@ -217,6 +262,7 @@ export default function CartPage() {
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
                     isUpdating={updatingItems.has(item.id)}
+                    currency={totals?.currency ?? cart.currency}
                   />
                 ))}
               </div>
@@ -241,29 +287,31 @@ export default function CartPage() {
 
                 <div className="mb-6 space-y-4 border-b border-[#ded8d0] pb-6">
                   <div className="flex justify-between text-luxury-brown">
-                    <span>Subtotal ({itemCount} {itemCount === 1 ? 'item' : 'items'})</span>
-                    <span>${subtotal.toFixed(2)}</span>
+                    <span>Item(s) total</span>
+                    <span>{money(originalTotal, 'USD')}</span>
+                  </div>
+                  <div className="flex justify-between text-luxury-brown">
+                    <span>Shop discount</span>
+                    <span className="font-medium text-green-700">-{money(shopDiscount, 'USD')}</span>
+                  </div>
+                  <div className="flex justify-between text-luxury-brown">
+                    <span>Subtotal</span>
+                    <span>{money(subtotal, 'USD')}</span>
                   </div>
                   <div className="flex justify-between text-luxury-brown text-sm">
-                    <span>Shipping</span>
-                    <span>${shipping.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-luxury-brown text-sm">
-                    <span>Tax</span>
-                    <span>${tax.toFixed(2)}</span>
+                    <span>Delivery</span>
+                    <span className="font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded">{shipping === 0 ? 'FREE' : money(shipping, 'USD')}</span>
                   </div>
                 </div>
 
-                <div className="mb-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-sm text-[#59535b]">
-                  <div className="flex items-center justify-between gap-4">
-                    <span>Estimated delivery</span>
-                    <span className="font-medium text-[#2f2933]">{estimatedDelivery ? `${estimatedDelivery} business days` : country ? "Shipping unavailable" : "Add a shipping address at checkout"}</span>
-                  </div>
+                <div className="mb-6 border-b border-[#ded8d0] pb-5">
+                  <p className="text-xs text-[#8a8278]">{shippingAddressLabel}</p>
+                  <p className="mt-1 text-xs text-[#8a8278]">Estimated delivery: {estimatedDelivery ? estimatedDelivery + " business days" : country ? "Shipping unavailable" : "Add a shipping address at checkout"}</p>
                 </div>
 
                 <div className="mb-7 flex justify-between text-xl font-semibold text-[#2f2933]">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>{money(Math.max(0, total - couponDiscount), 'USD')}</span>
                 </div>
 
                 <button
@@ -298,7 +346,9 @@ export default function CartPage() {
                     <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><svg viewBox="0 0 48 24" className="h-6 w-11" aria-label="UPI"><path d="M4 15 9 5h5l-5 10H4Z" fill="#5b8db8"/><path d="m13 15 5-10h5l-5 10h-5Z" fill="#39a94a"/><path d="m22 15 5-10h5l-5 10h-5Z" fill="#f4a21e"/><text x="31" y="15" font-size="8" font-family="Arial" font-weight="700" fill="#2b4e8a">UPI</text></svg></span>
                   </div>
                   
-                  <div className="mt-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] p-4"><label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#59535b]">Coupon code</label><div className="flex gap-2"><input type="text" placeholder="Enter coupon code" className="min-w-0 flex-1 rounded-md border border-[#ded8d0] bg-white px-3 py-2.5 text-sm text-[#302b35] outline-none transition focus:border-[#302b35]" /><button type="button" className="rounded-md bg-[#302b35] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#211e24]">Apply</button></div><p className="mt-2 text-xs text-[#6a636b]">Coupon discounts are applied at checkout.</p></div>                    <p className="mt-2 text-xs text-[#6a636b]">Local taxes included (where applicable)</p>
+                  <div className="mt-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] p-4"><label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#59535b]">Coupon code</label><div className="flex gap-2"><input type="text" value={couponCode} onChange={(e) => { setCouponCode(e.target.value); setCouponMessage(null); }} onKeyDown={(e) => { if (e.key === "Enter") void handleApplyCoupon(); }} placeholder="Enter coupon code" className="min-w-0 flex-1 rounded-md border border-[#ded8d0] bg-white px-3 py-2.5 text-sm text-[#302b35] outline-none transition focus:border-[#302b35]" /><button type="button" onClick={() => void handleApplyCoupon()} className="rounded-md bg-[#302b35] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#211e24]">Apply</button></div>
+                    <p className="mt-2 text-xs text-[#6a636b]">{couponMessage || "Coupon discounts are applied at checkout."}</p></div>
+                    <p className="mt-2 text-xs text-[#6a636b]">Local taxes included (where applicable)</p>
                 </div>
                 {/* Trust Badges */}
                 <div className="mt-7 border-t border-black/10 pt-6 space-y-4">
@@ -308,7 +358,7 @@ export default function CartPage() {
                   </div>
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
                     <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    <span>Free worldwide shipping</span>
+                    <span>Country-based shipping rates</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-luxury-brown">
                     <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.5 8l3 3 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -329,11 +379,13 @@ function CartItemCard({
   onUpdateQuantity,
   onRemove,
   isUpdating,
+  currency,
 }: {
   item: CartItem;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemove: (itemId: string) => void;
   isUpdating: boolean;
+  currency: string;
 }) {
   const mainImage = item.product.media?.find((m) => m.isMain) || item.product.media?.[0];
   const price = Number(item.priceSnapshot) || 0;
@@ -378,10 +430,10 @@ function CartItemCard({
 
             <div className="text-right">
               <p className="text-xl font-serif text-luxury-charcoal">
-                ${itemTotal.toFixed(2)}
+                {money(itemTotal, currency)}
               </p>
               <p className="text-sm text-luxury-brown/70 mt-1">
-                ${price.toFixed(2)} each
+                {money(price, currency)} each
               </p>
             </div>
           </div>
@@ -404,6 +456,34 @@ function CartItemCard({
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

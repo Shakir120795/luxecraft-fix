@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-10">
             <div className="mb-6">
-              <span className="text-6xl">✉️</span>
+              <span className="text-6xl"></span>
             </div>
             <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-3">Check Your Email</h1>
             <p className="text-luxury-brown leading-relaxed">
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
                 href="/auth/login"
                 className="btn-luxury w-full px-8 py-4 inline-block"
               >
-                Back to Login →
+                Back to Login 
               </Link>
 
               <button
@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
               href="/"
               className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
             >
-              ← Back to Home
+               Back to Home
             </Link>
           </div>
         </div>
@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
               disabled={loading}
               className="btn-luxury w-full px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Sending...' : 'Send Reset Instructions →'}
+              {loading ? 'Sending...' : 'Send Reset Instructions '}
             </button>
           </form>
 
@@ -136,7 +136,7 @@ export default function ForgotPasswordPage() {
             href="/"
             className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
           >
-            ← Back to Home
+             Back to Home
           </Link>
         </div>
       </div>

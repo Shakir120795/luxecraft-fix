@@ -21,7 +21,7 @@ export class AuditService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Write an audit log entry. Never throws — audit failure must not break the main flow. */
+  /** Write an audit log entry. Never throws  audit failure must not break the main flow. */
   async log(entry: AuditEntry): Promise<void> {
     try {
       await this.prisma.auditLog.create({

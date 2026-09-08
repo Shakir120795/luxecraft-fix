@@ -21,7 +21,7 @@ export class CategoriesService {
     private readonly audit: AuditService,
   ) {}
 
-  // ── Admin: Create ──────────────────────────────────────────────
+  //  Admin: Create 
 
   async create(dto: CreateCategoryDto, adminId: string): Promise<Category> {
     const slug = await this.resolveSlug(dto.slug, dto.name);
@@ -53,7 +53,7 @@ export class CategoriesService {
     return category;
   }
 
-  // ── Admin: Update ──────────────────────────────────────────────
+  //  Admin: Update 
 
   async update(
     id: string,
@@ -99,7 +99,7 @@ export class CategoriesService {
     return updated;
   }
 
-  // ── Admin: Status transitions ──────────────────────────────────
+  //  Admin: Status transitions 
 
   async hide(id: string, adminId: string): Promise<Category> {
     return this.setStatus(id, CategoryStatus.HIDDEN, adminId, 'CATEGORY_HIDDEN');
@@ -123,12 +123,12 @@ export class CategoriesService {
     return cat;
   }
 
-  // ── Admin: Safe delete ─────────────────────────────────────────
+  //  Admin: Safe delete 
 
   async softDelete(id: string, adminId: string): Promise<void> {
     const cat = await this.findOneOrFail(id);
 
-    // Check for active products — prefer archive over delete
+    // Check for active products  prefer archive over delete
     const productCount = await this.prisma.product.count({
       where: { categoryId: id, deletedAt: null },
     });
@@ -153,7 +153,7 @@ export class CategoriesService {
     });
   }
 
-  // ── Admin: Reorder ─────────────────────────────────────────────
+  //  Admin: Reorder 
 
   async reorder(dto: ReorderCategoriesDto, adminId: string): Promise<void> {
     await this.prisma.$transaction(
@@ -174,7 +174,7 @@ export class CategoriesService {
     });
   }
 
-  // ── Admin: Set image (from upload) ─────────────────────────────
+  //  Admin: Set image (from upload) 
 
   async setImage(
     id: string,
@@ -198,7 +198,7 @@ export class CategoriesService {
     return updated;
   }
 
-  // ── Admin: List all (including hidden/archived) ────────────────
+  //  Admin: List all (including hidden/archived) 
 
   async findAllAdmin(params: {
     status?: CategoryStatus;
@@ -228,7 +228,7 @@ export class CategoriesService {
     return this.findOneOrFail(id);
   }
 
-  // ── Public: Active categories only ────────────────────────────
+  //  Public: Active categories only 
 
   async findAllPublic(): Promise<Category[]> {
     return this.prisma.category.findMany({
@@ -257,7 +257,7 @@ export class CategoriesService {
     return cat;
   }
 
-  // ── Internal helpers ───────────────────────────────────────────
+  //  Internal helpers 
 
   async findOneOrFail(id: string): Promise<Category> {
     const cat = await this.prisma.category.findFirst({

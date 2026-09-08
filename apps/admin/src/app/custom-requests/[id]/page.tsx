@@ -124,7 +124,7 @@ export default function CustomRequestDetailPage() {
             onClick={() => router.push('/custom-requests')}
             className="text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
           >
-            ← Back to Requests
+             Back to Requests
           </button>
         </div>
       </AdminLayout>
@@ -140,7 +140,7 @@ export default function CustomRequestDetailPage() {
             onClick={() => router.push('/custom-requests')}
             className="text-[var(--color-muted)] hover:text-[var(--color-accent)] mb-2 text-sm"
           >
-            ← Back to Custom Requests
+             Back to Custom Requests
           </button>
           <div className="flex items-start justify-between">
             <div>
@@ -148,7 +148,7 @@ export default function CustomRequestDetailPage() {
                 {request.title}
               </h1>
               <p className="text-[var(--color-muted)] mt-1">
-                Request #{request.requestNumber} • Submitted {new Date(request.createdAt).toLocaleDateString()}
+                Request #{request.requestNumber}  Submitted {new Date(request.createdAt).toLocaleDateString()}
               </p>
             </div>
             <span className={`px-4 py-2 text-sm font-medium bg-blue-100 text-blue-800`}>
@@ -366,7 +366,7 @@ export default function CustomRequestDetailPage() {
                     onClick={() => router.push(`/customers/${request.userId}`)}
                     className="text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
                   >
-                    View Customer Profile →
+                    View Customer Profile 
                   </button>
                 </div>
               ) : (

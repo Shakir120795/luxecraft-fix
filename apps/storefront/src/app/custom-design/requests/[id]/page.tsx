@@ -101,7 +101,7 @@ export default function CustomRequestDetailPage() {
           <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-4">Request Not Found</h1>
           <p className="text-luxury-brown mb-8">{error || 'The request could not be found'}</p>
           <Link href="/custom-design/requests" className="btn-luxury px-10 py-4 inline-block">
-            Back to Requests →
+            Back to Requests 
           </Link>
         </div>
       </div>
@@ -117,7 +117,7 @@ export default function CustomRequestDetailPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
             <Link href="/custom-design/requests" className="text-luxury-gold hover:text-luxury-darkGold">
-              ← Back
+               Back
             </Link>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -251,7 +251,7 @@ export default function CustomRequestDetailPage() {
                   disabled={sendingMessage || !newMessage.trim()}
                   className="btn-luxury px-6 py-3 disabled:opacity-50"
                 >
-                  {sendingMessage ? 'Sending...' : 'Send Message →'}
+                  {sendingMessage ? 'Sending...' : 'Send Message '}
                 </button>
               </form>
             </div>
@@ -331,7 +331,7 @@ export default function CustomRequestDetailPage() {
                       onClick={() => handleAcceptQuote(latestQuote.id)}
                       className="btn-luxury w-full px-6 py-3"
                     >
-                      Accept Quote →
+                      Accept Quote 
                     </button>
                     <button className="w-full border border-luxury-sand bg-luxury-cream px-6 py-3 text-sm text-luxury-brown hover:border-luxury-gold transition-colors">
                       Request Revision

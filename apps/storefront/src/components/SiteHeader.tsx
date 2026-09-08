@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -106,7 +106,7 @@ export function SiteHeader() {
             aria-expanded={menuOpen}
           >
             <span className="text-2xl leading-none" aria-hidden="true">
-              {menuOpen ? 'Ã—' : 'â˜°'}
+              {menuOpen ? '' : ''}
             </span>
           </button>
 
@@ -202,7 +202,7 @@ export function SiteHeader() {
                             className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                           >
                             My Account
-                            <span>â†’</span>
+                            <span></span>
                           </Link>
 
                           <Link
@@ -211,7 +211,7 @@ export function SiteHeader() {
                             className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                           >
                             Orders
-                            <span>â†’</span>
+                            <span></span>
                           </Link>
 
                           <Link
@@ -220,7 +220,7 @@ export function SiteHeader() {
                             className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                           >
                             Addresses
-                            <span>â†’</span>
+                            <span></span>
                           </Link>
 
                           <Link
@@ -229,7 +229,7 @@ export function SiteHeader() {
                             className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                           >
                             Wishlist
-                            <span>â†’</span>
+                            <span></span>
                           </Link>
                         </>
                       ) : (
@@ -239,7 +239,7 @@ export function SiteHeader() {
                           className="flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                         >
                           Login / Register
-                          <span>â†’</span>
+                          <span></span>
                         </Link>
                       )}
                     </div>
@@ -332,7 +332,7 @@ export function SiteHeader() {
                 onClick={() => setMenuOpen(false)}
                 className="font-serif text-xl text-[#7a5a2c] transition-colors hover:text-[#2f6b36]"
               >
-                Custom Design â†’
+                Custom Design 
               </Link>
 
               {categories.length > 0 && (

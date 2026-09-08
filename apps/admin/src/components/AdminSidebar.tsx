@@ -10,15 +10,15 @@ interface NavItem {
 }
 
 const navigation: NavItem[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+  { href: '/dashboard', label: 'Dashboard', icon: '' },
     { href: '/products', label: 'Products', icon: 'Products' },
   { href: '/shipping', label: 'Shipping', icon: 'Shipping' },
   { href: '/coupons', label: 'Coupons', icon: 'Coupons' },
-  { href: '/categories', label: 'Categories', icon: '🏷️' },
-  { href: '/orders', label: 'Orders', icon: '🛒' },
-  { href: '/customers', label: 'Customers', icon: '👥' },
-  { href: '/custom-requests', label: 'Custom Requests', icon: '✨' },
-  { href: '/settings', label: 'Settings', icon: '⚙️' },
+  { href: '/categories', label: 'Categories', icon: '' },
+  { href: '/orders', label: 'Orders', icon: '' },
+  { href: '/customers', label: 'Customers', icon: '' },
+  { href: '/custom-requests', label: 'Custom Requests', icon: '' },
+  { href: '/settings', label: 'Settings', icon: '' },
 ];
 
 export function AdminSidebar() {
@@ -62,7 +62,7 @@ export function AdminSidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-[var(--color-border)] text-xs text-[var(--color-muted)]">
-        <p>© 2024 LuxeCraft</p>
+        <p> 2024 LuxeCraft</p>
         <p className="mt-1">v1.0.0</p>
       </div>
     </aside>

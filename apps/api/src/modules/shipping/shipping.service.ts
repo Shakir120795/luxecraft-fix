@@ -24,7 +24,7 @@ export class ShippingService {
       include: { methods: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } },
     });
 
-    const zone = zones.find((z) => z.countries.includes(params.country));
+    const zone = zones.find((z) => z.countries.includes('*') || z.countries.includes(params.country));
     if (!zone) return [];
 
     return zone.methods.map((method) => {
@@ -162,6 +162,7 @@ export class ShippingService {
     await this.prisma.shippingMethod.delete({ where: { id } });
   }
 }
+
 
 
 

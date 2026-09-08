@@ -27,7 +27,7 @@ export class PasswordResetService {
   async generateToken(email: string): Promise<string | null> {
     const user = await this.users.findByEmail(email);
     if (!user) {
-      // Return null silently — caller should NOT reveal user non-existence
+      // Return null silently  caller should NOT reveal user non-existence
       return null;
     }
 

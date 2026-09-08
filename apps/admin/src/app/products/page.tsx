@@ -103,7 +103,7 @@ export default function ProductsPage() {
           </div>
         ) : filteredProducts.length === 0 ? (
           <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-12 text-center">
-            <div className="text-4xl mb-4">ðŸ“¦</div>
+            <div className="text-4xl mb-4"></div>
             <h3 className="text-xl font-serif text-[var(--color-primary)] mb-2">
               {searchTerm || filterStatus !== 'all' ? 'No Products Found' : 'No Products Yet'}
             </h3>
@@ -160,7 +160,7 @@ export default function ProductsPage() {
                             />
                           ) : (
                             <div className="w-12 h-12 bg-[var(--color-border)] flex items-center justify-center text-[var(--color-muted)]">
-                              ðŸ“¦
+                              
                             </div>
                           )}
                           <div>
@@ -168,7 +168,7 @@ export default function ProductsPage() {
                               {product.name}
                             </div>
                             {product.isFeatured && (
-                              <span className="text-xs text-[var(--color-accent)]">â­ Featured</span>
+                              <span className="text-xs text-[var(--color-accent)]"> Featured</span>
                             )}
                           </div>
                         </div>

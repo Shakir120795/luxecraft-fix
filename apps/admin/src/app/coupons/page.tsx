@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/AdminLayout';
@@ -347,15 +347,15 @@ export default function CouponsPage() {
                         ? `${coupon.discountValue}% off`
                         : `${coupon.currency} ${coupon.discountValue} off`}
                       {coupon.minOrderAmount !== null &&
-                        ` · Min order ${coupon.currency} ${coupon.minOrderAmount}`}
+                        `  Min order ${coupon.currency} ${coupon.minOrderAmount}`}
                     </p>
 
                     <p className="mt-1 text-xs text-[var(--color-muted)]">
                       Valid {formatDate(coupon.validFrom)}
                       {coupon.validTo
-                        ? ` — ${formatDate(coupon.validTo)}`
-                        : ' — No expiry'}
-                      {' · '}
+                        ? `  ${formatDate(coupon.validTo)}`
+                        : '  No expiry'}
+                      {'  '}
                       Used {coupon.usedCount}
                       {coupon.maxUsageCount !== null
                         ? ` / ${coupon.maxUsageCount}`

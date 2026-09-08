@@ -49,10 +49,10 @@ export default function OfflinePage() {
             Troubleshooting Tips
           </h3>
           <ul className="text-luxury-brown space-y-2 max-w-md mx-auto text-left">
-            <li>• Check your WiFi or mobile data connection</li>
-            <li>• Try turning airplane mode off and on</li>
-            <li>• Restart your router if using WiFi</li>
-            <li>• Contact your internet service provider</li>
+            <li> Check your WiFi or mobile data connection</li>
+            <li> Try turning airplane mode off and on</li>
+            <li> Restart your router if using WiFi</li>
+            <li> Contact your internet service provider</li>
           </ul>
         </div>
       </div>

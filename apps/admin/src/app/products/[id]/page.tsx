@@ -1104,7 +1104,7 @@ export default function ProductEditPage() {
                       value={form.deliveryInfo}
                       onChange={(event) => updateForm('deliveryInfo', event.target.value)}
                       className="w-full resize-y border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
-                      placeholder="e.g. Made to order and delivered within 3–4 weeks."
+                      placeholder="e.g. Made to order and delivered within 34 weeks."
                     />
                   </div>
                   <div>

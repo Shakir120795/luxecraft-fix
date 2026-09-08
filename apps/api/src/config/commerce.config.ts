@@ -1,17 +1,17 @@
-import { registerAs } from '@nestjs/config';
+﻿import { registerAs } from '@nestjs/config';
 
 const csv = (value: string | undefined, fallback: string[] = []) =>
   value?.split(',').map((item) => item.trim()).filter(Boolean) ?? fallback;
 
 export default registerAs('commerce', () => ({
   defaultCurrency: process.env.DEFAULT_CURRENCY ?? 'USD',
-  supportedCurrencies: csv(process.env.SUPPORTED_CURRENCIES, ['USD']),
+  supportedCurrencies: csv(process.env.SUPPORTED_CURRENCIES, ['USD','INR','CAD','GBP','AUD','AED','EUR','JPY','SGD','NZD','CHF','CNY']),
   supportedCountries: csv(process.env.SUPPORTED_COUNTRIES),
   payment: {
     provider: (process.env.PAYMENT_PROVIDER ?? 'none').toLowerCase(),
-    stripeSecretKey: process.env.STRIPE_SECRET_KEY,
-    stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
-    stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+    stripeSecretKey: process.env.PAYMENT_SECRET_KEY ?? process.env.STRIPE_SECRET_KEY,
+    stripePublishableKey: process.env.PAYMENT_PUBLIC_KEY ?? process.env.STRIPE_PUBLISHABLE_KEY,
+    stripeWebhookSecret: process.env.PAYMENT_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET,
     razorpayKeyId: process.env.RAZORPAY_KEY_ID,
     razorpayKeySecret: process.env.RAZORPAY_KEY_SECRET,
     paypalClientId: process.env.PAYPAL_CLIENT_ID,
@@ -34,3 +34,5 @@ export default registerAs('commerce', () => ({
     cdnUrl: process.env.STORAGE_CDN_URL,
   },
 }));
+
+

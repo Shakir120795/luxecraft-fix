@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 
@@ -179,8 +179,8 @@ export function SiteFooter() {
           </div>
 
           <div className="mt-7 flex flex-col gap-3 text-xs tracking-wide text-black sm:flex-row sm:items-center sm:justify-between">
-            <span>© {new Date().getFullYear()} LuxeCraft. Crafted with care.</span>
-            <span>Quiet luxury · Indian craftsmanship · Worldwide</span>
+            <span> {new Date().getFullYear()} LuxeCraft. Crafted with care.</span>
+            <span>Quiet luxury  Indian craftsmanship  Worldwide</span>
           </div>
 
         </div>

@@ -184,10 +184,10 @@ function ProductsContent() {
 
                 <select value={minPrice === 0 && maxPrice === 10000 ? '' : `${minPrice}-${maxPrice}`} onChange={(event) => { const value = event.target.value; if (!value) { setMinPrice(0); setMaxPrice(10000); } else { const [min, max] = value.split('-').map(Number); setMinPrice(min); setMaxPrice(max); } setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
                   <option value="">Price</option>
-                  <option value="0-500">$0 – $500</option>
-                  <option value="500-1000">$500 – $1,000</option>
-                  <option value="1000-2500">$1,000 – $2,500</option>
-                  <option value="2500-5000">$2,500 – $5,000</option>
+                  <option value="0-500">$0  $500</option>
+                  <option value="500-1000">$500  $1,000</option>
+                  <option value="1000-2500">$1,000  $2,500</option>
+                  <option value="2500-5000">$2,500  $5,000</option>
                   <option value="5000-10000">$5,000+</option>
                 </select>
 

@@ -83,7 +83,7 @@ export default function OrdersPage() {
 
               <div className="mt-8 pt-6 border-t border-luxury-sand">
                 <Link href="/account" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline">
-                  ← Back to Account
+                   Back to Account
                 </Link>
               </div>
             </div>
@@ -153,7 +153,7 @@ export default function OrdersPage() {
                         href={`/account/orders/${order.id}`}
                         className="btn-luxury px-6 py-2 text-sm"
                       >
-                        View Details →
+                        View Details 
                       </Link>
                       
                       {order.status === 'Delivered' && (
@@ -174,7 +174,7 @@ export default function OrdersPage() {
             ) : (
               <div className="border border-luxury-sand bg-luxury-beige p-12 text-center">
                 <div className="mb-6">
-                  <span className="text-7xl">📦</span>
+                  <span className="text-7xl"></span>
                 </div>
                 <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">
                   No {filter !== 'all' && filter} Orders Found
@@ -194,7 +194,7 @@ export default function OrdersPage() {
                   </button>
                 ) : (
                   <Link href="/products" className="btn-luxury px-8 py-3 inline-block">
-                    Start Shopping →
+                    Start Shopping 
                   </Link>
                 )}
               </div>

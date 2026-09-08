@@ -19,7 +19,7 @@ import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
 import { AdminUser, CategoryStatus } from '@prisma/client';
 
-// â”€â”€ Admin routes: /api/v1/admin/categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Admin routes: /api/v1/admin/categories 
 
 @Controller('admin/categories')
 @UseGuards(AdminJwtAuthGuard)
@@ -91,7 +91,7 @@ export class AdminCategoriesController {
   }
 }
 
-// â”€â”€ Public routes: /api/v1/categories â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Public routes: /api/v1/categories 
 
 @Controller('categories')
 export class PublicCategoriesController {

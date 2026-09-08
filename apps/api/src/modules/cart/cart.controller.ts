@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -28,10 +28,10 @@ export class CartController {
   constructor(private readonly svc: CartService) {}
 
   @Get()
-  getCart(@Req() req: RequestWithUser) {
+  getCart(@Req() req: RequestWithUser, @Query('country') country?: string) {
     const userId = req.user?.id;
     const sessionId = req.cookies?.sessionId || req.headers['x-session-id'];
-    return this.svc.getCart(userId, sessionId as string);
+    return this.svc.getCart(userId, sessionId as string, country);
   }
 
   @Get('totals')
@@ -41,6 +41,14 @@ export class CartController {
     return this.svc.calculateCartTotals(userId, sessionId as string, country);
   }
 
+  @Post('coupon/validate')
+  validateCoupon(
+    @Body('code') code: string,
+    @Body('subtotal') subtotal: number,
+    @Body('productIds') productIds: string[] = [],
+  ) {
+    return this.svc.validateCoupon(code, subtotal, Array.isArray(productIds) ? productIds : []);
+  }
   @Post('items')
   addToCart(@Body() dto: AddToCartDto, @Req() req: RequestWithUser) {
     const userId = req.user?.id;
@@ -85,3 +93,5 @@ export class CartController {
     return this.svc.mergeGuestCartIntoCustomerCart(userId, guestSessionId);
   }
 }
+
+

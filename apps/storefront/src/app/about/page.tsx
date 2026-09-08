@@ -22,7 +22,7 @@ export default function AboutPage() {
           
           <p className="text-luxury-brown text-lg leading-relaxed mb-6">
             Founded in 2020, LuxeCraft began with a simple vision: to create furniture that tells a story. 
-            Each piece we craft is more than just an object—it's a testament to the enduring beauty of 
+            Each piece we craft is more than just an objectit's a testament to the enduring beauty of 
             artisanal excellence and thoughtful design.
           </p>
 

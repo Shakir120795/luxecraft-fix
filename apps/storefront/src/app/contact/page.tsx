@@ -103,16 +103,16 @@ export default function ContactPage() {
               <h3 className="text-2xl font-serif text-luxury-charcoal mb-6">Quick Links</h3>
               <div className="space-y-3">
                 <Link href="/faq" className="block text-luxury-brown hover:text-luxury-gold transition-colors">
-                  → Frequently Asked Questions
+                   Frequently Asked Questions
                 </Link>
                 <Link href="/shipping" className="block text-luxury-brown hover:text-luxury-gold transition-colors">
-                  → Shipping Information
+                   Shipping Information
                 </Link>
                 <Link href="/returns" className="block text-luxury-brown hover:text-luxury-gold transition-colors">
-                  → Returns & Refunds
+                   Returns & Refunds
                 </Link>
                 <Link href="/custom-design" className="block text-luxury-brown hover:text-luxury-gold transition-colors">
-                  → Custom Design Services
+                   Custom Design Services
                 </Link>
               </div>
             </div>

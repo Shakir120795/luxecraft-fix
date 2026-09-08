@@ -159,7 +159,7 @@ function RegisterForm() {
                 onChange={handleChange}
                 required
                 className="input-luxury"
-                placeholder="••••••••"
+                placeholder=""
                 autoComplete="new-password"
               />
               <p className="text-xs text-luxury-brown/70 mt-1">Minimum 8 characters</p>
@@ -177,7 +177,7 @@ function RegisterForm() {
                 onChange={handleChange}
                 required
                 className="input-luxury"
-                placeholder="••••••••"
+                placeholder=""
                 autoComplete="new-password"
               />
             </div>
@@ -206,7 +206,7 @@ function RegisterForm() {
               disabled={loading}
               className="btn-luxury w-full px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Creating Account...' : 'Create Account →'}
+              {loading ? 'Creating Account...' : 'Create Account '}
             </button>
           </form>
 
@@ -238,7 +238,7 @@ function RegisterForm() {
             href="/"
             className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
           >
-            ← Back to Home
+             Back to Home
           </Link>
         </div>
       </div>

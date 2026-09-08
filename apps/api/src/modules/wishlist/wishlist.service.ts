@@ -19,7 +19,7 @@ export class WishlistService {
     private readonly cartService: CartService,
   ) {}
 
-  // ── Get or create wishlist ─────────────────────────────────────
+  //  Get or create wishlist 
 
   async getOrCreateWishlist(userId: string): Promise<Wishlist & { items: WishlistItem[] }> {
     let wishlist = await this.prisma.wishlist.findUnique({
@@ -85,7 +85,7 @@ export class WishlistService {
     return wishlist;
   }
 
-  // ── Add to wishlist ────────────────────────────────────────────
+  //  Add to wishlist 
 
   async addToWishlist(dto: AddToWishlistDto, userId: string): Promise<WishlistItem> {
     const wishlist = await this.getOrCreateWishlist(userId);
@@ -156,7 +156,7 @@ export class WishlistService {
     });
   }
 
-  // ── Remove from wishlist ───────────────────────────────────────
+  //  Remove from wishlist 
 
   async removeFromWishlist(itemId: string, userId: string): Promise<void> {
     const wishlist = await this.getOrCreateWishlist(userId);
@@ -172,7 +172,7 @@ export class WishlistService {
     await this.prisma.wishlistItem.delete({ where: { id: itemId } });
   }
 
-  // ── Toggle wishlist (add if not present, remove if present) ────
+  //  Toggle wishlist (add if not present, remove if present) 
 
   async toggleWishlist(dto: AddToWishlistDto, userId: string): Promise<{
     action: 'added' | 'removed';
@@ -197,20 +197,20 @@ export class WishlistService {
     return { action: 'added', item };
   }
 
-  // ── Get wishlist ───────────────────────────────────────────────
+  //  Get wishlist 
 
   async getWishlist(userId: string): Promise<Wishlist & { items: WishlistItem[] }> {
     return this.getOrCreateWishlist(userId);
   }
 
-  // ── Clear wishlist ─────────────────────────────────────────────
+  //  Clear wishlist 
 
   async clearWishlist(userId: string): Promise<void> {
     const wishlist = await this.getOrCreateWishlist(userId);
     await this.prisma.wishlistItem.deleteMany({ where: { wishlistId: wishlist.id } });
   }
 
-  // ── Move wishlist item to cart ─────────────────────────────────
+  //  Move wishlist item to cart 
 
   async moveToCart(dto: MoveToCartDto, userId: string, sessionId?: string): Promise<void> {
     const wishlist = await this.getOrCreateWishlist(userId);
@@ -240,7 +240,7 @@ export class WishlistService {
     await this.prisma.wishlistItem.delete({ where: { id: dto.wishlistItemId } });
   }
 
-  // ── Check if product is in wishlist ────────────────────────────
+  //  Check if product is in wishlist 
 
   async isInWishlist(
     productId: string,

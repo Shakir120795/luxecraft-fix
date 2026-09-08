@@ -29,7 +29,7 @@ export class ProductsService {
     private readonly audit: AuditService,
   ) {}
 
-  // ── Admin: Create Product ──────────────────────────────────────
+  //  Admin: Create Product 
 
   async create(dto: CreateProductDto, adminId: string): Promise<Product> {
     const slug = await this.resolveSlug(dto.slug, dto.name);
@@ -71,7 +71,7 @@ export class ProductsService {
     return product;
   }
 
-  // ── Admin: Update Product ──────────────────────────────────────
+  //  Admin: Update Product 
 
   async update(
     id: string,
@@ -126,7 +126,7 @@ export class ProductsService {
     return updated;
   }
 
-  // ── Admin: Status transitions ──────────────────────────────────
+  //  Admin: Status transitions 
 
   async publish(id: string, adminId: string): Promise<Product> {
     const product = await this.setStatus(id, ProductStatus.ACTIVE, adminId, 'PRODUCT_PUBLISHED');
@@ -159,7 +159,7 @@ export class ProductsService {
     return product;
   }
 
-  // ── Admin: Safe delete ─────────────────────────────────────────
+  //  Admin: Safe delete 
 
   async softDelete(id: string, adminId: string): Promise<void> {
     const product = await this.findOneOrFail(id);
@@ -179,7 +179,7 @@ export class ProductsService {
     });
   }
 
-  // ── Admin: List all products ───────────────────────────────────
+  //  Admin: List all products 
 
   async findAllAdmin(params: {
     status?: ProductStatus;
@@ -227,7 +227,7 @@ export class ProductsService {
     return product;
   }
 
-  // ── Admin: Variants ────────────────────────────────────────────
+  //  Admin: Variants 
 
   async addVariant(
     productId: string,
@@ -332,7 +332,7 @@ export class ProductsService {
     });
   }
 
-  // ── Admin: Media ───────────────────────────────────────────────
+  //  Admin: Media 
 
   async addMedia(
     productId: string,
@@ -520,7 +520,7 @@ export class ProductsService {
     });
   }
 
-  // ── Admin: Customization Options ───────────────────────────────
+  //  Admin: Customization Options 
 
   async addCustomizationOption(
     productId: string,
@@ -601,7 +601,7 @@ export class ProductsService {
     });
   }
 
-  // ── Public: Active products only ───────────────────────────────
+  //  Public: Active products only 
 
   async findAllPublic(params: {
     categoryId?: string;
@@ -657,7 +657,7 @@ export class ProductsService {
     return product;
   }
 
-  // ── Internal helpers ───────────────────────────────────────────
+  //  Internal helpers 
 
   async findOneOrFail(id: string): Promise<Product> {
     const product = await this.prisma.product.findFirst({

@@ -127,14 +127,14 @@ export default function WishlistPage() {
           // Empty Wishlist State
           <div className="text-center py-20">
             <div className="mb-8">
-              <span className="text-8xl">♡</span>
+              <span className="text-8xl"></span>
             </div>
             <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">Your wishlist is empty</h2>
             <p className="text-luxury-brown mb-8 text-lg max-w-md mx-auto">
               Save your favorite pieces and come back to them anytime
             </p>
             <Link href="/products" className="btn-luxury px-10 py-4 inline-block">
-              Explore Collection →
+              Explore Collection 
             </Link>
           </div>
         ) : (
@@ -142,7 +142,7 @@ export default function WishlistPage() {
             {/* Wishlist Actions */}
             <div className="flex justify-between items-center mb-8">
               <Link href="/account" className="text-luxury-gold hover:text-luxury-darkGold underline">
-                ← Back to Account
+                 Back to Account
               </Link>
 
               {wishlist.items.length > 0 && (
@@ -236,7 +236,7 @@ export default function WishlistPage() {
                           className="border border-luxury-sand bg-luxury-cream px-3 py-2 hover:border-luxury-terracotta transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Remove from wishlist"
                         >
-                          <span className="text-luxury-terracotta">×</span>
+                          <span className="text-luxury-terracotta"></span>
                         </button>
                       </div>
                     </div>
@@ -252,7 +252,7 @@ export default function WishlistPage() {
                 Share your curated collection with friends and family
               </p>
               <button className="btn-luxury-outline px-8 py-3">
-                Get Shareable Link →
+                Get Shareable Link 
               </button>
             </div>
           </>

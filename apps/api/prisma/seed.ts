@@ -1,116 +1,56 @@
-import { PrismaClient } from '@prisma/client';
+﻿import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // 4. Create default shipping zone and methods
-  const shippingZone = await prisma.shippingZone.upsert({
+  // 4. Create default free-shipping configuration
+  const worldwideShippingZone = await prisma.shippingZone.upsert({
     where: { id: 'seed-worldwide-zone' },
     update: {
       name: 'Worldwide',
-      countries: ['US', 'CA', 'GB', 'AU', 'IN'],
+      countries: ['*'],
       isActive: true,
     },
     create: {
       id: 'seed-worldwide-zone',
       name: 'Worldwide',
-      countries: ['US', 'CA', 'GB', 'AU', 'IN'],
+      countries: ['*'],
       isActive: true,
     },
   });
 
   await prisma.shippingMethod.upsert({
-    where: { id: 'seed-standard-shipping' },
+    where: { id: 'seed-worldwide-free-shipping' },
     update: {
-      zoneId: shippingZone.id,
-      name: 'Standard Shipping',
-      description: 'Reliable standard delivery',
-      deliveryDaysMin: 5,
+      zoneId: worldwideShippingZone.id,
+      name: 'Free Shipping',
+      description: 'Free worldwide shipping',
+      deliveryDaysMin: 10,
       deliveryDaysMax: 10,
-      basePrice: 25,
-      pricePerKg: 1.5,
+      basePrice: 0,
+      pricePerKg: 0,
       freeShippingMin: null,
       isActive: true,
       sortOrder: 1,
     },
     create: {
-      id: 'seed-standard-shipping',
-      zoneId: shippingZone.id,
-      name: 'Standard Shipping',
-      description: 'Reliable standard delivery',
-      deliveryDaysMin: 5,
+      id: 'seed-worldwide-free-shipping',
+      zoneId: worldwideShippingZone.id,
+      name: 'Free Shipping',
+      description: 'Free worldwide shipping',
+      deliveryDaysMin: 10,
       deliveryDaysMax: 10,
-      basePrice: 25,
-      pricePerKg: 1.5,
+      basePrice: 0,
+      pricePerKg: 0,
       freeShippingMin: null,
       isActive: true,
       sortOrder: 1,
     },
   });
 
-  await prisma.shippingMethod.upsert({
-    where: { id: 'seed-express-shipping' },
-    update: {
-      zoneId: shippingZone.id,
-      name: 'Express Shipping',
-      description: 'Faster delivery for urgent orders',
-      deliveryDaysMin: 2,
-      deliveryDaysMax: 5,
-      basePrice: 60,
-      pricePerKg: 2.5,
-      freeShippingMin: null,
-      isActive: true,
-      sortOrder: 2,
-    },
-    create: {
-      id: 'seed-express-shipping',
-      zoneId: shippingZone.id,
-      name: 'Express Shipping',
-      description: 'Faster delivery for urgent orders',
-      deliveryDaysMin: 2,
-      deliveryDaysMax: 5,
-      basePrice: 60,
-      pricePerKg: 2.5,
-      freeShippingMin: null,
-      isActive: true,
-      sortOrder: 2,
-    },
-  });
-
-  await prisma.shippingMethod.upsert({
-    where: { id: 'seed-free-shipping' },
-    update: {
-      zoneId: shippingZone.id,
-      name: 'Free Shipping',
-      description: 'Free shipping on qualifying orders',
-      deliveryDaysMin: 7,
-      deliveryDaysMax: 14,
-      basePrice: 0,
-      pricePerKg: 0,
-      freeShippingMin: 5000,
-      isActive: true,
-      sortOrder: 3,
-    },
-    create: {
-      id: 'seed-free-shipping',
-      zoneId: shippingZone.id,
-      name: 'Free Shipping',
-      description: 'Free shipping on qualifying orders',
-      deliveryDaysMin: 7,
-      deliveryDaysMax: 14,
-      basePrice: 0,
-      pricePerKg: 0,
-      freeShippingMin: 5000,
-      isActive: true,
-      sortOrder: 3,
-    },
-  });
-
-  console.log('Shipping configuration ready: 1 zone, 3 methods');
-  console.log('🌱 Seeding database...');
-
-  // 1. Create Admin User
+  console.log('Shipping configuration ready: worldwide free shipping, estimated delivery 10 days');
+   // 1. Create Admin User
   const adminEmail = process.env.SUPER_ADMIN_EMAIL;
   const adminPassword = process.env.SUPER_ADMIN_PASSWORD;
   if (!adminEmail || !adminPassword) {
@@ -130,7 +70,7 @@ async function main() {
       status: 'ACTIVE',
     },
   });
-  console.log('✅ Admin user created:', admin.email);
+  console.log(' Admin user created:', admin.email);
 
   // 2. Create Categories
   const categories = await Promise.all([
@@ -187,7 +127,7 @@ async function main() {
       },
     }),
   ]);
-  console.log('✅ Categories created:', categories.length);
+  console.log(' Categories created:', categories.length);
 
   // 3. Create Sample Products
   const product1 = await prisma.product.create({
@@ -403,22 +343,24 @@ async function main() {
     },
   });
 
-  console.log('✅ Products created: 5');
+  console.log(' Products created: 5');
 
-  console.log('\n🎉 Seed completed successfully!');
-  console.log('\n📊 Summary:');
+  console.log('\n Seed completed successfully!');
+  console.log('\n Summary:');
   console.log(`   - Admin users: 1`);
   console.log(`   - Categories: ${categories.length}`);
   console.log(`   - Products: 5`);
-  console.log(`\n🔐 Super Admin created for: ${admin.email}`);
+  console.log(`\n Super Admin created for: ${admin.email}`);
 }
 
 main()
   .catch((e: unknown) => {
-    console.error('❌ Seed failed:', e);
+    console.error(' Seed failed:', e);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
   });
+
+
 

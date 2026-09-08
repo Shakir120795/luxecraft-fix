@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+﻿import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { CartService } from '../cart/cart.service';
 import { AddressesService } from '../addresses/addresses.service';
 import { ShippingService } from '../shipping/shipping.service';
@@ -119,7 +119,7 @@ export class CheckoutService {
       0,
     );
     const methods = await this.shipping.calculateShippingRate({ country, cartWeightKg, cartTotal: subtotal });
-    const shippingMethod = methods.find((method) => method.id === input.dto.shippingMethodId);
+    const shippingMethod = methods[0];
     if (!shippingMethod) throw new BadRequestException('Shipping method is unavailable for this address.');
 
     const taxAmount = cartItems.reduce((sum, item) => {
@@ -365,3 +365,6 @@ export class CheckoutService {
     return { order, payment };
   }
 }
+
+
+

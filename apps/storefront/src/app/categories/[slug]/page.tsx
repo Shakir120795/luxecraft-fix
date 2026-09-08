@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useParams } from 'next/navigation';
@@ -125,7 +125,7 @@ function CategoryContent() {
           </p>
 
           <Link href="/products" className="btn-luxury mt-7">
-            Browse All Products →
+            Browse All Products 
           </Link>
         </div>
       </main>
@@ -207,7 +207,7 @@ function CategoryContent() {
                             : 'translate-x-[-5px] opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
                         }`}
                       >
-                        →
+                        
                       </span>
                     </Link>
                   );
@@ -325,7 +325,7 @@ function CategoryContent() {
                 </p>
 
                 <Link href="/products" className="btn-luxury mt-7">
-                  Browse All Products →
+                  Browse All Products 
                 </Link>
               </div>
             )}
