@@ -22,18 +22,22 @@ export default function CustomerDetailPage() {
 
   async function loadCustomerData() {
     try {
-      const [customerData, ordersData] = await Promise.all([
-        getCustomer(customerId),
-        getOrders(),
-      ]);
-      setCustomer(customerData);
+    const customerData = await getCustomer(customerId);
+    setCustomer(customerData);
+
+    try {
+      const ordersData = await getOrders();
       setOrders(ordersData.filter(o => o.userId === customerId));
     } catch (error) {
-      console.error('Failed to load customer:', error);
-    } finally {
-      setLoading(false);
+      console.error('Failed to load customer orders:', error);
+      setOrders([]);
     }
+  } catch (error) {
+    console.error('Failed to load customer:', error);
+  } finally {
+    setLoading(false);
   }
+}
 
   async function handleToggleStatus() {
     if (!customer) return;
@@ -77,7 +81,12 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const totalSpent = orders.reduce((sum, order) => sum + Number(order.total), 0);
+  const totalSpent = Number(customer.totalSpent ?? orders.reduce((sum, order) => sum + Number(order.total), 0));
+  const totalOrders = Number(customer._count?.orders ?? orders.length);
+  const addresses = customer.addresses ?? [];
+  const wishlistItems = customer.wishlists?.items ?? [];
+  const customRequests = customer.customRequests ?? [];
+  const primaryAddress = addresses.find((address) => address.isDefault) ?? addresses[0] ?? null;
 
   return (
     <AdminLayout>
@@ -120,7 +129,7 @@ export default function CustomerDetailPage() {
             <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
               <div className="text-[var(--color-muted)] text-sm mb-2">Total Orders</div>
               <div className="text-3xl font-serif text-[var(--color-primary)]">
-                {orders.length}
+                {totalOrders}
               </div>
             </div>
 
@@ -139,6 +148,44 @@ export default function CustomerDetailPage() {
             </div>
           </div>
 
+          {/* Location & Addresses */}
+          <div className="lg:col-span-2 mb-6">
+            <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-serif text-[var(--color-primary)]">Location & Addresses</h2>
+                <span className="text-sm text-[var(--color-muted)]">{addresses.length} saved</span>
+              </div>
+              <div className="mb-5 p-4 border border-[var(--color-border)]">
+                <div className="text-xs uppercase tracking-wider text-[var(--color-muted)] mb-2">Customer Location</div>
+                <div className="text-[var(--color-text)]">
+                  {[primaryAddress?.city, primaryAddress?.stateProvince, primaryAddress?.country ?? customer.country].filter(Boolean).join(', ') || 'Location not provided'}
+                </div>
+              </div>
+              {addresses.length > 0 ? (
+                <div className="space-y-3">
+                  {addresses.map((address) => (
+                    <div key={address.id} className="p-4 border border-[var(--color-border)]">
+                      <div className="flex items-start justify-between gap-4 mb-2">
+                        <div className="font-medium text-[var(--color-text)]">{address.firstName} {address.lastName}</div>
+                        <span className="text-xs text-[var(--color-muted)] uppercase">
+                          {address.type}{address.isDefault ? ' · Default' : ''}
+                        </span>
+                      </div>
+                      <div className="text-sm text-[var(--color-muted)] leading-6">
+                        {address.addressLine1}
+                        {address.addressLine2 && <><br />{address.addressLine2}</>}
+                        <br />{[address.city, address.stateProvince].filter(Boolean).join(', ')} {address.postalCode}
+                        <br />{address.country}
+                      </div>
+                      {address.phone && <div className="text-sm text-[var(--color-muted)] mt-2">{address.phone}</div>}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-[var(--color-muted)]">No saved addresses</div>
+              )}
+            </div>
+          </div>
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Recent Orders */}
@@ -197,6 +244,43 @@ export default function CustomerDetailPage() {
             </div>
           </div>
 
+            {/* Wishlist */}
+            <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-serif text-[var(--color-primary)]">Wishlist</h2>
+                <span className="text-sm text-[var(--color-muted)]">{wishlistItems.length} items</span>
+              </div>
+              {wishlistItems.length > 0 ? (
+                <div className="space-y-3">
+                  {wishlistItems.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between gap-4 p-4 border border-[var(--color-border)]">
+                      <div>
+                        <div className="font-medium text-[var(--color-text)]">
+                          {item.product?.name ?? 'Product'}
+                        </div>
+                        {item.variant?.name && (
+                          <div className="text-sm text-[var(--color-muted)] mt-1">
+                            Variant: {item.variant.name}
+                          </div>
+                        )}
+                        <div className="text-xs text-[var(--color-muted)] mt-1">
+                          {item.product?.status ?? 'Unknown status'}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-medium text-[var(--color-text)]">
+                          ${Number(item.variant?.salePrice ?? item.variant?.regularPrice ?? item.product?.salePrice ?? item.product?.regularPrice ?? 0).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[var(--color-muted)]">
+                  No wishlist items
+                </div>
+              )}
+            </div>
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Contact Information */}
@@ -248,6 +332,18 @@ export default function CustomerDetailPage() {
                   <div className="text-[var(--color-muted)]">Last Updated</div>
                   <div className="text-[var(--color-text)]">
                     {new Date(customer.updatedAt).toLocaleString()}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[var(--color-muted)]">Country / Location</div>
+                  <div className="text-[var(--color-text)]">
+                    {[primaryAddress?.city, primaryAddress?.stateProvince, primaryAddress?.country ?? customer.country].filter(Boolean).join(', ') || 'Not provided'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[var(--color-muted)]">Email Verification</div>
+                  <div className="font-medium text-[var(--color-text)]">
+                    {customer.emailVerified ? 'Verified' : 'Not Verified'}
                   </div>
                 </div>
                 <div>

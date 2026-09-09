@@ -42,7 +42,7 @@ export class AdminCustomersService {
       where: { id },
       include: {
         orders: { orderBy: { createdAt: 'desc' }, take: 10 },
-        addresses: true,
+        addresses: true,        wishlists: { include: { items: { include: { product: { select: { id: true, name: true, slug: true, regularPrice: true, salePrice: true, status: true } }, variant: { select: { id: true, name: true, regularPrice: true, salePrice: true, isAvailable: true } } } } } },
         customRequests: { take: 5 },
         _count: { select: { orders: true, customRequests: true } },
       },

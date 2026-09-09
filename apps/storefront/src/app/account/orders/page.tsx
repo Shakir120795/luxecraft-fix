@@ -63,17 +63,17 @@ export default function OrdersPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="border border-luxury-sand bg-luxury-beige p-6 sticky top-24">
-              <h2 className="font-serif text-lg text-luxury-charcoal mb-4">Filter Orders</h2>
+            <div className="sticky top-24 rounded-lg border border-[#ded8d0] bg-white p-5 shadow-sm">
+              <h2 className="mb-5 font-serif text-lg text-[#302b35]">Filter Orders</h2>
               <div className="space-y-2">
                 {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(status => (
                   <button
                     key={status}
                     onClick={() => setFilter(status)}
-                    className={`block w-full text-left px-4 py-2 transition-colors ${
+                    className={`block w-full rounded-md border px-4 py-3 text-left text-sm font-medium transition-all ${
                       filter === status
-                        ? 'bg-luxury-gold text-white'
-                        : 'text-luxury-brown hover:bg-luxury-sand'
+                        ? 'border-[#bf4e48] bg-[#bf4e48] text-white'
+                        : 'border-[#ded8d0] bg-[#faf9f7] text-[#6a636b] hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white'
                     }`}
                   >
                     {status.charAt(0).toUpperCase() + status.slice(1)}
@@ -81,8 +81,8 @@ export default function OrdersPage() {
                 ))}
               </div>
 
-              <div className="mt-8 pt-6 border-t border-luxury-sand">
-                <Link href="/account" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline">
+              <div className="mt-6 border-t border-[#ded8d0] pt-5">
+                <Link href="/account" className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-center text-sm font-medium text-[#6a636b] transition hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white">
                    Back to Account
                 </Link>
               </div>
@@ -193,7 +193,7 @@ export default function OrdersPage() {
                     View All Orders
                   </button>
                 ) : (
-                  <Link href="/products" className="btn-luxury px-8 py-3 inline-block">
+                  <Link href="/products" className="inline-block rounded-md bg-[#302b35] px-8 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24]">
                     Start Shopping 
                   </Link>
                 )}

@@ -1,15 +1,16 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getAddresses, createAddress, isAuthenticated, Address } from '@/lib/api';
+import { getAddresses, createAddress, updateAddress, deleteAddress, isAuthenticated, Address } from '@/lib/api';
 
 export default function AddressesPage() {
   const router = useRouter();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -59,14 +60,14 @@ export default function AddressesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="border border-luxury-sand bg-luxury-beige p-6 sticky top-24">
-              <Link href="/account" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline mb-6 block">
+            <div className="sticky top-24 rounded-lg border border-[#ded8d0] bg-white p-5 shadow-sm">
+              <Link href="/account" className="mb-5 block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-center text-sm font-medium text-[#6a636b] transition hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white">
                  Back to Account
               </Link>
               
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="btn-luxury w-full px-6 py-3 text-sm"
+                className="w-full rounded-md border border-[#bf4e48] bg-[#bf4e48] px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#a9443e]"
               >
                 {showForm ? 'Cancel' : '+ Add New Address'}
               </button>
@@ -121,10 +122,10 @@ export default function AddressesPage() {
                     </div>
 
                     <div className="flex gap-3">
-                      <button className="text-sm text-luxury-gold hover:text-luxury-darkGold underline">
+                      <button type="button" onClick={() => { setEditingAddress(address); setShowForm(true); }} className="rounded-md bg-[#302b35] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#211e24]">
                         Edit
                       </button>
-                      <button className="text-sm text-luxury-terracotta hover:text-luxury-terracotta/80 underline">
+                      <button type="button" onClick={async () => { if (!window.confirm("Delete this address?")) return; const result = await deleteAddress(address.id); if (result.success) { await loadAddresses(); } else { window.alert(result.message || "Failed to delete address"); } }} className="rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[#a9443e] transition hover:border-[#a9443e] hover:bg-[#a9443e] hover:text-white">
                         Delete
                       </button>
                       {!address.isDefault && (
@@ -162,20 +163,20 @@ export default function AddressesPage() {
   );
 }
 
-function AddressForm({ onSuccess }: { onSuccess: () => void }) {
+function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; address?: Address; onCancel?: () => void }) {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    company: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    stateProvince: '',
-    postalCode: '',
-    country: 'US',
-    phone: '',
-    isDefault: false,
-    type: 'BOTH' as 'SHIPPING' | 'BILLING' | 'BOTH',
+    firstName: address?.firstName ?? '',
+    lastName: address?.lastName ?? '',
+    company: address?.company ?? '',
+    addressLine1: address?.addressLine1 ?? '',
+    addressLine2: address?.addressLine2 ?? '',
+    city: address?.city ?? '',
+    stateProvince: address?.stateProvince ?? '',
+    postalCode: address?.postalCode ?? '',
+    country: address?.country ?? 'US',
+    phone: address?.phone ?? '',
+    isDefault: address?.isDefault ?? false,
+    type: (address?.type ?? 'BOTH') as 'SHIPPING' | 'BILLING' | 'BOTH',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -193,12 +194,12 @@ function AddressForm({ onSuccess }: { onSuccess: () => void }) {
     setError(null);
     setSubmitting(true);
 
-    const result = await createAddress(formData);
+    const result = address ? await updateAddress(address.id, formData) : await createAddress(formData);
 
     if (result.success) {
       onSuccess();
     } else {
-      setError(result.message || 'Failed to create address');
+      setError(result.message || (address ? 'Failed to update address' : 'Failed to create address'));
       setSubmitting(false);
     }
   }

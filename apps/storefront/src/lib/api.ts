@@ -1,4 +1,4 @@
-﻿const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
 
 export interface Product {
   id: string;
@@ -786,6 +786,56 @@ export async function createAddress(params: Omit<Address, 'id' | 'userId' | 'cre
   }
 }
 
+
+export async function updateAddress(id: string, params: Partial<Omit<Address, 'id' | 'userId' | 'createdAt'>>): Promise<{ success: boolean; data?: Address; message?: string }> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/addresses/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: JSON.stringify(params),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.success) {
+      return { success: true, data: data.data };
+    }
+
+    return { success: false, message: data.message || 'Failed to update address' };
+  } catch (error) {
+    console.error('Failed to update address:', error);
+    return { success: false, message: 'Failed to update address' };
+  }
+}
+
+export async function deleteAddress(id: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/addresses/${id}`, {
+      method: 'DELETE',
+      headers,
+    });
+
+    if (res.ok || res.status === 204) {
+      return { success: true };
+    }
+
+    let message = 'Failed to delete address';
+    try {
+      const data = await res.json();
+      message = data.message || message;
+    } catch {}
+
+    return { success: false, message };
+  } catch (error) {
+    console.error('Failed to delete address:', error);
+    return { success: false, message: 'Failed to delete address' };
+  }
+}
 // ============================================
 // SHIPPING API
 // ============================================

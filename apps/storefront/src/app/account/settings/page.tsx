@@ -57,8 +57,8 @@ export default function SettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Sidebar */}
           <div className="lg:col-span-1">
-            <div className="border border-luxury-sand bg-luxury-beige p-6 sticky top-24">
-              <Link href="/account" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline">
+            <div className="sticky top-24 rounded-lg border border-[#ded8d0] bg-white p-5 shadow-sm">
+              <Link href="/account" className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-center text-sm font-medium text-[#6a636b] transition hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white">
                  Back to Account
               </Link>
             </div>
@@ -92,7 +92,7 @@ export default function SettingsPage() {
                   {!user.emailVerified && (
                     <Link
                       href={`/auth/verify-email?email=${encodeURIComponent(user.email)}`}
-                      className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
+                      className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-center text-sm font-medium text-[#6a636b] transition hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white"
                     >
                       Verify Now 
                     </Link>
@@ -115,12 +115,12 @@ export default function SettingsPage() {
               <div className="space-y-4">
                 <button
                   onClick={handleLogout}
-                  className="w-full border border-luxury-sand bg-luxury-cream px-6 py-3 text-luxury-brown hover:border-luxury-gold transition-colors"
+                  className="w-full rounded-md border border-[#bf4e48] bg-[#bf4e48] px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#a9443e]"
                 >
                   Logout
                 </button>
                 
-                <button className="w-full border border-luxury-terracotta bg-luxury-terracotta/10 px-6 py-3 text-luxury-terracotta hover:bg-luxury-terracotta/20 transition-colors">
+                <button className="w-full rounded-md border border-[#ded8d0] bg-[#faf9f7] px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-[#a9443e] transition hover:border-[#a9443e] hover:bg-[#a9443e] hover:text-white">
                   Delete Account
                 </button>
               </div>
@@ -201,7 +201,7 @@ function ProfileForm({ user }: { user: User }) {
       <button
         type="submit"
         disabled={submitting}
-        className="btn-luxury px-8 py-3 disabled:opacity-50"
+        className="rounded-md bg-[#302b35] px-8 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24] disabled:opacity-50"
       >
         {submitting ? 'Saving...' : 'Save Changes'}
       </button>
@@ -310,7 +310,7 @@ function PasswordForm() {
       <button
         type="submit"
         disabled={submitting}
-        className="btn-luxury px-8 py-3 disabled:opacity-50"
+        className="rounded-md bg-[#302b35] px-8 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24] disabled:opacity-50"
       >
         {submitting ? 'Changing...' : 'Change Password'}
       </button>

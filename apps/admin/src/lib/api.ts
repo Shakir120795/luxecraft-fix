@@ -1,4 +1,4 @@
-﻿/**
+/**
  * LuxeCraft Admin API client foundation.
  * Admin uses a separate auth boundary (Phase 2).
  */
@@ -219,21 +219,78 @@ export interface OrderItem {
   };
 }
 
+export interface CustomerAddress {
+  id: string;
+  type: string;
+  firstName: string;
+  lastName: string;
+  company: string | null;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  stateProvince: string | null;
+  postalCode: string;
+  country: string;
+  phone: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerWishlistItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  createdAt: string;
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+    regularPrice: number | null;
+    salePrice: number | null;
+    status: string;
+  };
+  variant?: {
+    id: string;
+    name: string;
+    regularPrice: number | null;
+    salePrice: number | null;
+    isAvailable: boolean;
+  } | null;
+}
+
+export interface CustomerWishlist {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  items: CustomerWishlistItem[];
+}
+
 export interface Customer {
   id: string;
   email: string;
   firstName: string;
   lastName: string;
   phoneNumber: string | null;
+  phone?: string | null;
+  country: string | null;
   emailVerified: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  lastLoginAt?: string | null;
+  totalSpent?: number;
+  addresses?: CustomerAddress[];
+  wishlists?: CustomerWishlist | null;
+  customRequests?: CustomRequest[];
   _count?: {
     orders: number;
     addresses: number;
+    customRequests?: number;
   };
 }
+
 
 export interface CustomRequest {
   id: string;
@@ -576,7 +633,8 @@ export async function getCustomers(): Promise<Customer[]> {
 }
 
 export async function getCustomer(id: string): Promise<Customer> {
-  return adminApi.get<Customer>(`/admin/customers/${id}`);
+  const customer = await adminApi.get<any>(`/admin/customers/${id}`);
+  return { ...customer, phoneNumber: customer.phoneNumber ?? customer.phone ?? null, isActive: customer.status === 'ACTIVE' };
 }
 
 export async function deleteCustomer(id: string): Promise<{ success: boolean }> {

@@ -58,19 +58,19 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="min-h-screen bg-luxury-cream">
+    <main className="min-h-screen bg-[#f8f6f2]">
       {/* Header */}
-      <div className="bg-luxury-beige border-b border-luxury-sand py-12 px-4 sm:px-6 lg:px-8">
+      <div className="border-b border-[#ded8d0] bg-white px-4 py-14 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-3">
+          <h1 className="text-4xl font-serif font-light text-[#302b35] sm:text-5xl mb-3">
             Welcome, {user.firstName || user.email}
           </h1>
-          <p className="text-luxury-brown text-lg">Manage your account and orders</p>
+          <p className="text-[#6a636b] text-base sm:text-lg">Manage your account and orders</p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 sm:py-16">
+        <div className="grid grid-cols-1 gap-7 lg:grid-cols-4 lg:gap-8">
           {/* Sidebar Navigation */}
           <div className="lg:col-span-1">
             <AccountNav />
@@ -80,11 +80,11 @@ export default function AccountPage() {
           <div className="lg:col-span-3 space-y-8">
             {/* Verification Alert */}
             {!user.emailVerified && (
-              <div className="border border-luxury-gold/50 bg-luxury-gold/10 p-6">
+              <div className="rounded-lg border border-luxury-gold/40 bg-luxury-gold/10 p-6 shadow-sm">
                 <div className="flex items-start gap-4">
                   <span className="text-2xl"></span>
                   <div className="flex-1">
-                    <h3 className="font-serif text-lg text-luxury-charcoal mb-2">Email Not Verified</h3>
+                    <h3 className="mb-2 font-serif text-lg text-[#302b35]">Email Not Verified</h3>
                     <p className="text-luxury-brown mb-4">
                       Please verify your email address to access all features.
                     </p>
@@ -97,28 +97,28 @@ export default function AccountPage() {
             )}
 
             {/* Account Overview Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Link href="/account/orders" className="border border-luxury-sand bg-luxury-beige p-6 hover:border-luxury-gold transition-colors">
-                <div className="text-4xl font-serif text-luxury-gold mb-3">{recentOrders.length}</div>
-                <h3 className="font-serif text-lg text-luxury-charcoal mb-2">Orders</h3>
-                <p className="text-sm text-luxury-brown">View order history</p>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              <Link href="/account/orders" className="rounded-lg border border-[#bf4e48] bg-[#bf4e48] p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#a9443e] hover:bg-[#a9443e]">
+                <div className="mb-4 text-4xl font-serif text-white">{recentOrders.length}</div>
+                <h3 className="mb-2 font-serif text-lg text-white">Orders</h3>
+                <p className="text-sm text-white/80">View order history</p>
               </Link>
 
-              <Link href="/account/addresses" className="border border-luxury-sand bg-luxury-beige p-6 hover:border-luxury-gold transition-colors">
-                <div className="text-4xl font-serif text-luxury-gold mb-3"></div>
-                <h3 className="font-serif text-lg text-luxury-charcoal mb-2">Addresses</h3>
-                <p className="text-sm text-luxury-brown">Manage shipping addresses</p>
+              <Link href="/account/addresses" className="rounded-lg border border-[#bf4e48] bg-[#bf4e48] p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#a9443e] hover:bg-[#a9443e]">
+                <div className="mb-4 h-10 w-10 rounded-full border border-white/30 bg-white/10"></div>
+                <h3 className="mb-2 font-serif text-lg text-white">Addresses</h3>
+                <p className="text-sm text-white/80">Manage shipping addresses</p>
               </Link>
 
-              <Link href="/account/settings" className="border border-luxury-sand bg-luxury-beige p-6 hover:border-luxury-gold transition-colors">
-                <div className="text-4xl font-serif text-luxury-gold mb-3"></div>
-                <h3 className="font-serif text-lg text-luxury-charcoal mb-2">Settings</h3>
-                <p className="text-sm text-luxury-brown">Update your profile</p>
+              <Link href="/account/settings" className="rounded-lg border border-[#bf4e48] bg-[#bf4e48] p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#a9443e] hover:bg-[#a9443e]">
+                <div className="mb-4 h-10 w-10 rounded-full border border-white/30 bg-white/10"></div>
+                <h3 className="mb-2 font-serif text-lg text-white">Settings</h3>
+                <p className="text-sm text-white/80">Update your profile</p>
               </Link>
             </div>
 
             {/* Recent Orders */}
-            <div className="border border-luxury-sand bg-luxury-beige p-8">
+            <div className="rounded-lg border border-[#ded8d0] bg-white p-6 shadow-sm sm:p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-serif text-luxury-charcoal">Recent Orders</h2>
                 <Link href="/account/orders" className="text-sm text-luxury-gold hover:text-luxury-darkGold underline">
@@ -132,7 +132,7 @@ export default function AccountPage() {
                     <Link
                       key={order.id}
                       href={`/account/orders/${order.id}`}
-                      className="block border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-gold transition-colors"
+                      className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] p-4 transition-all hover:border-luxury-gold hover:bg-white hover:shadow-sm"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-serif text-luxury-charcoal">Order #{order.orderNumber}</p>
@@ -160,7 +160,7 @@ export default function AccountPage() {
               ) : (
                 <div className="text-center py-12">
                   <p className="text-luxury-brown mb-6">You haven't placed any orders yet</p>
-                  <Link href="/products" className="btn-luxury px-8 py-3 inline-block">
+                  <Link href="/products" className="inline-block rounded-md bg-[#302b35] px-8 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24]">
                     Start Shopping 
                   </Link>
                 </div>
@@ -168,30 +168,30 @@ export default function AccountPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className="border border-luxury-sand bg-luxury-beige p-8">
+            <div className="rounded-lg border border-[#ded8d0] bg-white p-6 shadow-sm sm:p-8">
               <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Quick Actions</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Link href="/wishlist" className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-gold transition-colors text-center">
+                <Link href="/wishlist" className="rounded-md border border-[#bf4e48] bg-[#bf4e48] p-5 text-center shadow-sm transition-all hover:border-[#a9443e] hover:bg-[#a9443e]">
                   <span className="text-2xl block mb-2"></span>
-                  <span className="text-sm text-luxury-brown">View Wishlist</span>
+                  <span className="text-sm text-white/80">View Wishlist</span>
                 </Link>
                 
-                <Link href="/custom-design" className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-gold transition-colors text-center">
+                <Link href="/custom-design" className="rounded-md border border-[#bf4e48] bg-[#bf4e48] p-5 text-center shadow-sm transition-all hover:border-[#a9443e] hover:bg-[#a9443e]">
                   <span className="text-2xl block mb-2"></span>
-                  <span className="text-sm text-luxury-brown">Custom Design</span>
+                  <span className="text-sm text-white/80">Custom Design</span>
                 </Link>
                 
-                <Link href="/account/addresses" className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-gold transition-colors text-center">
+                <Link href="/account/addresses" className="rounded-md border border-[#bf4e48] bg-[#bf4e48] p-5 text-center shadow-sm transition-all hover:border-[#a9443e] hover:bg-[#a9443e]">
                   <span className="text-2xl block mb-2"></span>
-                  <span className="text-sm text-luxury-brown">Add Address</span>
+                  <span className="text-sm text-white/80">Add Address</span>
                 </Link>
                 
                 <button
                   onClick={handleLogout}
-                  className="border border-luxury-sand bg-luxury-cream p-4 hover:border-luxury-terracotta transition-colors text-center"
+                  className="rounded-md border border-[#bf4e48] bg-[#bf4e48] p-5 text-center shadow-sm transition-all hover:border-[#a9443e] hover:bg-[#a9443e]"
                 >
                   <span className="text-2xl block mb-2"></span>
-                  <span className="text-sm text-luxury-brown">Logout</span>
+                  <span className="text-sm text-white/80">Logout</span>
                 </button>
               </div>
             </div>
@@ -204,13 +204,13 @@ export default function AccountPage() {
 
 function AccountNav() {
   return (
-    <nav className="border border-luxury-sand bg-luxury-beige p-6 sticky top-24">
-      <h2 className="font-serif text-lg text-luxury-charcoal mb-6">My Account</h2>
+    <nav className="sticky top-24 rounded-lg border border-[#ded8d0] bg-white p-5 shadow-sm">
+      <h2 className="mb-5 font-serif text-lg text-[#302b35]">My Account</h2>
       <ul className="space-y-3">
         <li>
           <Link
             href="/account"
-            className="block text-luxury-brown hover:text-luxury-gold transition-colors py-2 border-l-2 border-luxury-gold pl-4 font-medium"
+            className="block rounded-md border border-white/20 bg-white px-4 py-3 font-medium text-[#302b35] shadow-sm transition-all hover:border-white hover:bg-white"
           >
             Dashboard
           </Link>
@@ -218,7 +218,7 @@ function AccountNav() {
         <li>
           <Link
             href="/account/orders"
-            className="block text-luxury-brown hover:text-luxury-gold transition-colors py-2 border-l-2 border-transparent hover:border-luxury-sand pl-4"
+            className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-[#6a636b] transition-all hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white"
           >
             Orders
           </Link>
@@ -226,7 +226,7 @@ function AccountNav() {
         <li>
           <Link
             href="/account/addresses"
-            className="block text-luxury-brown hover:text-luxury-gold transition-colors py-2 border-l-2 border-transparent hover:border-luxury-sand pl-4"
+            className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-[#6a636b] transition-all hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white"
           >
             Addresses
           </Link>
@@ -234,7 +234,7 @@ function AccountNav() {
         <li>
           <Link
             href="/account/settings"
-            className="block text-luxury-brown hover:text-luxury-gold transition-colors py-2 border-l-2 border-transparent hover:border-luxury-sand pl-4"
+            className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-[#6a636b] transition-all hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white"
           >
             Settings
           </Link>
@@ -242,7 +242,7 @@ function AccountNav() {
         <li>
           <Link
             href="/wishlist"
-            className="block text-luxury-brown hover:text-luxury-gold transition-colors py-2 border-l-2 border-transparent hover:border-luxury-sand pl-4"
+            className="block rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-[#6a636b] transition-all hover:border-[#bf4e48] hover:bg-[#bf4e48] hover:text-white"
           >
             Wishlist
           </Link>
