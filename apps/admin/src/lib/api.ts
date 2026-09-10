@@ -1028,6 +1028,7 @@ export async function updateCustomerStatus(id: string, isActive: boolean): Promi
 
 export async function getCustomRequests(): Promise<CustomRequest[]> {
   const data = await adminApi.get<{ items: any[] }>('/admin/custom-orders/requests');
+  console.log('CUSTOM REQUESTS API:', data);
   return data.items.map((request) => ({
     ...request,
     requestNumber: request.customRequestNumber,

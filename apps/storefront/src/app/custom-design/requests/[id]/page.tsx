@@ -116,8 +116,8 @@ export default function CustomRequestDetailPage() {
       <div className="bg-luxury-beige border-b border-luxury-sand py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-3 mb-4">
-            <Link href="/custom-design/requests" className="text-luxury-gold hover:text-luxury-darkGold">
-               Back
+            <Link href="/custom-design/requests" className="inline-flex items-center rounded-md border border-[#ded8d0] bg-white px-4 py-2 text-sm font-medium text-[#302b35] transition hover:border-[#bf4e48] hover:text-[#bf4e48]">
+              Back
             </Link>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -127,24 +127,22 @@ export default function CustomRequestDetailPage() {
               </h1>
               <p className="text-luxury-brown text-lg">Request #{request.requestNumber}</p>
             </div>
-            <span className={`text-sm px-4 py-2 self-start ${
-              request.status === 'Completed' ? 'bg-luxury-gold/20 text-luxury-gold' :
-              request.status === 'In Progress' ? 'bg-luxury-gold/10 text-luxury-gold' :
-              request.status === 'Quoted' ? 'bg-luxury-gold/10 text-luxury-gold' :
-              'bg-luxury-sand text-luxury-brown'
+            <span className={`inline-flex items-center rounded-md border px-4 py-2 text-sm font-medium self-start ${
+              request.status === 'Completed' ? 'border-[#bf4e48]/30 bg-[#bf4e48]/10 text-[#a9443e]' :
+              request.status === 'In Progress' ? 'border-[#bf4e48]/20 bg-[#bf4e48]/5 text-[#bf4e48]' :
+              request.status === 'Quoted' ? 'border-[#bf4e48]/20 bg-[#bf4e48]/5 text-[#bf4e48]' :
+              'border-[#ded8d0] bg-[#faf9f7] text-[#6b625c]'
             }`}>
               {request.status}
             </span>
           </div>
         </div>
       </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Request Details */}
-            <div className="border border-luxury-sand bg-luxury-beige p-8">
+            <div className="rounded-lg border border-[#ded8d0] bg-white p-6 shadow-sm sm:p-8">
               <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Request Details</h2>
               
               <div className="space-y-4">
@@ -186,10 +184,10 @@ export default function CustomRequestDetailPage() {
                   <p className="text-luxury-brown">{request.quantity}</p>
                 </div>
 
-                {request.estimatedBudget && (
+                {request.estimatedBudget != null && Number.isFinite(Number(request.estimatedBudget)) && (
                   <div>
                     <h3 className="text-sm font-serif text-luxury-charcoal mb-2 tracking-wide">Budget</h3>
-                    <p className="text-luxury-brown">${request.estimatedBudget.toFixed(2)}</p>
+                    <p className="text-luxury-brown">${Number(request.estimatedBudget).toFixed(2)}</p>
                   </div>
                 )}
               </div>
@@ -206,9 +204,9 @@ export default function CustomRequestDetailPage() {
                       key={message.id}
                       className={`p-4 ${
                         message.senderType === 'CUSTOMER'
-                          ? 'bg-luxury-gold/10 ml-auto max-w-[80%]'
+                          ? 'bg-[#bf4e48]/10 border border-[#bf4e48]/20 ml-auto max-w-[85%]'
                           : message.senderType === 'ADMIN'
-                          ? 'bg-luxury-sand max-w-[80%]'
+                          ? 'bg-[#faf9f7] border border-[#ded8d0] max-w-[85%]'
                           : 'bg-luxury-cream text-center text-sm'
                       }`}
                     >
@@ -242,14 +240,14 @@ export default function CustomRequestDetailPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   rows={4}
-                  className="input-luxury"
+                  className="w-full min-h-[120px] rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3 text-sm text-[#302b35] outline-none transition focus:border-[#bf4e48] focus:ring-2 focus:ring-[#bf4e48]/10"
                   placeholder="Type your message..."
                   disabled={sendingMessage}
                 />
                 <button
                   type="submit"
                   disabled={sendingMessage || !newMessage.trim()}
-                  className="btn-luxury px-6 py-3 disabled:opacity-50"
+                  className="rounded-md border border-[#bf4e48] bg-[#bf4e48] px-6 py-3 text-sm font-semibold text-white transition-all hover:border-[#a9443e] hover:bg-[#a9443e] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {sendingMessage ? 'Sending...' : 'Send Message '}
                 </button>
@@ -283,34 +281,34 @@ export default function CustomRequestDetailPage() {
 
                   <div className="flex justify-between text-luxury-brown">
                     <span>Base Price</span>
-                    <span>${latestQuote.basePrice.toFixed(2)}</span>
+                     <span>${Number(latestQuote.basePrice ?? 0).toFixed(2)}</span>
                   </div>
 
                   {latestQuote.designFee && latestQuote.designFee > 0 && (
                     <div className="flex justify-between text-luxury-brown">
                       <span>Design Fee</span>
-                      <span>${latestQuote.designFee.toFixed(2)}</span>
+                       <span>${Number(latestQuote.designFee ?? 0).toFixed(2)}</span>
                     </div>
                   )}
 
                   {latestQuote.materialFee && latestQuote.materialFee > 0 && (
                     <div className="flex justify-between text-luxury-brown">
                       <span>Material Fee</span>
-                      <span>${latestQuote.materialFee.toFixed(2)}</span>
+                       <span>${Number(latestQuote.materialFee ?? 0).toFixed(2)}</span>
                     </div>
                   )}
 
                   {latestQuote.discount && latestQuote.discount > 0 && (
                     <div className="flex justify-between text-luxury-terracotta">
                       <span>Discount</span>
-                      <span>-${latestQuote.discount.toFixed(2)}</span>
+                        <span>-${Number(latestQuote.discount ?? 0).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="flex justify-between text-2xl font-serif text-luxury-charcoal mb-6">
                   <span>Total</span>
-                  <span>${latestQuote.total.toFixed(2)}</span>
+                   <span>${Number(latestQuote.total ?? 0).toFixed(2)}</span>
                 </div>
 
                 {latestQuote.notes && (
@@ -329,11 +327,11 @@ export default function CustomRequestDetailPage() {
                   <div className="space-y-3">
                     <button
                       onClick={() => handleAcceptQuote(latestQuote.id)}
-                      className="btn-luxury w-full px-6 py-3"
+                      className="w-full rounded-md border border-[#bf4e48] bg-[#bf4e48] px-6 py-3 text-sm font-semibold text-white transition-all hover:border-[#a9443e] hover:bg-[#a9443e]"
                     >
                       Accept Quote 
                     </button>
-                    <button className="w-full border border-luxury-sand bg-luxury-cream px-6 py-3 text-sm text-luxury-brown hover:border-luxury-gold transition-colors">
+                    <button className="w-full rounded-md border border-[#ded8d0] bg-white px-6 py-3 text-sm font-medium text-[#302b35] transition-all hover:border-[#bf4e48] hover:text-[#bf4e48]">
                       Request Revision
                     </button>
                   </div>
@@ -369,7 +367,7 @@ export default function CustomRequestDetailPage() {
             </div>
           </div>
         </div>
-      </div>
     </main>
   );
 }
+

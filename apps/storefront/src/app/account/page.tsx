@@ -176,9 +176,10 @@ export default function AccountPage() {
                   <span className="text-sm text-white/80">View Wishlist</span>
                 </Link>
                 
-                <Link href="/custom-design" className="rounded-md border border-[#bf4e48] bg-[#bf4e48] p-5 text-center shadow-sm transition-all hover:border-[#a9443e] hover:bg-[#a9443e]">
+
+                <Link href="/custom-design/requests" className="rounded-md border border-[#bf4e48] bg-[#bf4e48] p-5 text-center shadow-sm transition-all hover:border-[#a9443e] hover:bg-[#a9443e]">
                   <span className="text-2xl block mb-2"></span>
-                  <span className="text-sm text-white/80">Custom Design</span>
+                  <span className="text-sm text-white/80">My Custom Requests</span>
                 </Link>
                 
                 <Link href="/account/addresses" className="rounded-md border border-[#bf4e48] bg-[#bf4e48] p-5 text-center shadow-sm transition-all hover:border-[#a9443e] hover:bg-[#a9443e]">

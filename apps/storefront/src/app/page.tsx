@@ -177,25 +177,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      <section className="border-b border-black/10 bg-white">
-        <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-8 px-6 py-10 sm:px-8 lg:grid-cols-3 lg:items-center lg:gap-12 lg:py-14">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.24em] text-luxury-olive">
-              The LuxeCraft Edit
-            </p>
-            <h2 className="mt-3 font-serif text-3xl font-light leading-tight sm:text-4xl">
-              Pieces with a story.
-            </h2>
-          </div>
-
-          <p className="max-w-2xl text-sm leading-7 text-luxury-brown lg:col-span-2 lg:max-w-none">
-            Discover handcrafted collections selected for timeless interiors,
-            meaningful spaces, and collectors who value craftsmanship over
-            trends.
-          </p>
-        </div>
-      </section>
-
       {/* FEATURED COLLECTION SLIDER */}
       {!loading && categories.length > 0 && (
         <section className="border-y border-black/10 bg-white">

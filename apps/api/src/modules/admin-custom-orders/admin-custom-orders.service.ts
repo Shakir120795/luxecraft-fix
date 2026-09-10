@@ -11,8 +11,8 @@ export class AdminCustomOrdersService {
     const [items, total] = await Promise.all([
       this.prisma.customRequest.findMany({
         where: params.status ? { status: params.status as any } : {},
-        skip: params.skip ?? 0,
-        take: params.take ?? 50,
+        skip: Number.isFinite(params.skip) ? params.skip : 0,
+        take: Number.isFinite(params.take) ? params.take : 50,
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { email: true, firstName: true } }, _count: { select: { messages: true, quotes: true } } },
       }),
@@ -43,3 +43,5 @@ export class AdminCustomOrdersService {
     });
   }
 }
+
+

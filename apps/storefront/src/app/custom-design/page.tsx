@@ -5,6 +5,34 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createCustomRequest, isAuthenticated } from '@/lib/api';
 
+async function getCustomDesignToken(): Promise<string | null> {
+  const accessToken = localStorage.getItem('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+
+  if (!accessToken || !refreshToken) return null;
+
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
+    const response = await fetch(`${apiUrl}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success || !data.data?.accessToken) return null;
+
+    localStorage.setItem('accessToken', data.data.accessToken);
+    if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
+    if (data.data.user) localStorage.setItem('user', JSON.stringify(data.data.user));
+
+    return data.data.accessToken;
+  } catch {
+    return null;
+  }
+}
+
 export default function CustomDesignPage() {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -148,6 +176,13 @@ export default function CustomDesignPage() {
     }
 
     setError(null);
+
+    const token = await getCustomDesignToken();
+    if (!token) {
+      setError('Your session has expired. Please log in again.');
+      setSubmitting(false);
+      return;
+    }
     setSubmitting(true);
 
     const result = await createCustomRequest({
@@ -502,3 +537,7 @@ export default function CustomDesignPage() {
     </main>
   );
 }
+
+
+
+

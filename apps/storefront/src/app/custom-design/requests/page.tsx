@@ -67,7 +67,7 @@ export default function CustomRequestsPage() {
 
           <Link
             href="/custom-design"
-            className="btn-luxury px-6 py-3"
+            className="rounded-md border border-[#bf4e48] bg-[#bf4e48] px-6 py-3 text-sm font-semibold text-white transition-all hover:border-[#a9443e] hover:bg-[#a9443e]"
           >
             + New Request
           </Link>
@@ -156,3 +156,4 @@ export default function CustomRequestsPage() {
     </main>
   );
 }
+
