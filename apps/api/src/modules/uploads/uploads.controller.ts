@@ -14,6 +14,35 @@ import { UploadsService } from './uploads.service';
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
+  @Post('categories')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: undefined,
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  async uploadCategoryImage(
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.uploadsService.saveCategoryImage(file);
+  }
+
+  @Post('hero')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: undefined,
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  async uploadHeroImage(
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.uploadsService.saveHeroImage(file);
+  }
   @Post('products')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -29,3 +58,4 @@ export class UploadsController {
     return this.uploadsService.saveProductImage(file);
   }
 }
+

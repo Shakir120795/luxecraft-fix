@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { AdminLayout } from '@/components/AdminLayout';
-import { getCategory, createCategory, updateCategory, getCategories, Category, CreateCategoryRequest } from '@/lib/api';
+import { getCategory, createCategory, updateCategory, getCategories, uploadCategoryImage, Category, CreateCategoryRequest } from '@/lib/api';
 
 export default function CategoryEditPage() {
   const router = useRouter();
@@ -23,6 +23,7 @@ export default function CategoryEditPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     loadCategories();
@@ -71,6 +72,20 @@ export default function CategoryEditPage() {
       name,
       slug: generateSlug(name),
     });
+  }
+
+  async function handleImageUpload(file: File) {
+    setUploadingImage(true);
+    setError('');
+
+    try {
+      const result = await uploadCategoryImage(file);
+      setFormData((prev) => ({ ...prev, imageUrl: result.url }));
+    } catch (err: any) {
+      setError(err.message || 'Failed to upload category image');
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -213,7 +228,34 @@ export default function CategoryEditPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                  Image URL
+                  Upload Image
+                </label>
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.gif,.avif,image/*"
+                  disabled={uploadingImage}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      void handleImageUpload(file);
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                  className="w-full px-4 py-3 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)]"
+                />
+                <p className="mt-2 text-xs text-[var(--color-muted)]">
+                  JPG, PNG, WEBP, GIF or AVIF ? maximum 10 MB.
+                </p>
+                {uploadingImage && (
+                  <p className="mt-2 text-sm text-[var(--color-accent)]">
+                    Uploading image...
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
+                  Or use Image URL
                 </label>
                 <input
                   type="url"

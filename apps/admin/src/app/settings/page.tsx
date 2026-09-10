@@ -7,6 +7,7 @@ import {
   getProducts,
   getHero,
   updateHero,
+  uploadHeroImage,
   Admin,
   Product,
   HeroSection,
@@ -21,6 +22,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [savingHero, setSavingHero] = useState(false);
   const [heroMessage, setHeroMessage] = useState('');
+  const [uploadingHeroSlot, setUploadingHeroSlot] = useState<2 | 3 | null>(null);
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [currencyMessage, setCurrencyMessage] = useState('');
@@ -35,6 +37,14 @@ export default function SettingsPage() {
     primaryCtaLink: '/products',
     secondaryCtaText: 'Bespoke Design',
     secondaryCtaLink: '/custom-design',
+    hero2ProductId: '',
+    hero2ImageUrl: '',
+    hero2Title: 'Signature Rugs',
+    hero2Link: '/products',
+    hero3ProductId: '',
+    hero3ImageUrl: '',
+    hero3Title: 'Artisan Objects',
+    hero3Link: '/products',
     isActive: true,
   });
 
@@ -69,6 +79,14 @@ export default function SettingsPage() {
           primaryCtaLink: heroData.primaryCtaLink ?? '/products',
           secondaryCtaText: heroData.secondaryCtaText ?? '',
           secondaryCtaLink: heroData.secondaryCtaLink ?? '/custom-design',
+          hero2ProductId: heroData.hero2ProductId ?? '',
+          hero2ImageUrl: heroData.hero2ImageUrl ?? '',
+          hero2Title: heroData.hero2Title ?? 'Signature Rugs',
+          hero2Link: heroData.hero2Link ?? '/products',
+          hero3ProductId: heroData.hero3ProductId ?? '',
+          hero3ImageUrl: heroData.hero3ImageUrl ?? '',
+          hero3Title: heroData.hero3Title ?? 'Artisan Objects',
+          hero3Link: heroData.hero3Link ?? '/products',
           isActive: heroData.isActive,
         });
       }
@@ -115,6 +133,14 @@ export default function SettingsPage() {
         primaryCtaLink: form.primaryCtaLink || null,
         secondaryCtaText: form.secondaryCtaText || null,
         secondaryCtaLink: form.secondaryCtaLink || null,
+        hero2ProductId: form.hero2ProductId || null,
+        hero2ImageUrl: form.hero2ImageUrl || null,
+        hero2Title: form.hero2Title || null,
+        hero2Link: form.hero2Link || null,
+        hero3ProductId: form.hero3ProductId || null,
+        hero3ImageUrl: form.hero3ImageUrl || null,
+        hero3Title: form.hero3Title || null,
+        hero3Link: form.hero3Link || null,
         isActive: form.isActive,
       });
 
@@ -125,6 +151,24 @@ export default function SettingsPage() {
       setHeroMessage('Failed to save hero settings.');
     } finally {
       setSavingHero(false);
+    }
+  }
+
+  async function handleHeroImageUpload(slot: 2 | 3, file: File) {
+    try {
+      setUploadingHeroSlot(slot);
+
+      const uploaded = await uploadHeroImage(file);
+
+      setForm((current) => ({
+        ...current,
+        [slot === 2 ? 'hero2ImageUrl' : 'hero3ImageUrl']: uploaded.url,
+      }));
+    } catch (error) {
+      console.error('Failed to upload hero image:', error);
+      setHeroMessage('Failed to upload hero image.');
+    } finally {
+      setUploadingHeroSlot(null);
     }
   }
 
@@ -525,6 +569,135 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </div>
+
+
+        {/* HERO SECONDARY CARDS */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {[2, 3].map((slot) => {
+            const imageKey =
+              slot === 2 ? 'hero2ImageUrl' : 'hero3ImageUrl';
+            const titleKey =
+              slot === 2 ? 'hero2Title' : 'hero3Title';
+            const linkKey =
+              slot === 2 ? 'hero2Link' : 'hero3Link';
+
+            return (
+              <div
+                key={slot}
+                className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6"
+              >
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                  Homepage Card {slot}
+                </p>
+
+                <h3 className="mt-1 text-xl font-serif text-[var(--color-primary)]">
+                  Hero {slot}
+                </h3>
+
+                <div className="mt-5 space-y-4">
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                      Hero Image
+                    </label>
+
+                    <label className="flex cursor-pointer items-center justify-center border border-dashed border-[var(--color-border)] bg-white px-4 py-6 text-sm text-[var(--color-muted)] transition-colors hover:border-[var(--color-accent)]">
+                      <span>
+                        {uploadingHeroSlot === slot
+                          ? 'Uploading...'
+                          : 'Choose Image'}
+                      </span>
+
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                        className="hidden"
+                        disabled={uploadingHeroSlot !== null}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            void handleHeroImageUpload(slot as 2 | 3, file);
+                          }
+                          e.currentTarget.value = '';
+                        }}
+                      />
+                    </label>
+
+                    <div className="mt-3">
+                      <input
+                        value={form[imageKey]}
+                        onChange={(e) =>
+                          setForm((current) => ({
+                            ...current,
+                            [imageKey]: e.target.value,
+                          }))
+                        }
+                        placeholder="Or paste image URL"
+                        className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                      />
+                    </div>
+                  </div>
+
+                  {form[imageKey] ? (
+                    <div className="aspect-[16/10] overflow-hidden border border-[var(--color-border)]">
+                      <img
+                        src={form[imageKey]}
+                        alt={form[titleKey] || `Hero ${slot}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                      Card Title
+                    </label>
+                    <input
+                      value={form[titleKey]}
+                      onChange={(e) =>
+                        setForm((current) => ({
+                          ...current,
+                          [titleKey]: e.target.value,
+                        }))
+                      }
+                      placeholder={
+                        slot === 2 ? 'Signature Rugs' : 'Artisan Objects'
+                      }
+                      className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                      Card Link
+                    </label>
+                    <input
+                      value={form[linkKey]}
+                      onChange={(e) =>
+                        setForm((current) => ({
+                          ...current,
+                          [linkKey]: e.target.value,
+                        }))
+                      }
+                      placeholder="/products"
+                      className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={saveHero}
+            disabled={savingHero || uploadingHeroSlot !== null}
+            className="bg-[var(--color-accent)] px-7 py-3 text-xs uppercase tracking-[0.16em] text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {savingHero ? 'Saving...' : 'Save Hero'}
+          </button>
         </div>
 
         {/* PROFILE INFO */}

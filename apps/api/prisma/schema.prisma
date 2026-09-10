@@ -254,6 +254,8 @@ model Product {
   category             Category?                    @relation(fields: [categoryId], references: [id])
   reviews              Review[]
   heroSections         HeroSection[]
+  hero2Sections        HeroSection[] @relation("Hero2Product")
+  hero3Sections        HeroSection[] @relation("Hero3Product")
   wishlistItems        WishlistItem[]
 
   @@index([categoryId])
@@ -949,13 +951,28 @@ model HeroSection {
   primaryCtaLink     String?
   secondaryCtaText   String?
   secondaryCtaLink   String?
+
+  hero2ProductId     String?
+  hero2ImageUrl      String?
+  hero2Title         String?
+  hero2Link          String?
+
+  hero3ProductId     String?
+  hero3ImageUrl      String?
+  hero3Title         String?
+  hero3Link          String?
+
   isActive           Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
   product            Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  hero2Product       Product? @relation("Hero2Product", fields: [hero2ProductId], references: [id], onDelete: SetNull)
+  hero3Product       Product? @relation("Hero3Product", fields: [hero3ProductId], references: [id], onDelete: SetNull)
 
   @@index([productId])
+  @@index([hero2ProductId])
+  @@index([hero3ProductId])
   @@index([isActive])
   @@map("hero_sections")
 }

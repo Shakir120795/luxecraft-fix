@@ -22,6 +22,8 @@ export class AdminCmsService {
             },
           },
         },
+        hero2Product: true,
+        hero3Product: true,
       },
     });
   }
@@ -36,6 +38,14 @@ export class AdminCmsService {
     primaryCtaLink?: string | null;
     secondaryCtaText?: string | null;
     secondaryCtaLink?: string | null;
+    hero2ProductId?: string | null;
+    hero2ImageUrl?: string | null;
+    hero2Title?: string | null;
+    hero2Link?: string | null;
+    hero3ProductId?: string | null;
+    hero3ImageUrl?: string | null;
+    hero3Title?: string | null;
+    hero3Link?: string | null;
     isActive?: boolean;
   }) {
     const existing = await this.prisma.heroSection.findFirst({
@@ -52,6 +62,14 @@ export class AdminCmsService {
       primaryCtaLink: data.primaryCtaLink ?? null,
       secondaryCtaText: data.secondaryCtaText ?? null,
       secondaryCtaLink: data.secondaryCtaLink ?? null,
+      hero2ProductId: data.hero2ProductId ?? null,
+      hero2ImageUrl: data.hero2ImageUrl ?? null,
+      hero2Title: data.hero2Title ?? null,
+      hero2Link: data.hero2Link ?? null,
+      hero3ProductId: data.hero3ProductId ?? null,
+      hero3ImageUrl: data.hero3ImageUrl ?? null,
+      hero3Title: data.hero3Title ?? null,
+      hero3Link: data.hero3Link ?? null,
       isActive: data.isActive ?? true,
     };
 
@@ -67,6 +85,8 @@ export class AdminCmsService {
               },
             },
           },
+          hero2Product: true,
+          hero3Product: true,
         },
       });
     }
@@ -81,6 +101,8 @@ export class AdminCmsService {
             },
           },
         },
+        hero2Product: true,
+        hero3Product: true,
       },
     });
   }

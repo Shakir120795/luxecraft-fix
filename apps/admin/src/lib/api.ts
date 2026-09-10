@@ -58,6 +58,44 @@ export const adminApi = {
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
 
+export async function uploadCategoryImage(file: File): Promise<{
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  storageKey: string;
+}> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token =
+    typeof window === 'undefined'
+      ? null
+      : localStorage.getItem('adminToken');
+
+  const response = await fetch(`${API_BASE}/admin/uploads/categories`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+    body: formData,
+  });
+
+  const json = await response.json();
+
+  if (!response.ok || !json.success) {
+    throw new ApiError(
+      json.statusCode ?? response.status,
+      json.error ?? 'UploadError',
+      json.message ?? 'Failed to upload category image',
+    );
+  }
+
+  return json.data;
+}
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -452,6 +490,343 @@ export interface LoginResponse {
   refreshToken: string;
 }
 
+export async function uploadHeroImage(file: File): Promise<{
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  storageKey: string;
+}> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token =
+    typeof window === 'undefined'
+      ? null
+      : localStorage.getItem('adminToken');
+
+  const response = await fetch(`${API_BASE}/admin/uploads/hero`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+    body: formData,
+  });
+
+  const json = await response.json();
+
+  if (!response.ok || !json.success) {
+    throw new ApiError(
+      json.statusCode ?? response.status,
+      json.error ?? 'UploadError',
+      json.message ?? 'Failed to upload category image',
+    );
+  }
+
+  return json.data;
+}
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface Admin {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: 'SUPER_ADMIN' | 'ADMIN';
+  emailVerified: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  name: string;
+  sku: string | null;
+  sortOrder: number;
+    currency?: string;
+  regularPrice: number | null;
+  salePrice: number | null;
+  weightKg: number | null;
+  lengthCm: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
+  stockQty: number;
+  reservedQty: number;
+  lowStockAt: number | null;
+  trackInventory: boolean;
+  allowBackorder: boolean;
+  isAvailable: boolean;
+  media: ProductMedia[];
+}
+
+export interface ProductMedia {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  type: 'IMAGE' | 'VIDEO';
+  url: string;
+  storageKey: string | null;
+  altText: string | null;
+  sortOrder: number;
+  isMain: boolean;
+}
+
+export interface ProductCustomizationOption {
+  id: string;
+  productId: string;
+  groupName: string;
+  optionLabel: string;
+  priceDelta: number;
+  sortOrder: number;
+  isAvailable: boolean;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  sku: string;
+  description: string;
+  shortDescription: string | null;
+  material: string | null;
+  style: string | null;
+  collection: string | null;
+  color: string | null;
+  deliveryInfo: string | null;
+  shippingInfo: string | null;
+  returnsInfo: string | null;
+  careInstructions: string | null;
+  origin: string | null;
+  productNote: string | null;
+
+  regularPrice: number;
+  salePrice: number | null;
+  taxRate: number;
+  currency: string;
+
+  status: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
+  emailVerified: boolean;
+  isActive: boolean;
+  isFeatured: boolean;
+  isCustomizable: boolean;
+
+  categoryId: string;
+  stockQuantity: number;
+
+  weightKg: number | null;
+  lengthCm: number | null;
+  widthCm: number | null;
+  heightCm: number | null;
+
+  seoTitle: string | null;
+  seoDesc: string | null;
+
+  trackInventory: boolean;
+  allowBackorder: boolean;
+
+  images: string[];
+  media: ProductMedia[];
+  variants: ProductVariant[];
+  customizationOptions: ProductCustomizationOption[];
+
+  createdAt: string;
+  updatedAt: string;
+}
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  imageUrl: string | null;
+  parentId: string | null;
+  emailVerified: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId: string;
+  status: string;
+  total: number;
+  subtotal: number;
+  tax: number;
+  shippingCost: number;
+  shippingAddressId: string;
+  billingAddressId: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  items?: OrderItem[];
+}
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  quantity: number;
+  price: number;
+  total: number;
+  product?: {
+    id: string;
+    name: string;
+    sku: string;
+    images: string[];
+  };
+}
+
+export interface CustomerAddress {
+  id: string;
+  type: string;
+  firstName: string;
+  lastName: string;
+  company: string | null;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  stateProvince: string | null;
+  postalCode: string;
+  country: string;
+  phone: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CustomerWishlistItem {
+  id: string;
+  productId: string;
+  variantId: string | null;
+  createdAt: string;
+  product?: {
+    id: string;
+    name: string;
+    slug: string;
+    regularPrice: number | null;
+    salePrice: number | null;
+    status: string;
+  };
+  variant?: {
+    id: string;
+    name: string;
+    regularPrice: number | null;
+    salePrice: number | null;
+    isAvailable: boolean;
+  } | null;
+}
+
+export interface CustomerWishlist {
+  id: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  items: CustomerWishlistItem[];
+}
+
+export interface Customer {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string | null;
+  phone?: string | null;
+  country: string | null;
+  emailVerified: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string | null;
+  totalSpent?: number;
+  addresses?: CustomerAddress[];
+  wishlists?: CustomerWishlist | null;
+  customRequests?: CustomRequest[];
+  _count?: {
+    orders: number;
+    addresses: number;
+    customRequests?: number;
+  };
+}
+
+
+export interface CustomRequest {
+  id: string;
+  requestNumber: string;
+  userId: string;
+  status: string;
+  title: string;
+  description: string;
+  budget: number | null;
+  timeline: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  };
+  messages?: CustomRequestMessage[];
+  quote?: CustomRequestQuote | null;
+}
+
+export interface CustomRequestMessage {
+  id: string;
+  customRequestId: string;
+  message: string;
+  isAdminReply: boolean;
+  createdAt: string;
+}
+
+export interface CustomRequestQuote {
+  id: string;
+  customRequestId: string;
+  amount: number;
+  description: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DashboardStats {
+  totalRevenue: number;
+  totalOrders: number;
+  totalCustomers: number;
+  totalProducts: number;
+  pendingOrders: number;
+  pendingCustomRequests: number;
+  revenueChange: number;
+  ordersChange: number;
+}
+
+// ============================================================================
+// Auth Functions
+// ============================================================================
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  admin: Admin;
+  accessToken: string;
+  refreshToken: string;
+}
+
 export async function adminLogin(credentials: LoginRequest): Promise<LoginResponse> {
   return adminApi.post<LoginResponse>('/admin/auth/login', credentials);
 }
@@ -589,16 +964,18 @@ export interface CreateCategoryRequest {
 }
 
 export async function createCategory(data: CreateCategoryRequest): Promise<Category> {
+  const { isActive, ...categoryData } = data;
   return mapCategory(await adminApi.post<any>('/admin/categories', {
-    ...data,
-    status: data.isActive ? 'ACTIVE' : 'DRAFT',
+    ...categoryData,
+    status: isActive ? 'ACTIVE' : 'DRAFT',
   }));
 }
 
 export async function updateCategory(id: string, data: Partial<CreateCategoryRequest>): Promise<Category> {
+  const { isActive, ...categoryData } = data;
   return mapCategory(await adminApi.patch<any>(`/admin/categories/${id}`, {
-    ...data,
-    ...(data.isActive !== undefined ? { status: data.isActive ? 'ACTIVE' : 'DRAFT' } : {}),
+    ...categoryData,
+    ...(isActive !== undefined ? { status: isActive ? 'ACTIVE' : 'DRAFT' } : {}),
   }));
 }
 
@@ -851,6 +1228,14 @@ export interface HeroSection {
   primaryCtaLink: string | null;
   secondaryCtaText: string | null;
   secondaryCtaLink: string | null;
+  hero2ProductId: string | null;
+  hero2ImageUrl: string | null;
+  hero2Title: string | null;
+  hero2Link: string | null;
+  hero3ProductId: string | null;
+  hero3ImageUrl: string | null;
+  hero3Title: string | null;
+  hero3Link: string | null;
   isActive: boolean;
   product?: Product | null;
   createdAt: string;
@@ -867,6 +1252,14 @@ export interface UpdateHeroRequest {
   primaryCtaLink?: string | null;
   secondaryCtaText?: string | null;
   secondaryCtaLink?: string | null;
+  hero2ProductId?: string | null;
+  hero2ImageUrl?: string | null;
+  hero2Title?: string | null;
+  hero2Link?: string | null;
+  hero3ProductId?: string | null;
+  hero3ImageUrl?: string | null;
+  hero3Title?: string | null;
+  hero3Link?: string | null;
   isActive?: boolean;
 }
 
@@ -1010,3 +1403,5 @@ export async function getDefaultCurrency(): Promise<string> {
 export async function updateDefaultCurrency(currency: string): Promise<string> {
   return adminApi.put<string>('/admin/settings/currency', { currency });
 }
+
+

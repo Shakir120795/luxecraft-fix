@@ -131,6 +131,14 @@ export interface HeroSection {
   primaryCtaLink: string | null;
   secondaryCtaText: string | null;
   secondaryCtaLink: string | null;
+  hero2ProductId: string | null;
+  hero2ImageUrl: string | null;
+  hero2Title: string | null;
+  hero2Link: string | null;
+  hero3ProductId: string | null;
+  hero3ImageUrl: string | null;
+  hero3Title: string | null;
+  hero3Link: string | null;
   isActive: boolean;
   product?: Product | null;
   createdAt: string;

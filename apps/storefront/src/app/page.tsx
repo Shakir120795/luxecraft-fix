@@ -60,23 +60,19 @@ export default function HomePage() {
   }, []);
 
   const heroCategory = categories[0];
-  const sideCategoryOne = categories[1];
+  const heroImage = hero?.imageUrl || heroCategory?.imageUrl || products[0]?.media?.find((media) => media.isMain)?.url || products[0]?.media?.[0]?.url || '';
   const sideCategoryTwo = categories[2];
 
-  const heroImage =
+  const sideImageOne = hero?.hero2ImageUrl || products[1]?.media?.find((media) => media.isMain)?.url || products[1]?.media?.[0]?.url || '';
     heroCategory?.imageUrl ||
     products[0]?.media?.find((media) => media.isMain)?.url ||
     products[0]?.media?.[0]?.url ||
     '';
-
-  const sideImageOne =
-    sideCategoryOne?.imageUrl ||
+  const sideImageTwo = hero?.hero3ImageUrl || products[2]?.media?.find((media) => media.isMain)?.url || products[2]?.media?.[0]?.url || '';
     products[1]?.media?.find((media) => media.isMain)?.url ||
     products[1]?.media?.[0]?.url ||
     '';
 
-  const sideImageTwo =
-    sideCategoryTwo?.imageUrl ||
     products[2]?.media?.find((media) => media.isMain)?.url ||
     products[2]?.media?.[0]?.url ||
     '';
@@ -134,13 +130,13 @@ export default function HomePage() {
 
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-1 lg:grid-rows-2">
             <Link
-              href={sideCategoryOne ? `/categories/${sideCategoryOne.slug}` : '/products'}
+              href={hero?.hero2Link || '/products'}
               className="group relative min-h-[260px] overflow-hidden bg-[#ded7ce] lg:min-h-0"
             >
               {sideImageOne ? (
                 <img
                   src={sideImageOne}
-                  alt={sideCategoryOne?.name || 'Luxury collection'}
+                  alt={hero?.hero2Title || 'Luxury collection'}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               ) : (
@@ -151,19 +147,19 @@ export default function HomePage() {
 
               <div className="absolute bottom-5 left-5 right-5">
                 <h2 className="mt-1 font-serif text-2xl text-white sm:text-3xl">
-                  {sideCategoryOne?.name || 'Signature Rugs'}
+                  {hero?.hero2Title || 'Signature Rugs'}
                 </h2>
               </div>
             </Link>
 
             <Link
-              href={sideCategoryTwo ? `/categories/${sideCategoryTwo.slug}` : '/products'}
+              href={hero?.hero3Link || '/products'}
               className="group relative min-h-[260px] overflow-hidden bg-[#d8d0c5] lg:min-h-0"
             >
               {sideImageTwo ? (
                 <img
                   src={sideImageTwo}
-                  alt={sideCategoryTwo?.name || 'Artisan collection'}
+                  alt={hero?.hero3Title || 'Artisan collection'}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                 />
               ) : (
@@ -174,14 +170,13 @@ export default function HomePage() {
 
               <div className="absolute bottom-5 left-5 right-5">
                 <h2 className="mt-1 font-serif text-2xl text-white sm:text-3xl">
-                  {sideCategoryTwo?.name || 'Artisan Objects'}
+                  {hero?.hero3Title || 'Artisan Objects'}
                 </h2>
               </div>
             </Link>
           </div>
         </div>
       </section>
-      {/* INTRO STRIP */}
       <section className="border-b border-black/10 bg-white">
         <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-8 px-6 py-10 sm:px-8 lg:grid-cols-3 lg:items-center lg:gap-12 lg:py-14">
           <div>
@@ -523,6 +518,9 @@ export default function HomePage() {
     </main>
   );
 }
+
+
+
 
 
 

@@ -11,7 +11,47 @@ import { randomUUID } from 'node:crypto';
 export class UploadsService {
   private readonly uploadRoot = resolve(process.cwd(), 'uploads');
   private readonly productsRoot = join(this.uploadRoot, 'products');
+  private readonly categoriesRoot = join(this.uploadRoot, 'categories');
+  private readonly heroRoot = join(this.uploadRoot, 'hero');
 
+  async saveHeroImage(file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Image file is required.');
+    }
+
+    if (!file.mimetype?.startsWith('image/')) {
+      throw new BadRequestException('Only image files are allowed.');
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('Image size must be 10 MB or smaller.');
+    }
+
+    try {
+      await mkdir(this.heroRoot, { recursive: true });
+
+      const extension = extname(file.originalname).toLowerCase();
+      const filename = `${randomUUID()}${extension}`;
+      const destination = join(this.heroRoot, filename);
+
+      await writeFile(destination, file.buffer);
+
+      const publicApiUrl =
+        process.env.PUBLIC_API_URL?.trim().replace(/\/+$/, '') ||
+        `http://localhost:${process.env.API_PORT ?? 3001}`;
+
+      return {
+        filename,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        url: `${publicApiUrl}/uploads/hero/${filename}`,
+        storageKey: `hero/${filename}`,
+      };
+    } catch (error) {
+      throw new BadRequestException('Failed to save hero image.');
+    }
+  }
   async saveProductImage(file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('Image file is required.');
@@ -68,6 +108,61 @@ export class UploadsService {
       console.error('Failed to save product image:', error);
 
       throw new InternalServerErrorException('Failed to save image.');
+    }
+  }
+
+  async saveCategoryImage(file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('Image file is required.');
+    }
+
+    if (!file.mimetype?.startsWith('image/')) {
+      throw new BadRequestException('Only image files are allowed.');
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      throw new BadRequestException('Image size must be 10 MB or smaller.');
+    }
+
+    const extension = extname(file.originalname).toLowerCase();
+    const allowedExtensions = new Set([
+      '.jpg',
+      '.jpeg',
+      '.png',
+      '.webp',
+      '.gif',
+      '.avif',
+    ]);
+
+    if (!allowedExtensions.has(extension)) {
+      throw new BadRequestException(
+        'Unsupported image format. Use JPG, PNG, WEBP, GIF or AVIF.',
+      );
+    }
+
+    try {
+      await mkdir(this.categoriesRoot, { recursive: true });
+
+      const filename = `${randomUUID()}${extension}`;
+      const destination = join(this.categoriesRoot, filename);
+
+      await writeFile(destination, file.buffer);
+
+      const publicApiUrl =
+        process.env.PUBLIC_API_URL?.trim().replace(/\/+$/, '') ||
+        `http://localhost:${process.env.API_PORT ?? 3001}`;
+
+      return {
+        filename,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        url: `${publicApiUrl}/uploads/categories/${filename}`,
+        storageKey: `categories/${filename}`,
+      };
+    } catch (error) {
+      console.error('Failed to save category image:', error);
+      throw new InternalServerErrorException('Failed to save category image.');
     }
   }
 
@@ -147,3 +242,6 @@ export class UploadsService {
     }
   }
 }
+
+
+
