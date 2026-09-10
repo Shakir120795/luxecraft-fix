@@ -210,7 +210,7 @@ export function SiteHeader() {
                         className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                       >
                         {isAuth ? 'My Account' : 'Sign In'}
-                        <span>→</span>
+                        <span>&rarr;</span>
                       </Link>
 
                       {isAuth && (
@@ -221,7 +221,7 @@ export function SiteHeader() {
                             className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                           >
                             Orders
-                            <span>→</span>
+                            <span>&rarr;</span>
                           </Link>
                           <Link
                             href="/account/addresses"
@@ -229,7 +229,7 @@ export function SiteHeader() {
                             className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                           >
                             Addresses
-                            <span>→</span>
+                            <span>&rarr;</span>
                           </Link>
                         </>
                       )}
@@ -240,7 +240,7 @@ export function SiteHeader() {
                         className="flex items-center justify-between rounded-lg px-4 py-3 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                       >
                         Wishlist
-                        <span>→</span>
+                        <span>&rarr;</span>
                       </Link>
                     </div>
                   </div>
@@ -358,17 +358,17 @@ export function SiteHeader() {
         <Link
           href="/products"
           aria-label="Shop products with free worldwide shipping"
-          className="luxecraft-shipping-promo block border-t border-black/10 bg-[#F3E1CA] px-3 py-2 transition-all duration-300 sm:px-6 sm:py-2.5"
+          className="luxecraft-shipping-promo block border-t border-black/10 bg-black px-3 py-2 transition-all duration-300 sm:px-6 sm:py-2.5"
         >
           <div className="grid w-full grid-cols-1 items-center text-center sm:grid-cols-3">
-            <span className="luxecraft-shipping-text text-[11px] font-extrabold uppercase tracking-[0.14em] sm:text-[14px] sm:tracking-[0.18em]">
-              FREE SHIPPING <span className="text-[#8C6A32]">•</span> WORLDWIDE
+            <span className="luxecraft-shipping-text text-white text-[11px] font-extrabold uppercase tracking-[0.14em] sm:text-[14px] sm:tracking-[0.18em]">
+              <span style={{color:"#ffffff"}}>FREE SHIPPING</span> <span style={{color:"#B94740"}}>&bull;</span> <span style={{color:"#ffffff"}}>WORLDWIDE</span>
             </span>
-            <span className="luxecraft-shipping-text hidden text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
-              FREE SHIPPING <span className="text-[#8C6A32]">•</span> WORLDWIDE
+            <span className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
+              <span style={{color:"#ffffff"}}>FREE SHIPPING</span> <span style={{color:"#B94740"}}>&bull;</span> <span style={{color:"#ffffff"}}>WORLDWIDE</span>
             </span>
-            <span className="luxecraft-shipping-text hidden text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
-              FREE SHIPPING <span className="text-[#8C6A32]">•</span> WORLDWIDE
+            <span className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
+              <span style={{color:"#ffffff"}}>FREE SHIPPING</span> <span style={{color:"#B94740"}}>&bull;</span> <span style={{color:"#ffffff"}}>WORLDWIDE</span>
             </span>
           </div>
         </Link>
