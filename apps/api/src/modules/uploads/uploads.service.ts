@@ -22,9 +22,7 @@ export class UploadsService {
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException(
-        'Image size must be 10 MB or smaller.',
-      );
+      throw new BadRequestException('Image size must be 10 MB or smaller.');
     }
 
     const extension = extname(file.originalname).toLowerCase();
@@ -52,9 +50,6 @@ export class UploadsService {
 
       await writeFile(destination, file.buffer);
 
-      // Public URL of the API server.
-      // For local development this is localhost:3001.
-      // On production, set PUBLIC_API_URL to the real API URL.
       const publicApiUrl =
         process.env.PUBLIC_API_URL?.trim().replace(/\/+$/, '') ||
         `http://localhost:${process.env.API_PORT ?? 3001}`;
@@ -72,9 +67,83 @@ export class UploadsService {
     } catch (error) {
       console.error('Failed to save product image:', error);
 
-      throw new InternalServerErrorException(
-        'Failed to save image.',
-      );
+      throw new InternalServerErrorException('Failed to save image.');
+    }
+  }
+
+  async saveCustomRequestFiles(
+    customRequestId: string,
+    files: Express.Multer.File[],
+  ) {
+    if (!files?.length) {
+      throw new BadRequestException('At least one file is required.');
+    }
+
+    const maxSize = 10 * 1024 * 1024;
+    const allowed = new Map([
+      ['.jpg', 'image/jpeg'],
+      ['.jpeg', 'image/jpeg'],
+      ['.png', 'image/png'],
+      ['.webp', 'image/webp'],
+      ['.gif', 'image/gif'],
+      ['.avif', 'image/avif'],
+      ['.pdf', 'application/pdf'],
+      ['.doc', 'application/msword'],
+      ['.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      ['.xls', 'application/vnd.ms-excel'],
+      ['.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+      ['.txt', 'text/plain'],
+    ]);
+
+    for (const file of files) {
+      const extension = extname(file.originalname).toLowerCase();
+      const expectedMime = allowed.get(extension);
+
+      if (!expectedMime || file.mimetype !== expectedMime) {
+        throw new BadRequestException(
+          `Unsupported file type: ${file.originalname}`,
+        );
+      }
+
+      if (file.size > maxSize) {
+        throw new BadRequestException(
+          `File ${file.originalname} exceeds the 10 MB limit.`,
+        );
+      }
+    }
+
+    try {
+      const safeRequestId = customRequestId.replace(/[^a-zA-Z0-9_-]/g, '');
+      const requestRoot = join(this.uploadRoot, 'custom-requests', safeRequestId);
+      await mkdir(requestRoot, { recursive: true });
+
+      const publicApiUrl =
+        process.env.PUBLIC_API_URL?.trim().replace(/\/+$/, '') ||
+        `http://localhost:${process.env.API_PORT ?? 3001}`;
+
+      const saved = [];
+
+      for (const file of files) {
+        const extension = extname(file.originalname).toLowerCase();
+        const filename = `${randomUUID()}${extension}`;
+        const destination = join(requestRoot, filename);
+
+        await writeFile(destination, file.buffer);
+
+        saved.push({
+          filename,
+          originalName: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+          url: `${publicApiUrl}/uploads/custom-requests/${safeRequestId}/${filename}`,
+          storageKey: `custom-requests/${safeRequestId}/${filename}`,
+        });
+      }
+
+      return saved;
+    } catch (error) {
+      console.error('Failed to save custom request files:', error);
+      throw new InternalServerErrorException('Failed to save files.');
     }
   }
 }
