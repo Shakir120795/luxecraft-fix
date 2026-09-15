@@ -33,122 +33,141 @@ export default function CustomRequestsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-luxury-cream flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-3 text-luxury-brown">
-            <div className="w-4 h-4 bg-luxury-gold rounded-full animate-pulse" />
-            <span className="font-serif">Loading requests...</span>
-          </div>
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f6f2]">
+        <div className="text-center text-[#6a636b]">
+          <div className="mx-auto mb-3 h-3 w-3 animate-pulse rounded-full bg-[#8a5d38]" />
+          <span className="font-serif">Loading requests...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-luxury-cream">
-      {/* Header */}
-      <div className="bg-luxury-beige border-b border-luxury-sand py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-3">
+    <main className="min-h-screen bg-[#f8f6f2]">
+      <div className="border-b border-[#ded8d0] bg-white px-4 py-12 sm:px-6 lg:px-8 sm:py-14">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a5d38]">
+            Wolhomes Bespoke
+          </p>
+          <h1 className="mb-3 font-serif text-4xl font-light text-[#302b35] sm:text-5xl">
             My Custom Design Requests
           </h1>
-          <p className="text-luxury-brown text-lg">Track your bespoke projects</p>
+          <p className="text-base text-[#6a636b] sm:text-lg">
+            Track your bespoke projects
+          </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="mb-8 flex justify-between items-center">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <Link
             href="/account"
-            className="text-luxury-gold hover:text-luxury-darkGold underline"
+            className="text-sm text-[#6a636b] underline underline-offset-4 transition hover:text-[#8a5d38]"
           >
-             Back to Account
+            Back to Account
           </Link>
 
           <Link
             href="/custom-design"
-            className="rounded-md border border-[#bf4e48] bg-[#bf4e48] px-6 py-3 text-sm font-semibold text-white transition-all hover:border-[#a9443e] hover:bg-[#a9443e]"
+            className="inline-flex items-center justify-center rounded-md bg-[#bf4e48] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#a9443e]"
           >
             + New Request
           </Link>
         </div>
 
         {requests.length > 0 ? (
-          <div className="space-y-6">
+          <div className="space-y-5">
             {requests.map(request => (
               <Link
                 key={request.id}
                 href={`/custom-design/requests/${request.id}`}
-                className="block border border-luxury-sand bg-luxury-beige p-6 hover:border-luxury-gold transition-colors"
+                className="group block rounded-lg border border-[#ded8d0] bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#bf4e48]/50 hover:shadow-md sm:p-7"
               >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-serif text-xl text-luxury-charcoal">{request.title}</h3>
-                      <span className={`text-xs px-3 py-1 ${
-                        request.status === 'Completed' ? 'bg-luxury-gold/20 text-luxury-gold' :
-                        request.status === 'In Progress' ? 'bg-luxury-gold/10 text-luxury-gold' :
-                        request.status === 'Quoted' ? 'bg-luxury-gold/10 text-luxury-gold' :
-                        'bg-luxury-sand text-luxury-brown'
-                      }`}>
+                <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-3">
+                      <h3 className="font-serif text-2xl text-[#302b35] transition group-hover:text-[#8a5d38]">
+                        {request.title}
+                      </h3>
+
+                      <span
+                        className={`rounded-sm px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+                          request.status === 'Completed'
+                            ? 'bg-[#8a5d38]/10 text-[#8a5d38]'
+                            : request.status === 'In Progress'
+                              ? 'bg-[#bf4e48]/10 text-[#bf4e48]'
+                              : request.status === 'Quoted'
+                                ? 'bg-[#8a5d38]/10 text-[#8a5d38]'
+                                : 'bg-[#f0ece7] text-[#6a636b]'
+                        }`}
+                      >
                         {request.status}
                       </span>
                     </div>
-                    <p className="text-sm text-luxury-brown mb-2">
+
+                    <p className="mb-1 text-sm text-[#6a636b]">
                       Request #{request.requestNumber}
                     </p>
+
                     {request.productCategory && (
-                      <p className="text-sm text-luxury-brown/70">
-                        Category: {request.productCategory}
+                      <p className="text-sm text-[#8b8389]">
+                        {request.productCategory}
                       </p>
                     )}
                   </div>
 
                   <div className="text-left sm:text-right">
-                    <p className="text-sm text-luxury-brown/70">
+                    <p className="text-sm text-[#8b8389]">
                       Created {new Date(request.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
                       })}
                     </p>
+
                     {request.estimatedBudget && (
-                      <p className="text-sm text-luxury-brown mt-1">
-                        Budget: ${request.estimatedBudget.toFixed(2)}
+                      <p className="mt-1 font-serif text-base text-[#302b35]">
+                        ${request.estimatedBudget.toFixed(2)}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <p className="text-luxury-brown line-clamp-2 mb-4">{request.description}</p>
+                <p className="mb-5 max-w-4xl line-clamp-2 text-[15px] leading-7 text-[#6a636b]">
+                  {request.description}
+                </p>
 
-                <div className="flex items-center gap-6 text-sm text-luxury-brown/70">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#eee9e3] pt-4 text-sm text-[#8b8389]">
                   {request.desiredDimensions && (
-                    <span> {request.desiredDimensions}</span>
+                    <span>Size: {request.desiredDimensions}</span>
                   )}
                   {request.quantity > 1 && (
                     <span>Qty: {request.quantity}</span>
                   )}
+                  <span className="ml-auto hidden text-[#8a5d38] transition group-hover:block">
+                    View Request ?
+                  </span>
                 </div>
               </Link>
             ))}
           </div>
         ) : (
-          <div className="border border-luxury-sand bg-luxury-beige p-16 text-center">
-            <div className="mb-6">
-              <span className="text-8xl"></span>
-            </div>
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">
+          <div className="rounded-lg border border-[#ded8d0] bg-white px-6 py-16 text-center shadow-sm sm:px-10">
+            <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-[#8a5d38]">
+              Bespoke Studio
+            </p>
+            <h2 className="mb-4 font-serif text-3xl font-light text-[#302b35] sm:text-4xl">
               No Custom Requests Yet
             </h2>
-            <p className="text-luxury-brown mb-8 max-w-md mx-auto">
-              Start your bespoke design journey. Our master artisans are ready to create something extraordinary for you.
+            <p className="mx-auto mb-8 max-w-xl text-base leading-7 text-[#6a636b]">
+              Start your bespoke design journey. Our master artisans are ready
+              to create something extraordinary for you.
             </p>
             <Link
               href="/custom-design"
-              className="btn-luxury px-10 py-4 inline-block"
+              className="inline-block rounded-md bg-[#302b35] px-8 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24]"
             >
-              Create Custom Design 
+              Create Custom Design
             </Link>
           </div>
         )}
@@ -156,4 +175,3 @@ export default function CustomRequestsPage() {
     </main>
   );
 }
-
