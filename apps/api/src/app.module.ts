@@ -63,6 +63,7 @@ import { AdminNotificationsModule } from './modules/admin-notifications/admin-no
 import { SettingsModule } from './modules/settings/settings.module';
 import { CurrencyModule } from './modules/currency/currency.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { ContactModule } from './modules/contact/contact.module';
 
 // Phase 8 - Analytics & SEO
 import { AnalyticsModule } from './modules/analytics/analytics.module';
@@ -138,6 +139,7 @@ import { HealthModule } from './modules/health/health.module';
     AdminNotificationsModule,
     SettingsModule,
     ReviewsModule,
+    ContactModule,
 
     // ----- Phase 8 - Analytics & SEO ----------------------
     AnalyticsModule,
@@ -155,5 +157,6 @@ import { HealthModule } from './modules/health/health.module';
   ],
 })
 export class AppModule {}
+
 
 

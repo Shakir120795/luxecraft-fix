@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { CustomRequest, CustomRequestStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CustomRequestsService {
   private readonly logger = new Logger(CustomRequestsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: AdminNotificationsService,
+  ) {}
 
   async create(data: {
     userId: string;
@@ -23,7 +27,7 @@ export class CustomRequestsService {
   }): Promise<CustomRequest> {
     const customRequestNumber = await this.generateCustomRequestNumber();
 
-    return this.prisma.customRequest.create({
+    const customRequest = await this.prisma.customRequest.create({
       data: {
         customRequestNumber,
         userId: data.userId,
@@ -41,6 +45,27 @@ export class CustomRequestsService {
       },
       include: { messages: true, quotes: true, designs: true },
     });
+
+    const admin = await this.prisma.adminUser.findFirst({
+      where: { status: 'ACTIVE' },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+
+    if (admin) {
+      await this.notifications.send({
+        recipientId: admin.id,
+        type: 'CUSTOM_REQUEST',
+        title: `New Custom Request: ${customRequest.customRequestNumber}`,
+        message:
+          `Title: ${customRequest.title}\n` +
+          `Status: ${customRequest.status}\n` +
+          `Description: ${customRequest.description}`,
+        relatedId: customRequest.id,
+      });
+    }
+
+    return customRequest;
   }
 
   async findOne(id: string): Promise<CustomRequest> {

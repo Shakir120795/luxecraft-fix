@@ -2,20 +2,20 @@ import Link from 'next/link';
 
 export default function ReturnsPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-[#f8f6f2]">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-luxury-night via-[#4A3F35] to-luxury-night text-white py-24">
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-6xl md:text-7xl font-serif font-light tracking-tight mb-6">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] text-white py-20 md:py-24 lg:py-28">
+        <div className="relative max-w-6xl mx-auto px-5 sm:px-8 lg:px-10">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-serif font-light tracking-tight mb-5">
             Returns & Refunds
           </h1>
-          <p className="text-xl text-luxury-cream/90 leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-luxury-cream/90 leading-relaxed max-w-2xl">
             Your satisfaction is our priority
           </p>
         </div>
       </section>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-14 md:py-20">
         <div className="prose prose-lg max-w-none">
           {/* Introduction */}
           <section className="mb-12">
@@ -26,12 +26,12 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 1 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               30-Day Return Policy
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <div className="border border-luxury-gold bg-luxury-gold/10 p-6">
+              <div className="rounded-2xl border border-[#d8c5a7] bg-white p-6 md:p-7 shadow-sm">
                 <p className="font-serif text-lg text-luxury-charcoal mb-3">
                   Standard Products
                 </p>
@@ -47,7 +47,7 @@ export default function ReturnsPage() {
                 </ul>
               </div>
 
-              <div className="border border-luxury-terracotta/50 bg-luxury-terracotta/10 p-6">
+              <div className="rounded-2xl border border-[#d9c8bd] bg-[#f4ede7] p-6 md:p-7 shadow-sm">
                 <p className="font-serif text-lg text-luxury-charcoal mb-3">
                   Custom & Made-to-Order Products
                 </p>
@@ -67,13 +67,13 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 2 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               How to Initiate a Return
             </h2>
-            <div className="space-y-6 text-luxury-brown leading-relaxed">
-              <div className="flex gap-4">
-                <div className="text-3xl font-serif text-luxury-gold">1</div>
+            <div className="space-y-7 text-luxury-brown leading-relaxed">
+              <div className="flex gap-5 items-start">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">1</div>
                 <div className="flex-1">
                   <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
                     Contact Us
@@ -92,8 +92,8 @@ export default function ReturnsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="text-3xl font-serif text-luxury-gold">2</div>
+              <div className="flex gap-5 items-start">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">2</div>
                 <div className="flex-1">
                   <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
                     Receive Authorization
@@ -105,8 +105,8 @@ export default function ReturnsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="text-3xl font-serif text-luxury-gold">3</div>
+              <div className="flex gap-5 items-start">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">3</div>
                 <div className="flex-1">
                   <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
                     Package & Ship
@@ -119,8 +119,8 @@ export default function ReturnsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="text-3xl font-serif text-luxury-gold">4</div>
+              <div className="flex gap-5 items-start">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">4</div>
                 <div className="flex-1">
                   <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
                     Receive Refund
@@ -135,12 +135,12 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 3 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               Return Shipping Costs
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <div className="border-l-4 border-luxury-gold pl-6">
+              <div className="rounded-r-xl border-l-4 border-[#b7925e] bg-white px-6 py-5 shadow-sm">
                 <h4 className="font-serif text-luxury-charcoal mb-2">Customer Responsibility:</h4>
                 <p>
                   If you're returning an item because you changed your mind, you're responsible for 
@@ -148,7 +148,7 @@ export default function ReturnsPage() {
                 </p>
               </div>
 
-              <div className="border-l-4 border-luxury-gold pl-6">
+              <div className="rounded-r-xl border-l-4 border-[#b7925e] bg-white px-6 py-5 shadow-sm">
                 <h4 className="font-serif text-luxury-charcoal mb-2">Wolhomes Responsibility:</h4>
                 <p>
                   If we sent the wrong item, or the item arrived damaged or defective, we'll cover all 
@@ -156,7 +156,7 @@ export default function ReturnsPage() {
                 </p>
               </div>
 
-              <div className="border-l-4 border-luxury-gold pl-6">
+              <div className="rounded-r-xl border-l-4 border-[#b7925e] bg-white px-6 py-5 shadow-sm">
                 <h4 className="font-serif text-luxury-charcoal mb-2">Large Items:</h4>
                 <p>
                   For furniture requiring freight shipping, please contact us to arrange return logistics. 
@@ -167,8 +167,8 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 4 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               Refund Processing
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -199,8 +199,8 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 5 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               Exchanges
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -219,15 +219,15 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 6 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               Damaged or Defective Items
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
               <p>
                 If your item arrives damaged or has a manufacturing defect:
               </p>
-              <div className="border border-luxury-sand bg-luxury-beige p-6">
+              <div className="rounded-2xl border border-[#ddd2c5] bg-white p-6 md:p-7 shadow-sm">
                 <ol className="list-decimal pl-6 space-y-3">
                   <li>
                     <strong>Inspect Upon Delivery:</strong> Note any visible damage on the delivery receipt
@@ -253,8 +253,8 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 7 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               Non-Returnable Items
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -272,8 +272,8 @@ export default function ReturnsPage() {
           </section>
 
           {/* Section 8 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               Cancellations
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -297,7 +297,7 @@ export default function ReturnsPage() {
 
           {/* Section 9 */}
           <section className="mb-12">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               International Returns
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -315,7 +315,7 @@ export default function ReturnsPage() {
         </div>
 
         {/* Warranty Info */}
-        <div className="mt-16 border border-luxury-sand bg-luxury-beige p-10">
+        <div className="mt-16 rounded-2xl border border-[#ddd2c5] bg-white p-8 md:p-10 shadow-sm">
           <h3 className="text-3xl font-serif font-light text-luxury-charcoal mb-4 text-center">
             Our Warranty
           </h3>
@@ -331,7 +331,7 @@ export default function ReturnsPage() {
         </div>
 
         {/* Contact CTA */}
-        <div className="mt-8 border border-luxury-sand bg-luxury-cream p-10 text-center">
+        <div className="mt-8 rounded-2xl border border-[#ddd2c5] bg-[#f1ebe4] p-8 md:p-10 text-center">
           <h3 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">
             Questions About Returns?
           </h3>
@@ -349,12 +349,9 @@ export default function ReturnsPage() {
         </div>
 
         {/* Related Links */}
-        <div className="mt-8 border border-luxury-sand bg-luxury-beige p-8">
+        <div className="mt-8 rounded-2xl border border-[#ddd2c5] bg-white p-7 md:p-8 shadow-sm">
           <h3 className="text-2xl font-serif text-luxury-charcoal mb-6">Related Policies</h3>
           <div className="grid sm:grid-cols-2 gap-4">
-            <Link href="/shipping" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-               Shipping Information
-            </Link>
             <Link href="/terms" className="text-luxury-brown hover:text-luxury-gold transition-colors">
                Terms & Conditions
             </Link>
@@ -370,4 +367,5 @@ export default function ReturnsPage() {
     </main>
   );
 }
+
 

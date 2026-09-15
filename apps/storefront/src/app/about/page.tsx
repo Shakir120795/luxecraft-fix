@@ -2,21 +2,21 @@ import Link from 'next/link';
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-[#f8f6f2]">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-luxury-night via-[#4A3F35] to-luxury-night text-white py-24">
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-6xl md:text-7xl font-serif font-light tracking-tight mb-6">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] text-white py-20 md:py-24 lg:py-28">
+        <div className="relative max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 text-center">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-serif font-light tracking-tight mb-5">
             About Wolhomes
           </h1>
-          <p className="text-xl md:text-2xl text-luxury-cream/90 leading-relaxed max-w-3xl mx-auto">
+          <p className="text-base sm:text-xl md:text-2xl text-luxury-cream/90 leading-relaxed max-w-3xl mx-auto">
             Where timeless craftsmanship meets contemporary elegance
           </p>
         </div>
       </section>
 
       {/* Story Section */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-16 md:py-20">
         <div className="prose prose-lg max-w-none">
           <h2 className="text-4xl font-serif font-light text-luxury-charcoal mb-8">Our Story</h2>
           
@@ -42,14 +42,14 @@ export default function AboutPage() {
       </section>
 
       {/* Values Section */}
-      <section className="bg-luxury-beige py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="bg-[#eee7df] py-20 md:py-24">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
           <h2 className="text-4xl font-serif font-light text-luxury-charcoal text-center mb-16">
             Our Values
           </h2>
 
           <div className="grid md:grid-cols-3 gap-10">
-            <div className="border border-luxury-sand bg-luxury-cream p-8">
+            <div className="rounded-2xl border border-[#ddd2c5] bg-white p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300">
               <h3 className="text-2xl font-serif text-luxury-charcoal mb-4">Craftsmanship</h3>
               <p className="text-luxury-brown leading-relaxed">
                 Every piece is handcrafted by master artisans who have honed their skills over decades. 
@@ -57,7 +57,7 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="border border-luxury-sand bg-luxury-cream p-8">
+            <div className="rounded-2xl border border-[#ddd2c5] bg-white p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300">
               <h3 className="text-2xl font-serif text-luxury-charcoal mb-4">Sustainability</h3>
               <p className="text-luxury-brown leading-relaxed">
                 We're committed to environmental responsibility, using sustainably sourced materials 
@@ -65,7 +65,7 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="border border-luxury-sand bg-luxury-cream p-8">
+            <div className="rounded-2xl border border-[#ddd2c5] bg-white p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300">
               <h3 className="text-2xl font-serif text-luxury-charcoal mb-4">Timelessness</h3>
               <p className="text-luxury-brown leading-relaxed">
                 Our designs transcend trends. We create furniture meant to be cherished for generations, 
@@ -77,12 +77,12 @@ export default function AboutPage() {
       </section>
 
       {/* Process Section */}
-      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <section className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-16 md:py-20">
         <h2 className="text-4xl font-serif font-light text-luxury-charcoal mb-12 text-center">
           Our Process
         </h2>
 
-        <div className="space-y-12">
+        <div className="space-y-10 md:space-y-12">
           <div className="flex flex-col md:flex-row gap-8 items-start">
             <div className="md:w-1/4">
               <div className="text-5xl font-serif text-luxury-gold">01</div>
@@ -160,5 +160,6 @@ export default function AboutPage() {
     </main>
   );
 }
+
 
 

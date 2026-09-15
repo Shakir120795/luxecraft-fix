@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { Order, OrderStatus, PaymentStatus, FulfillmentStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: AdminNotificationsService,
+  ) {}
 
   async create(data: {
     userId?: string;
@@ -67,6 +71,25 @@ export class OrdersService {
       include: { items: true },
     });
 
+    const admin = await this.prisma.adminUser.findFirst({
+      where: { status: 'ACTIVE' },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+
+    if (admin) {
+      await this.notifications.send({
+        recipientId: admin.id,
+        type: 'NEW_ORDER',
+        title: `New Order: ${order.orderNumber}`,
+        message:
+          `Order: ${order.orderNumber}\n` +
+          `Type: ${order.orderType}\n` +
+          `Total: ${order.total} ${order.currency}\n` +
+          `Status: ${order.orderStatus}`,
+        relatedId: order.id,
+      });
+    }
     return order;
   }
 

@@ -11,6 +11,63 @@ export class AdminCmsService {
     return { message: 'CMS content management ready for Phase 7 extension' };
   }
 
+  async getActiveFaqs() {
+    return this.prisma.faqItem.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+  async getFaqs() {
+    return this.prisma.faqItem.findMany({
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async createFaq(data: {
+    category: string;
+    question: string;
+    answer: string;
+    sortOrder?: number;
+    isActive?: boolean;
+  }) {
+    return this.prisma.faqItem.create({
+      data: {
+        category: data.category.trim(),
+        question: data.question.trim(),
+        answer: data.answer.trim(),
+        sortOrder: data.sortOrder ?? 0,
+        isActive: data.isActive ?? true,
+      },
+    });
+  }
+
+  async updateFaq(
+    id: string,
+    data: {
+      category?: string;
+      question?: string;
+      answer?: string;
+      sortOrder?: number;
+      isActive?: boolean;
+    },
+  ) {
+    return this.prisma.faqItem.update({
+      where: { id },
+      data: {
+        ...(data.category !== undefined && { category: data.category.trim() }),
+        ...(data.question !== undefined && { question: data.question.trim() }),
+        ...(data.answer !== undefined && { answer: data.answer.trim() }),
+        ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
+        ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+    });
+  }
+
+  async deleteFaq(id: string) {
+    return this.prisma.faqItem.delete({
+      where: { id },
+    });
+  }
   async getHero() {
     return this.prisma.heroSection.findFirst({
       orderBy: { updatedAt: 'desc' },

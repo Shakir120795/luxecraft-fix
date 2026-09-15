@@ -1023,6 +1023,29 @@ export async function updateCustomerStatus(id: string, isActive: boolean): Promi
 }
 
 // ============================================================================
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  subject: string;
+  message: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getContactMessages(status?: string): Promise<ContactMessage[]> {
+  const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  return adminApi.get<ContactMessage[]>(`/admin/contact-messages${query}`);
+}
+
+export async function updateContactMessageStatus(
+  id: string,
+  status: string,
+): Promise<ContactMessage> {
+  return adminApi.patch<ContactMessage>(`/admin/contact-messages/${id}/status`, { status });
+}
 // Custom Request Functions
 // ============================================================================
 
@@ -1264,6 +1287,48 @@ export interface UpdateHeroRequest {
   isActive?: boolean;
 }
 
+export interface FaqItem {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFaqRequest {
+  category: string;
+  question: string;
+  answer: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateFaqRequest {
+  category?: string;
+  question?: string;
+  answer?: string;
+  sortOrder?: number;
+  isActive?: boolean;
+}
+
+export async function getFaqs(): Promise<FaqItem[]> {
+  return adminApi.get<FaqItem[]>('/admin/cms/faqs');
+}
+
+export async function createFaq(data: CreateFaqRequest): Promise<FaqItem> {
+  return adminApi.post<FaqItem>('/admin/cms/faqs', data);
+}
+
+export async function updateFaq(id: string, data: UpdateFaqRequest): Promise<FaqItem> {
+  return adminApi.put<FaqItem>(`/admin/cms/faqs/${id}`, data);
+}
+
+export async function deleteFaq(id: string): Promise<FaqItem> {
+  return adminApi.delete<FaqItem>(`/admin/cms/faqs/${id}`);
+}
 export async function getHero(): Promise<HeroSection | null> {
   return adminApi.get<HeroSection | null>('/admin/cms/hero');
 }

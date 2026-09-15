@@ -421,12 +421,6 @@ export default function HomePage() {
               <p className="mt-3 text-sm leading-7 text-luxury-brown">
                 Thoughtful shipping, customs support, and delivery worldwide.
               </p>
-              <Link
-                href="/shipping"
-                className="mt-5 inline-block text-[10px] uppercase tracking-[0.16em] text-luxury-olive underline underline-offset-4"
-              >
-              Shipping information &rarr;
-              </Link>
             </div>
 
             <div className="px-0 py-8 md:px-8 md:py-5 md:last:pr-0">

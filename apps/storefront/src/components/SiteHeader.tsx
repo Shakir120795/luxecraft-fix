@@ -1,6 +1,7 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { getCartTotals, getStorefrontCategories, Category, isAuthenticated } from '@/lib/api';
@@ -125,12 +126,19 @@ export function SiteHeader() {
           >
             <MenuIcon open={menuOpen} />
           </button>
-
           <Link
             href="/"
-            className="shrink-0 font-serif text-[24px] font-medium tracking-[0.18em] text-black sm:text-[27px] lg:text-[30px]"
+            aria-label="Wolhomes"
+            className="shrink-0"
           >
-            WOLHOMES
+            <Image
+              src="/wolhomes-header-logo.png"
+              alt="Wolhomes"
+              width={250}
+              height={100}
+              priority
+              className="h-10 w-auto object-contain sm:h-11 lg:h-12"
+            />
           </Link>
 
           <div className="hidden min-w-0 flex-1 lg:block">
@@ -448,4 +456,6 @@ export function SiteHeader() {
     </header>
   );
 }
+
+
 

@@ -18,6 +18,8 @@ const navigation: NavItem[] = [
   { href: '/orders', label: 'Orders', icon: '' },
   { href: '/customers', label: 'Customers', icon: '' },
   { href: '/custom-requests', label: 'Custom Requests', icon: '' },
+  { href: '/contact-messages', label: 'Contact Messages', icon: '' },
+  { href: '/faqs', label: 'FAQs', icon: '' },
   { href: '/settings', label: 'Settings', icon: '' },
 ];
 

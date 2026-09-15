@@ -2,20 +2,20 @@ import Link from 'next/link';
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-[#f8f6f2]">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-luxury-night via-[#4A3F35] to-luxury-night text-white py-24">
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-6xl md:text-7xl font-serif font-light tracking-tight mb-6">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] text-white py-20 md:py-24 lg:py-28">
+        <div className="relative max-w-6xl mx-auto px-5 sm:px-8 lg:px-10">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-serif font-light tracking-tight mb-5">
             Terms & Conditions
           </h1>
-          <p className="text-xl text-luxury-cream/90 leading-relaxed">
+          <p className="text-base sm:text-lg md:text-xl text-luxury-cream/90 leading-relaxed max-w-2xl">
             Last updated: January 1, 2024
           </p>
         </div>
       </section>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-14 md:py-20">
         <div className="prose prose-lg max-w-none">
           {/* Introduction */}
           <section className="mb-12">
@@ -27,8 +27,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 1 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               1. General Terms
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -47,8 +47,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 2 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               2. Products & Pricing
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -72,8 +72,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 3 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               3. Orders & Payment
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -97,16 +97,13 @@ export default function TermsPage() {
           </section>
 
           {/* Section 4 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               4. Shipping & Delivery
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
               <p>
-                <strong>4.1</strong> Shipping times are estimates and not guaranteed. See our{' '}
-                <Link href="/shipping" className="text-luxury-gold underline hover:text-luxury-brown">
-                  Shipping Policy
-                </Link>{' '}
+                <strong>4.1</strong> Shipping times are estimates and not guaranteed. See our{' '}{' '}
                 for detailed information.
               </p>
               <p>
@@ -123,8 +120,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 5 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               5. Returns & Refunds
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -148,8 +145,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 6 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               6. Warranty
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -168,8 +165,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 7 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               7. Intellectual Property
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -189,8 +186,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 8 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               8. Limitation of Liability
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -209,8 +206,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 9 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               9. Privacy
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -225,8 +222,8 @@ export default function TermsPage() {
           </section>
 
           {/* Section 10 */}
-          <section className="mb-12 pb-8 border-b border-luxury-sand">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               10. Governing Law
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
@@ -243,14 +240,14 @@ export default function TermsPage() {
 
           {/* Section 11 */}
           <section className="mb-12">
-            <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-6">
+            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
               11. Contact Information
             </h2>
             <div className="text-luxury-brown leading-relaxed">
               <p className="mb-4">
                 If you have any questions about these Terms, please contact us:
               </p>
-              <div className="border-l-4 border-luxury-gold pl-6">
+              <div className="rounded-r-xl border-l-4 border-[#b7925e] bg-white px-6 py-5 shadow-sm">
                 <p>
                   <strong>Wolhomes</strong><br />
                   123 Artisan Boulevard<br />
@@ -274,14 +271,11 @@ export default function TermsPage() {
         </div>
 
         {/* Related Links */}
-        <div className="mt-16 border border-luxury-sand bg-luxury-beige p-8">
+        <div className="mt-16 rounded-2xl border border-[#ddd2c5] bg-white p-7 md:p-8 shadow-sm">
           <h3 className="text-2xl font-serif text-luxury-charcoal mb-6">Related Policies</h3>
           <div className="grid sm:grid-cols-2 gap-4">
             <Link href="/privacy" className="text-luxury-brown hover:text-luxury-gold transition-colors">
                Privacy Policy
-            </Link>
-            <Link href="/shipping" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-               Shipping Policy
             </Link>
             <Link href="/returns" className="text-luxury-brown hover:text-luxury-gold transition-colors">
                Returns Policy
@@ -295,4 +289,5 @@ export default function TermsPage() {
     </main>
   );
 }
+
 

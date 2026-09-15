@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function SiteFooter() {
   return (
@@ -12,9 +13,16 @@ export function SiteFooter() {
           <div>
             <Link
               href="/"
-              className="font-serif text-[26px] font-semibold tracking-[0.2em] transition-opacity hover:opacity-70 sm:text-[24px]"
+              aria-label="Wolhomes"
+              className="inline-flex items-center transition-opacity hover:opacity-70"
             >
-              WOLHOMES
+              <Image
+                src="/wolhomes-header-logo.png"
+                alt="Wolhomes"
+                width={250}
+                height={100}
+                className="h-12 w-auto object-contain sm:h-14"
+              />
             </Link>
 
             <p className="mt-4 max-w-xs text-sm leading-7 text-black">
@@ -66,11 +74,6 @@ export function SiteFooter() {
               <li>
                 <Link href="/faq" className="transition-colors hover:text-[rgb(var(--luxecraft-olive))]">
                   FAQ
-                </Link>
-              </li>
-              <li>
-                <Link href="/shipping" className="transition-colors hover:text-[rgb(var(--luxecraft-olive))]">
-                  Shipping
                 </Link>
               </li>
               <li>
@@ -189,5 +192,6 @@ export function SiteFooter() {
     </footer>
   );
 }
+
 
 

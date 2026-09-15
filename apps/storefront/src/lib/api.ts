@@ -145,6 +145,32 @@ export interface HeroSection {
   updatedAt: string;
 }
 
+export interface FaqItem {
+  id: string;
+  category: string;
+  question: string;
+  answer: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getFaqs(): Promise<FaqItem[]> {
+  try {
+    const res = await fetch(`${API_URL}/storefront/faq`, {
+      cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+    const data = await res.json();
+    return data.success && Array.isArray(data.data) ? data.data : [];
+  } catch (error) {
+    console.error('Failed to fetch FAQs:', error);
+    return [];
+  }
+}
 export async function getHero(): Promise<HeroSection | null> {
   try {
     const res = await fetch(`${API_URL}/storefront/hero`, {
@@ -1094,6 +1120,32 @@ export interface CustomQuote {
   createdAt: string;
 }
 
+export async function submitContactMessage(params: {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  const res = await fetch(`${API_URL}/contact`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(params),
+  });
+
+  const data = await res.json().catch(() => null);
+
+  if (!res.ok) {
+    throw new Error(data?.message || 'Failed to send contact message.');
+  }
+
+  return {
+    success: true,
+    data,
+  };
+}
 export async function createCustomRequest(params: {
   title: string;
   description: string;
@@ -1391,6 +1443,7 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
     return { success: false, message: 'Failed to clear wishlist' };
   }
 }
+
 
 
 
