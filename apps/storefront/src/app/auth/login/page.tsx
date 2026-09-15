@@ -31,25 +31,30 @@ function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen bg-luxury-cream flex items-center justify-center py-16 px-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-3">Welcome Back</h1>
-          <p className="text-luxury-brown">Sign in to your Wolhomes account</p>
+    <main className="min-h-screen bg-[#f8f6f2] px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
+      <div className="mx-auto max-w-lg">
+        <div className="mb-8 text-center">
+          <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8a5d38]">
+            Wolhomes
+          </p>
+          <h1 className="mb-3 font-serif text-4xl font-light text-[#302b35] sm:text-5xl">
+            Welcome Back
+          </h1>
+          <p className="text-base text-[#6a636b]">
+            Sign in to your Wolhomes account
+          </p>
         </div>
 
-        {/* Login Form */}
-        <div className="border border-luxury-sand bg-luxury-beige p-8 sm:p-10">
+        <div className="rounded-lg border border-[#ded8d0] bg-white p-6 shadow-sm sm:p-9">
           {error && (
-            <div className="mb-6 border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-4 py-3 text-luxury-charcoal text-sm">
+            <div className="mb-6 rounded-md border border-[#bf4e48]/30 bg-[#bf4e48]/5 px-4 py-3 text-sm leading-6 text-[#302b35]">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-serif text-luxury-charcoal mb-2 tracking-wide">
+              <label htmlFor="email" className="mb-2 block font-serif text-sm text-[#302b35]">
                 Email Address
               </label>
               <input
@@ -58,96 +63,90 @@ function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="input-luxury"
+                className="w-full rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3.5 text-[#302b35] outline-none transition focus:border-[#bf4e48] focus:bg-white"
                 placeholder="you@example.com"
                 autoComplete="email"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-serif text-luxury-charcoal mb-2 tracking-wide">
-                Password
-              </label>
+              <div className="mb-2 flex items-center justify-between gap-4">
+                <label htmlFor="password" className="block font-serif text-sm text-[#302b35]">
+                  Password
+                </label>
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs text-[#8a5d38] transition hover:text-[#bf4e48]"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="input-luxury"
-                placeholder=""
+                className="w-full rounded-md border border-[#ded8d0] bg-[#faf9f7] px-4 py-3.5 text-[#302b35] outline-none transition focus:border-[#bf4e48] focus:bg-white"
                 autoComplete="current-password"
               />
             </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-luxury-gold border-luxury-sand focus:ring-luxury-gold"
-                />
-                <span className="ml-2 text-luxury-brown">Remember me</span>
-              </label>
-
-              <Link
-                href="/auth/forgot-password"
-                className="text-luxury-gold hover:text-luxury-darkGold transition-colors"
-              >
-                Forgot password?
-              </Link>
-            </div>
+            <label className="flex cursor-pointer items-center gap-3 text-sm text-[#6a636b]">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded border-[#cfc7bf] text-[#bf4e48] focus:ring-[#bf4e48]"
+              />
+              Remember me
+            </label>
 
             <button
               type="submit"
               disabled={loading}
-              className="btn-luxury w-full px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-md bg-[#302b35] px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? 'Signing in...' : 'Sign In '}
+              {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          {/* Divider */}
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-luxury-sand"></div>
+              <div className="w-full border-t border-[#ded8d0]" />
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-luxury-beige text-luxury-brown">or</span>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-4 text-sm text-[#9a9298]">or</span>
             </div>
           </div>
 
-          {/* Register Link */}
           <div className="text-center">
-            <p className="text-luxury-brown mb-4">Don't have an account?</p>
+            <p className="mb-4 text-sm text-[#6a636b]">Don't have an account?</p>
             <Link
               href={`/auth/register${redirectTo !== '/account' ? `?redirect=${redirectTo}` : ''}`}
-              className="btn-luxury-outline w-full px-8 py-4 inline-block"
+              className="inline-block w-full rounded-md border border-[#302b35] bg-white px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:bg-[#302b35] hover:text-white"
             >
               Create Account
             </Link>
           </div>
         </div>
 
-        {/* Guest Checkout Option */}
         {redirectTo.includes('checkout') && (
-          <div className="mt-8 text-center">
-            <p className="text-luxury-brown mb-4">Don't want to create an account?</p>
+          <div className="mt-6 rounded-lg border border-[#ded8d0] bg-white p-6 text-center shadow-sm">
+            <p className="mb-3 text-sm text-[#6a636b]">Don't want to create an account?</p>
             <Link
               href="/checkout?guest=true"
-              className="text-sm text-luxury-gold hover:text-luxury-darkGold transition-colors underline"
+              className="text-sm font-medium text-[#8a5d38] underline underline-offset-4 transition hover:text-[#bf4e48]"
             >
-              Continue as Guest 
+              Continue as Guest
             </Link>
           </div>
         )}
 
-        {/* Back to Home */}
         <div className="mt-8 text-center">
           <Link
             href="/"
-            className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
+            className="text-sm text-[#6a636b] transition hover:text-[#8a5d38]"
           >
-             Back to Home
+            Back to Home
           </Link>
         </div>
       </div>
@@ -157,9 +156,17 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-luxury-cream flex items-center justify-center">Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-[#f8f6f2]">
+          <div className="text-center text-[#6a636b]">
+            <div className="mx-auto mb-3 h-3 w-3 animate-pulse rounded-full bg-[#8a5d38]" />
+            <span className="font-serif">Loading...</span>
+          </div>
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );
 }
-
