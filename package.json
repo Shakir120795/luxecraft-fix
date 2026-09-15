@@ -2,7 +2,7 @@
   "name": "luxecraft",
   "version": "1.0.0",
   "private": true,
-  "description": "LuxeCraft — Worldwide Luxury Ecommerce Platform",
+  "description": "Wolhomes — Worldwide Luxury Ecommerce Platform",
   "workspaces": [
     "apps/api",
     "apps/storefront",
@@ -55,3 +55,5 @@
     "@types/nodemailer": "^8.0.1"
   }
 }
+
+

@@ -68,7 +68,7 @@ function RegisterForm() {
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-3">Create Account</h1>
-          <p className="text-luxury-brown">Join LuxeCraft for exclusive access</p>
+          <p className="text-luxury-brown">Join Wolhomes for exclusive access</p>
         </div>
 
         {/* Register Form */}
@@ -253,3 +253,4 @@ export default function RegisterPage() {
     </Suspense>
   );
 }
+

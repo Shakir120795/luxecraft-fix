@@ -213,7 +213,7 @@ export default function CustomRequestDetailPage() {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <span className="text-xs font-medium text-luxury-charcoal">
                           {message.senderType === 'CUSTOMER' ? 'You' : 
-                           message.senderType === 'ADMIN' ? 'LuxeCraft Team' : 'System'}
+                           message.senderType === 'ADMIN' ? 'Wolhomes Team' : 'System'}
                         </span>
                         <span className="text-xs text-luxury-brown/70">
                           {new Date(message.createdAt).toLocaleDateString('en-US', {
@@ -370,4 +370,5 @@ export default function CustomRequestDetailPage() {
     </main>
   );
 }
+
 

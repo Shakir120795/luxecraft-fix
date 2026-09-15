@@ -41,7 +41,7 @@ export default function AdminLoginPage() {
           {/* Logo */}
           <div className="text-center mb-8">
             <h1 className="text-4xl font-serif text-[var(--color-primary)] mb-2">
-              LuxeCraft
+              Wolhomes
             </h1>
             <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider">
               Admin Panel
@@ -73,7 +73,7 @@ export default function AdminLoginPage() {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="w-full px-4 py-3 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] focus:outline-none focus:border-[var(--color-accent)]"
-                placeholder="admin@luxecraft.com"
+                placeholder="admin@wolhomes.com"
               />
             </div>
 
@@ -110,3 +110,4 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+

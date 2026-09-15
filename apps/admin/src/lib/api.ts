@@ -1,5 +1,5 @@
 /**
- * LuxeCraft Admin API client foundation.
+ * Wolhomes Admin API client foundation.
  * Admin uses a separate auth boundary (Phase 2).
  */
 
@@ -1404,5 +1404,6 @@ export async function getDefaultCurrency(): Promise<string> {
 export async function updateDefaultCurrency(currency: string): Promise<string> {
   return adminApi.put<string>('/admin/settings/currency', { currency });
 }
+
 
 

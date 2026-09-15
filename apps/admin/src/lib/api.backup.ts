@@ -1,5 +1,5 @@
 /**
- * LuxeCraft Admin API client foundation.
+ * Wolhomes Admin API client foundation.
  * Admin uses a separate auth boundary (Phase 2).
  */
 
@@ -459,3 +459,4 @@ export interface SendMessageRequest {
 export async function sendCustomRequestMessage(requestId: string, data: SendMessageRequest): Promise<CustomRequestMessage> {
   return adminApi.post<CustomRequestMessage>(`/admin/custom-orders/requests/${requestId}/messages`, data);
 }
+

@@ -33,7 +33,7 @@ export class EmailService {
     const from = this.config.get<string>('commerce.email.from');
     const fromName = this.config.get<string>(
       'commerce.email.fromName',
-      'LuxeCraft',
+      'Wolhomes',
     );
 
     if (provider !== 'smtp') {
@@ -46,8 +46,8 @@ export class EmailService {
     await transporter.sendMail({
       from: `"${fromName}" <${from}>`,
       to,
-      subject: 'Verify your LuxeCraft account',
-      text: `Your LuxeCraft verification code is ${code}. It expires soon.`,
+      subject: 'Verify your Wolhomes account',
+      text: `Your Wolhomes verification code is ${code}. It expires soon.`,
     });
 
     this.logger.log(`Verification email sent to ${to}`);
@@ -61,7 +61,7 @@ export class EmailService {
     const from = this.config.get<string>('commerce.email.from');
     const fromName = this.config.get<string>(
       'commerce.email.fromName',
-      'LuxeCraft',
+      'Wolhomes',
     );
 
     if (provider !== 'smtp') {
@@ -82,14 +82,15 @@ export class EmailService {
     await transporter.sendMail({
       from: `"${fromName}" <${from}>`,
       to,
-      subject: 'Reset your LuxeCraft password',
+      subject: 'Reset your Wolhomes password',
       text:
-        `Reset your LuxeCraft password using this link:\n\n${resetUrl}\n\n` +
+        `Reset your Wolhomes password using this link:\n\n${resetUrl}\n\n` +
         'This link expires in 1 hour.',
     });
 
     this.logger.log(`Password reset email sent to ${to}`);
   }
 }
+
 
 

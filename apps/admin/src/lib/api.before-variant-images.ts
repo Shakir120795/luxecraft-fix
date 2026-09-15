@@ -1,5 +1,5 @@
 /**
- * LuxeCraft Admin API client foundation.
+ * Wolhomes Admin API client foundation.
  * Admin uses a separate auth boundary (Phase 2).
  */
 
@@ -756,3 +756,4 @@ export async function deleteCustomizationOption(
     `/admin/products/customization-options/${optionId}`,
   );
 }
+

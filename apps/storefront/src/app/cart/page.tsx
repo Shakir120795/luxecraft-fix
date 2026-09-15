@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -251,7 +251,7 @@ export default function CartPage() {
               <div className="overflow-hidden rounded-lg border border-[#ded8d0] bg-white">
                 <div className="border-b border-[#ded8d0] px-5 py-4">
                   <div className="flex items-center justify-between">
-                    <div className="text-sm font-semibold text-[#302b35]">LuxeCraft</div>
+                    <div className="text-sm font-semibold text-[#302b35]">Wolhomes</div>
                     <button type="button" className="text-xs text-[#59535b]">...</button>
                   </div>
                 </div>
@@ -456,6 +456,7 @@ function CartItemCard({
     </div>
   );
 }
+
 
 
 

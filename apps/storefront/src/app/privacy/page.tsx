@@ -20,7 +20,7 @@ export default function PrivacyPage() {
           {/* Introduction */}
           <section className="mb-12">
             <p className="text-luxury-brown text-lg leading-relaxed">
-              At LuxeCraft, we take your privacy seriously. This Privacy Policy explains how we collect, 
+              At Wolhomes, we take your privacy seriously. This Privacy Policy explains how we collect, 
               use, disclose, and safeguard your information when you visit our website or make a purchase 
               from us.
             </p>
@@ -208,8 +208,8 @@ export default function PrivacyPage() {
               </ul>
               <p className="mt-4">
                 To exercise these rights, please contact us at{' '}
-                <a href="mailto:privacy@luxecraft.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                  privacy@luxecraft.com
+                <a href="mailto:privacy@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+                  privacy@wolhomes.com
                 </a>
               </p>
             </div>
@@ -288,15 +288,15 @@ export default function PrivacyPage() {
               <div className="border-l-4 border-luxury-gold pl-6">
                 <p>
                   <strong>Privacy Officer</strong><br />
-                  LuxeCraft<br />
+                  Wolhomes<br />
                   123 Artisan Boulevard<br />
                   New York, NY 10001<br />
                   United States
                 </p>
                 <p className="mt-4">
                   Email:{' '}
-                  <a href="mailto:privacy@luxecraft.com" className="text-luxury-gold hover:underline">
-                    privacy@luxecraft.com
+                  <a href="mailto:privacy@wolhomes.com" className="text-luxury-gold hover:underline">
+                    privacy@wolhomes.com
                   </a>
                   <br />
                   Phone:{' '}
@@ -331,3 +331,4 @@ export default function PrivacyPage() {
     </main>
   );
 }
+

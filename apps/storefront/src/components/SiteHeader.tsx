@@ -130,7 +130,7 @@ export function SiteHeader() {
             href="/"
             className="shrink-0 font-serif text-[24px] font-medium tracking-[0.18em] text-black sm:text-[27px] lg:text-[30px]"
           >
-            LUXECRAFT
+            WOLHOMES
           </Link>
 
           <div className="hidden min-w-0 flex-1 lg:block">
@@ -199,7 +199,7 @@ export function SiteHeader() {
                         {isAuth ? 'Your account' : 'Welcome'}
                       </p>
                       <p className="mt-1 font-serif text-lg text-black">
-                        {isAuth ? 'My Profile' : 'Sign in to LuxeCraft'}
+                        {isAuth ? 'My Profile' : 'Sign in to Wolhomes'}
                       </p>
                     </div>
 
@@ -448,3 +448,4 @@ export function SiteHeader() {
     </header>
   );
 }
+

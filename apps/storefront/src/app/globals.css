@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* LuxeCraft shared storefront design language */
+/* Wolhomes shared storefront design language */
 :root {
   --luxecraft-bg: 255 255 255;
   --luxecraft-cream: 247 243 239;
@@ -202,7 +202,7 @@
   }
 }
 
-/* LuxeCraft typography overrides */
+/* Wolhomes typography overrides */
 @layer utilities {
   .font-serif {
     font-family: var(--font-heading-family) !important;

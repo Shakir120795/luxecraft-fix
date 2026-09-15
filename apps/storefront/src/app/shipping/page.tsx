@@ -20,7 +20,7 @@ export default function ShippingPage() {
           {/* Introduction */}
           <section className="mb-12">
             <p className="text-luxury-brown text-lg leading-relaxed">
-              We understand that receiving your LuxeCraft furniture is an exciting moment. We've partnered 
+              We understand that receiving your Wolhomes furniture is an exciting moment. We've partnered 
               with premium carriers to ensure your pieces arrive safely and on time.
             </p>
           </section>
@@ -295,3 +295,4 @@ export default function ShippingPage() {
     </main>
   );
 }
+

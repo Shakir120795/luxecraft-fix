@@ -1,4 +1,4 @@
-# 🚀 LuxeCraft VPS Deployment Guide
+# 🚀 Wolhomes VPS Deployment Guide
 
 **Target**: Ubuntu 24.04 LTS VPS (Google Cloud / AWS / DigitalOcean)
 
@@ -142,7 +142,7 @@ ADMIN_JWT_SECRET=YOUR_ADMIN_SECRET_HERE
 ADMIN_JWT_REFRESH_SECRET=YOUR_ADMIN_REFRESH_SECRET_HERE
 
 # CORS (your domains)
-CORS_ORIGINS=https://luxecraft.com,https://admin.luxecraft.com
+CORS_ORIGINS=https://wolhomes.com,https://admin.wolhomes.com
 
 # SMTP (your email provider)
 SMTP_HOST=smtp.gmail.com
@@ -156,8 +156,8 @@ STRIPE_SECRET_KEY=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 
 # Frontend URLs
-NEXT_PUBLIC_API_URL=https://api.luxecraft.com/api/v1
-NEXT_PUBLIC_STOREFRONT_URL=https://luxecraft.com
+NEXT_PUBLIC_API_URL=https://api.wolhomes.com/api/v1
+NEXT_PUBLIC_STOREFRONT_URL=https://wolhomes.com
 ```
 
 ---
@@ -290,13 +290,13 @@ pm2 list
 sudo apt install -y nginx
 
 # Create API configuration
-sudo nano /etc/nginx/sites-available/api.luxecraft.com
+sudo nano /etc/nginx/sites-available/api.wolhomes.com
 ```
 
 ```nginx
 server {
     listen 80;
-    server_name api.luxecraft.com;
+    server_name api.wolhomes.com;
 
     client_max_body_size 10M;
 
@@ -316,13 +316,13 @@ server {
 
 ```bash
 # Create Storefront configuration
-sudo nano /etc/nginx/sites-available/luxecraft.com
+sudo nano /etc/nginx/sites-available/wolhomes.com
 ```
 
 ```nginx
 server {
     listen 80;
-    server_name luxecraft.com www.luxecraft.com;
+    server_name wolhomes.com www.wolhomes.com;
 
     client_max_body_size 10M;
 
@@ -342,13 +342,13 @@ server {
 
 ```bash
 # Create Admin configuration
-sudo nano /etc/nginx/sites-available/admin.luxecraft.com
+sudo nano /etc/nginx/sites-available/admin.wolhomes.com
 ```
 
 ```nginx
 server {
     listen 80;
-    server_name admin.luxecraft.com;
+    server_name admin.wolhomes.com;
 
     client_max_body_size 10M;
 
@@ -368,9 +368,9 @@ server {
 
 ```bash
 # Enable sites
-sudo ln -s /etc/nginx/sites-available/api.luxecraft.com /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/luxecraft.com /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/admin.luxecraft.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/api.wolhomes.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/wolhomes.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/admin.wolhomes.com /etc/nginx/sites-enabled/
 
 # Test configuration
 sudo nginx -t
@@ -389,9 +389,9 @@ sudo systemctl enable nginx
 sudo apt install -y certbot python3-certbot-nginx
 
 # Obtain SSL certificates
-sudo certbot --nginx -d api.luxecraft.com
-sudo certbot --nginx -d luxecraft.com -d www.luxecraft.com
-sudo certbot --nginx -d admin.luxecraft.com
+sudo certbot --nginx -d api.wolhomes.com
+sudo certbot --nginx -d wolhomes.com -d www.wolhomes.com
+sudo certbot --nginx -d admin.wolhomes.com
 
 # Test auto-renewal
 sudo certbot renew --dry-run
@@ -432,9 +432,9 @@ pm2 logs luxecraft-storefront --lines 50
 pm2 logs luxecraft-admin --lines 50
 
 # Test URLs
-curl https://api.luxecraft.com/api/v1/health
-curl https://luxecraft.com
-curl https://admin.luxecraft.com
+curl https://api.wolhomes.com/api/v1/health
+curl https://wolhomes.com
+curl https://admin.wolhomes.com
 ```
 
 ---
@@ -527,7 +527,7 @@ psql -U luxecraft -h localhost -d luxecraft_prod < /var/backups/luxecraft/db-202
 ### Check Application Health
 ```bash
 # API health
-curl https://api.luxecraft.com/api/v1/health
+curl https://api.wolhomes.com/api/v1/health
 
 # Check error logs
 tail -f /var/www/luxecraft/logs/api-error.log
@@ -603,7 +603,10 @@ sudo systemctl restart nginx
 
 **Deployment Complete!** 🎉
 
-Your LuxeCraft platform is now running on:
-- **API**: https://api.luxecraft.com
-- **Storefront**: https://luxecraft.com
-- **Admin**: https://admin.luxecraft.com
+Your Wolhomes platform is now running on:
+- **API**: https://api.wolhomes.com
+- **Storefront**: https://wolhomes.com
+- **Admin**: https://admin.wolhomes.com
+
+
+

@@ -36,7 +36,7 @@ function LoginForm() {
         {/* Header */}
         <div className="text-center mb-10">
           <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-3">Welcome Back</h1>
-          <p className="text-luxury-brown">Sign in to your LuxeCraft account</p>
+          <p className="text-luxury-brown">Sign in to your Wolhomes account</p>
         </div>
 
         {/* Login Form */}
@@ -162,3 +162,4 @@ export default function LoginPage() {
     </Suspense>
   );
 }
+

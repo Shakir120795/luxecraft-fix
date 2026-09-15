@@ -85,8 +85,8 @@ export default function HomePage() {
           <div className="relative min-h-[560px] overflow-hidden bg-[#40372f] lg:min-h-0">
             {(hero?.imageUrl || heroImage) ? (
               <img
-                src={hero?.imageUrl || heroImage || '/luxecraft-hero-rug.png'}
-                alt={hero?.product?.name || 'LuxeCraft luxury collection'}
+                src={hero?.imageUrl || heroImage || '/wolhomes-hero-rug.png'}
+                alt={hero?.product?.name || 'Wolhomes luxury collection'}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.02]"
               />
             ) : (
@@ -310,7 +310,7 @@ export default function HomePage() {
         <div className="grid items-stretch overflow-hidden rounded-2xl bg-[#193f42] lg:grid-cols-[2fr_3fr]">
           <div className="flex flex-col justify-center px-6 py-8 text-white sm:px-8 sm:py-9 lg:px-10 lg:py-10">
             <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#d4a556]">
-              Bespoke by LuxeCraft
+              Bespoke by Wolhomes
             </p>
 
             <h2 className="mt-3 max-w-xl font-serif text-3xl font-light leading-[0.98] sm:text-4xl lg:text-5xl">
@@ -365,8 +365,8 @@ export default function HomePage() {
           <div className="relative aspect-[4/3] overflow-hidden bg-[#756454] lg:aspect-[4/3]">
             {true ? (
               <img
-                src="/luxecraft-bespoke-design.png"
-                alt="LuxeCraft bespoke custom rug design studio"
+                src="/wolhomes-bespoke-design.png"
+                alt="Wolhomes bespoke custom rug design studio"
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 hover:scale-[1.03]"
               />
             ) : (
@@ -388,12 +388,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      {/* WHY LUXECRAFT */}
+      {/* WHY WOLHOMES */}
       <section className="border-t border-black/10 bg-white">
         <div className="mx-auto max-w-[1400px] px-6 py-14 sm:px-8 sm:py-16 lg:py-20">
           <div className="mb-12 max-w-2xl">
             <p className="text-[10px] uppercase tracking-[0.24em] text-luxury-olive">
-              The LuxeCraft standard
+              The Wolhomes standard
             </p>
             <h2 className="mt-3 font-serif text-4xl font-light sm:text-5xl">
               Craftsmanship without compromise.
@@ -499,6 +499,7 @@ export default function HomePage() {
     </main>
   );
 }
+
 
 
 

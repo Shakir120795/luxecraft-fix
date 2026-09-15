@@ -86,7 +86,7 @@ function SearchContent() {
           <div className="mb-8">
             <span className="text-7xl"></span>
           </div>
-          <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-4">Search LuxeCraft</h1>
+          <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-4">Search Wolhomes</h1>
           <p className="text-luxury-brown mb-8">Enter a search term to find products</p>
           <Link href="/products" className="btn-luxury px-10 py-4 inline-block">
             Browse All Products 
@@ -261,3 +261,4 @@ function SearchContent() {
     </main>
   );
 }
+

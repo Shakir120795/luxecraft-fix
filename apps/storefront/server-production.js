@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * LuxeCraft Storefront - Production Server Wrapper
+ * Wolhomes Storefront - Production Server Wrapper
  * 
  * This wrapper ensures the Next.js standalone server starts with
  * the correct port from environment variable or default.
@@ -28,7 +28,7 @@ if (!process.env.NODE_ENV) {
 // Path to standalone server
 const SERVER_PATH = path.join(__dirname, '.next', 'standalone', 'apps', 'storefront', 'server.js');
 
-console.log(' LuxeCraft Storefront - Production Server');
+console.log(' Wolhomes Storefront - Production Server');
 console.log(`   Port: ${PORT}`);
 console.log(`   NODE_ENV: ${process.env.NODE_ENV}`);
 console.log(`   Server: ${SERVER_PATH}\n`);
@@ -61,3 +61,4 @@ process.on('SIGINT', () => {
   console.log('\n Received SIGINT, shutting down gracefully...');
   server.kill('SIGINT');
 });
+

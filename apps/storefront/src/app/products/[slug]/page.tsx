@@ -155,8 +155,8 @@ export default function ProductDetailPage() {
 
   const handleShare = async () => {
     const shareData = {
-      title: product?.name || 'LuxeCraft Product',
-      text: 'Discover this piece from LuxeCraft.',
+      title: product?.name || 'Wolhomes Product',
+      text: 'Discover this piece from Wolhomes.',
       url: window.location.href,
     };
 
@@ -741,6 +741,7 @@ export default function ProductDetailPage() {
     </main>
   );
 }
+
 
 
 

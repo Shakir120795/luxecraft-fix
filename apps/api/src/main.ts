@@ -106,7 +106,7 @@ async function bootstrap() {
   await app.listen(port);
 
   logger.log(
-    `LuxeCraft API running on http://localhost:${port}/api/v1`,
+    `Wolhomes API running on http://localhost:${port}/api/v1`,
   );
 
   logger.log(

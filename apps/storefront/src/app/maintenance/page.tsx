@@ -59,13 +59,13 @@ export default function MaintenancePage() {
           </p>
           
           <div className="flex gap-6 justify-center text-luxury-brown">
-            <Link href="https://twitter.com/luxecraft" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
+            <Link href="https://twitter.com/wolhomes" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
               Twitter
             </Link>
-            <Link href="https://instagram.com/luxecraft" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
+            <Link href="https://instagram.com/wolhomes" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
               Instagram
             </Link>
-            <Link href="https://facebook.com/luxecraft" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
+            <Link href="https://facebook.com/wolhomes" target="_blank" rel="noopener noreferrer" className="hover:text-luxury-gold transition-colors">
               Facebook
             </Link>
           </div>
@@ -75,8 +75,8 @@ export default function MaintenancePage() {
         <div className="mt-12 border border-luxury-sand bg-luxury-cream p-6">
           <p className="text-luxury-brown text-sm">
             Urgent inquiries? Contact us at{' '}
-            <a href="mailto:support@luxecraft.com" className="text-luxury-gold hover:underline">
-              support@luxecraft.com
+            <a href="mailto:support@wolhomes.com" className="text-luxury-gold hover:underline">
+              support@wolhomes.com
             </a>
           </p>
         </div>
@@ -84,3 +84,4 @@ export default function MaintenancePage() {
     </main>
   );
 }
+

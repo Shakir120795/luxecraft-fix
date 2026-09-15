@@ -14,7 +14,7 @@ export function SiteFooter() {
               href="/"
               className="font-serif text-[26px] font-semibold tracking-[0.2em] transition-opacity hover:opacity-70 sm:text-[24px]"
             >
-              LUXECRAFT
+              WOLHOMES
             </Link>
 
             <p className="mt-4 max-w-xs text-sm leading-7 text-black">
@@ -179,7 +179,7 @@ export function SiteFooter() {
           </div>
 
           <div className="mt-7 flex flex-col gap-3 text-xs tracking-wide text-black sm:flex-row sm:items-center sm:justify-between">
-            <span> {new Date().getFullYear()} LuxeCraft. Crafted with care.</span>
+            <span> {new Date().getFullYear()} Wolhomes. Crafted with care.</span>
             <span>Quiet luxury  Indian craftsmanship  Worldwide</span>
           </div>
 
@@ -189,3 +189,5 @@ export function SiteFooter() {
     </footer>
   );
 }
+
+

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/AdminLayout';
@@ -29,7 +29,7 @@ export default function SettingsPage() {
   const [form, setForm] = useState({
     productId: '',
     imageUrl: '',
-    eyebrow: 'LuxeCraft Collection',
+    eyebrow: 'Wolhomes Collection',
     title: 'Luxury crafted. Worldwide delivered.',
     subtitle:
       'Exquisite rugs, artisan crafts, and bespoke pieces made by master craftspeople from around the world.',
@@ -225,7 +225,7 @@ export default function SettingsPage() {
               Default Currency
             </h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">
-              This is the base currency used for LuxeCraft product pricing.
+              This is the base currency used for Wolhomes product pricing.
               Customer prices will be converted to their local currency.
             </p>
           </div>
@@ -325,7 +325,7 @@ export default function SettingsPage() {
 
                 <div className="absolute left-6 top-6">
                   <span className="border border-white/60 px-3 py-2 text-[9px] uppercase tracking-[0.2em] text-white">
-                    {form.eyebrow || 'LuxeCraft Collection'}
+                    {form.eyebrow || 'Wolhomes Collection'}
                   </span>
                 </div>
 
@@ -791,7 +791,7 @@ export default function SettingsPage() {
             <div className="flex justify-between border-b border-[var(--color-border)] py-2">
               <span className="text-[var(--color-muted)]">Application</span>
               <span className="font-medium text-[var(--color-text)]">
-                LuxeCraft Admin
+                Wolhomes Admin
               </span>
             </div>
             <div className="flex justify-between border-b border-[var(--color-border)] py-2">
@@ -822,7 +822,7 @@ export default function SettingsPage() {
             </p>
             <div className="flex gap-4">
               <a
-                href="mailto:support@luxecraft.com"
+                href="mailto:support@wolhomes.com"
                 className="text-sm text-[var(--color-accent)] hover:text-[var(--color-accent-strong)]"
               >
                  Email Support
@@ -840,6 +840,7 @@ export default function SettingsPage() {
     </AdminLayout>
   );
 }
+
 
 
 

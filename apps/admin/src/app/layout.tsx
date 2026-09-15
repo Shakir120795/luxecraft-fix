@@ -3,10 +3,10 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: 'LuxeCraft Admin',
-    template: '%s | LuxeCraft Admin',
+    default: 'Wolhomes Admin',
+    template: '%s | Wolhomes Admin',
   },
-  description: 'LuxeCraft Super Admin Panel',
+  description: 'Wolhomes Super Admin Panel',
 };
 
 export default function RootLayout({
@@ -20,3 +20,4 @@ export default function RootLayout({
     </html>
   );
 }
+

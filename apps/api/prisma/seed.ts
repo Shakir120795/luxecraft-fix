@@ -1,4 +1,4 @@
-﻿import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -81,7 +81,7 @@ async function main() {
         name: 'Hand Knotted Rugs',
         slug: 'hand-knotted-rugs',
         description: 'Traditional hand-knotted luxury rugs crafted by master artisans',
-        seoTitle: 'Hand Knotted Luxury Rugs | LuxeCraft',
+        seoTitle: 'Hand Knotted Luxury Rugs | Wolhomes',
         seoDesc: 'Explore our exquisite collection of hand-knotted rugs',
         status: 'ACTIVE',
         sortOrder: 1,
@@ -94,7 +94,7 @@ async function main() {
         name: 'Hand Tufted Rugs',
         slug: 'hand-tufted-rugs',
         description: 'Premium hand-tufted rugs with intricate designs',
-        seoTitle: 'Hand Tufted Rugs | LuxeCraft',
+        seoTitle: 'Hand Tufted Rugs | Wolhomes',
         seoDesc: 'Beautiful hand-tufted rugs for your home',
         status: 'ACTIVE',
         sortOrder: 2,
@@ -107,7 +107,7 @@ async function main() {
         name: 'Flat Weave Rugs',
         slug: 'flat-weave-rugs',
         description: 'Elegant flat-weave rugs perfect for modern interiors',
-        seoTitle: 'Flat Weave Rugs | LuxeCraft',
+        seoTitle: 'Flat Weave Rugs | Wolhomes',
         seoDesc: 'Contemporary flat-weave rugs collection',
         status: 'ACTIVE',
         sortOrder: 3,
@@ -120,7 +120,7 @@ async function main() {
         name: 'Crafts & Statues',
         slug: 'crafts-statues',
         description: 'Handcrafted decorative pieces and luxury statues',
-        seoTitle: 'Luxury Crafts & Statues | LuxeCraft',
+        seoTitle: 'Luxury Crafts & Statues | Wolhomes',
         seoDesc: 'Premium handcrafted decorative items',
         status: 'ACTIVE',
         sortOrder: 4,
@@ -361,6 +361,7 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+
 
 
 

@@ -7,7 +7,7 @@ export default function AboutPage() {
       <section className="relative overflow-hidden bg-gradient-to-br from-luxury-night via-[#4A3F35] to-luxury-night text-white py-24">
         <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-6xl md:text-7xl font-serif font-light tracking-tight mb-6">
-            About LuxeCraft
+            About Wolhomes
           </h1>
           <p className="text-xl md:text-2xl text-luxury-cream/90 leading-relaxed max-w-3xl mx-auto">
             Where timeless craftsmanship meets contemporary elegance
@@ -21,7 +21,7 @@ export default function AboutPage() {
           <h2 className="text-4xl font-serif font-light text-luxury-charcoal mb-8">Our Story</h2>
           
           <p className="text-luxury-brown text-lg leading-relaxed mb-6">
-            Founded in 2020, LuxeCraft began with a simple vision: to create furniture that tells a story. 
+            Founded in 2020, Wolhomes began with a simple vision: to create furniture that tells a story. 
             Each piece we craft is more than just an objectit's a testament to the enduring beauty of 
             artisanal excellence and thoughtful design.
           </p>
@@ -141,7 +141,7 @@ export default function AboutPage() {
       <section className="bg-luxury-night text-white py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl font-serif font-light mb-6">
-            Experience LuxeCraft
+            Experience Wolhomes
           </h2>
           <p className="text-xl text-luxury-cream/90 mb-10 leading-relaxed">
             Discover our curated collection of handcrafted furniture, or let us create 
@@ -160,3 +160,5 @@ export default function AboutPage() {
     </main>
   );
 }
+
+

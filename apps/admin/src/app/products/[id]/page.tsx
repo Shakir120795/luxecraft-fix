@@ -899,7 +899,7 @@ export default function ProductEditPage() {
             </h1>
             <p className="mt-2 text-[var(--color-muted)]">
               {isNew
-                ? 'Create a complete product for your LuxeCraft storefront.'
+                ? 'Create a complete product for your Wolhomes storefront.'
                 : 'Manage product details, media, variants, customization and publishing.'}
             </p>
           </div>
@@ -1419,7 +1419,7 @@ export default function ProductEditPage() {
                 )}
 
                 <p className="mt-4 text-xs leading-5 text-[var(--color-muted)]">
-                  Selected PC images are uploaded to the LuxeCraft API server when you save the product. Maximum size: 10 MB per image.
+                  Selected PC images are uploaded to the Wolhomes API server when you save the product. Maximum size: 10 MB per image.
                 </p>
               </div>
             </div>
@@ -1974,6 +1974,7 @@ export default function ProductEditPage() {
     </AdminLayout>
   );
 }
+
 
 
 

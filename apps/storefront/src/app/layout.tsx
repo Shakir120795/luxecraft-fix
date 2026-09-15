@@ -27,8 +27,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: 'LuxeCraft  Worldwide Luxury Ecommerce',
-    template: '%s | LuxeCraft',
+    default: 'Wolhomes  Worldwide Luxury Ecommerce',
+    template: '%s | Wolhomes',
   },
   description:
     'Bespoke luxury handcrafted rugs, crafts and custom design orders worldwide.',
@@ -53,3 +53,4 @@ export default function RootLayout({
     </html>
   );
 }
+

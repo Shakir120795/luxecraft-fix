@@ -13,7 +13,7 @@ export class SeoService {
       this.prisma.category.findMany({ where: { status: 'ACTIVE' }, select: { slug: true, updatedAt: true } }),
     ]);
 
-    const baseUrl = process.env.APP_URL || 'https://luxecraft.com';
+    const baseUrl = process.env.APP_URL || 'https://wolhomes.com';
 
     let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
     xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
@@ -43,7 +43,7 @@ Disallow: /admin
 Disallow: /api
 Crawl-delay: 1
 
-Sitemap: ${process.env.APP_URL || 'https://luxecraft.com'}/sitemap.xml
+Sitemap: ${process.env.APP_URL || 'https://wolhomes.com'}/sitemap.xml
 `;
   }
 
@@ -75,14 +75,15 @@ Sitemap: ${process.env.APP_URL || 'https://luxecraft.com'}/sitemap.xml
     return {
       '@context': 'https://schema.org',
       '@type': 'Organization',
-      name: 'LuxeCraft',
-      url: process.env.APP_URL || 'https://luxecraft.com',
+      name: 'Wolhomes',
+      url: process.env.APP_URL || 'https://wolhomes.com',
       logo: `${process.env.APP_URL}/logo.png`,
     };
   }
 
   getCanonicalUrl(path: string): string {
-    const base = process.env.APP_URL || 'https://luxecraft.com';
+    const base = process.env.APP_URL || 'https://wolhomes.com';
     return `${base}${path}`;
   }
 }
+

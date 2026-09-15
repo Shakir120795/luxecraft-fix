@@ -30,7 +30,7 @@ export function AdminSidebar() {
       <div className="p-6 border-b border-[var(--color-border)]">
         <Link href="/dashboard" className="block">
           <h1 className="text-2xl font-serif text-[var(--color-primary)]">
-            LuxeCraft
+            Wolhomes
           </h1>
           <p className="text-xs text-[var(--color-muted)] mt-1 uppercase tracking-wider">
             Admin Panel
@@ -62,9 +62,10 @@ export function AdminSidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-[var(--color-border)] text-xs text-[var(--color-muted)]">
-        <p> 2024 LuxeCraft</p>
+        <p> 2024 Wolhomes</p>
         <p className="mt-1">v1.0.0</p>
       </div>
     </aside>
   );
 }
+

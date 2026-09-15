@@ -113,7 +113,7 @@ function CategoryContent() {
       <main className="flex min-h-screen items-center justify-center bg-white px-6 py-20">
         <div className="w-full max-w-lg text-center">
           <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#315f37]">
-            LuxeCraft
+            Wolhomes
           </p>
 
           <h1 className="mt-3 font-serif text-4xl font-light text-black sm:text-5xl">
@@ -335,6 +335,7 @@ function CategoryContent() {
     </main>
   );
 }
+
 
 
 

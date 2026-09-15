@@ -23,7 +23,7 @@ const STATIC_SRC = path.join(STOREFRONT_DIR, '.next', 'static');
 const STANDALONE_DIR = path.join(STOREFRONT_DIR, '.next', 'standalone', 'apps', 'storefront');
 const STATIC_DEST = path.join(STANDALONE_DIR, '.next', 'static');
 
-console.log('📦 LuxeCraft Storefront: Copying static assets for standalone build...\n');
+console.log('📦 Wolhomes Storefront: Copying static assets for standalone build...\n');
 
 // Check if standalone build exists
 if (!fs.existsSync(STANDALONE_DIR)) {
@@ -82,3 +82,4 @@ try {
   console.error('❌ Error copying static assets:', error.message);
   process.exit(1);
 }
+

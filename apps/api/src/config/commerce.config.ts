@@ -1,4 +1,4 @@
-﻿import { registerAs } from '@nestjs/config';
+import { registerAs } from '@nestjs/config';
 
 const csv = (value: string | undefined, fallback: string[] = []) =>
   value?.split(',').map((item) => item.trim()).filter(Boolean) ?? fallback;
@@ -21,7 +21,7 @@ export default registerAs('commerce', () => ({
   email: {
     provider: (process.env.EMAIL_PROVIDER ?? 'none').toLowerCase(),
     from: process.env.EMAIL_FROM,
-    fromName: process.env.EMAIL_FROM_NAME ?? 'LuxeCraft',
+    fromName: process.env.EMAIL_FROM_NAME ?? 'Wolhomes',
     resendApiKey: process.env.RESEND_API_KEY,
     sendgridApiKey: process.env.SENDGRID_API_KEY,
   },
@@ -34,5 +34,6 @@ export default registerAs('commerce', () => ({
     cdnUrl: process.env.STORAGE_CDN_URL,
   },
 }));
+
 
 

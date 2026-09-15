@@ -20,7 +20,7 @@ export default function TermsPage() {
           {/* Introduction */}
           <section className="mb-12">
             <p className="text-luxury-brown text-lg leading-relaxed">
-              Welcome to LuxeCraft. These Terms and Conditions ("Terms") govern your use of our website 
+              Welcome to Wolhomes. These Terms and Conditions ("Terms") govern your use of our website 
               and the purchase of our products. By accessing our website or making a purchase, you agree 
               to be bound by these Terms.
             </p>
@@ -33,7 +33,7 @@ export default function TermsPage() {
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
               <p>
-                <strong>1.1</strong> By placing an order with LuxeCraft, you warrant that you are legally 
+                <strong>1.1</strong> By placing an order with Wolhomes, you warrant that you are legally 
                 capable of entering into binding contracts and are at least 18 years of age.
               </p>
               <p>
@@ -175,7 +175,7 @@ export default function TermsPage() {
             <div className="space-y-4 text-luxury-brown leading-relaxed">
               <p>
                 <strong>7.1</strong> All content on this website, including images, text, logos, and designs, 
-                is the property of LuxeCraft and protected by copyright and trademark laws.
+                is the property of Wolhomes and protected by copyright and trademark laws.
               </p>
               <p>
                 <strong>7.2</strong> You may not reproduce, distribute, or create derivative works from our 
@@ -195,7 +195,7 @@ export default function TermsPage() {
             </h2>
             <div className="space-y-4 text-luxury-brown leading-relaxed">
               <p>
-                <strong>8.1</strong> LuxeCraft shall not be liable for any indirect, incidental, special, 
+                <strong>8.1</strong> Wolhomes shall not be liable for any indirect, incidental, special, 
                 consequential, or punitive damages arising from your use of our products or services.
               </p>
               <p>
@@ -252,15 +252,15 @@ export default function TermsPage() {
               </p>
               <div className="border-l-4 border-luxury-gold pl-6">
                 <p>
-                  <strong>LuxeCraft</strong><br />
+                  <strong>Wolhomes</strong><br />
                   123 Artisan Boulevard<br />
                   New York, NY 10001<br />
                   United States
                 </p>
                 <p className="mt-4">
                   Email:{' '}
-                  <a href="mailto:legal@luxecraft.com" className="text-luxury-gold hover:underline">
-                    legal@luxecraft.com
+                  <a href="mailto:legal@wolhomes.com" className="text-luxury-gold hover:underline">
+                    legal@wolhomes.com
                   </a>
                   <br />
                   Phone:{' '}
@@ -295,3 +295,4 @@ export default function TermsPage() {
     </main>
   );
 }
+

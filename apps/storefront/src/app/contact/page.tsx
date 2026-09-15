@@ -88,8 +88,8 @@ export default function ContactPage() {
               <div className="border-l-4 border-luxury-gold pl-6">
                 <h3 className="text-lg font-serif text-luxury-charcoal mb-2">Email</h3>
                 <p className="text-luxury-brown">
-                  <a href="mailto:hello@luxecraft.com" className="hover:text-luxury-gold transition-colors">
-                    hello@luxecraft.com
+                  <a href="mailto:hello@wolhomes.com" className="hover:text-luxury-gold transition-colors">
+                    hello@wolhomes.com
                   </a>
                 </p>
                 <p className="text-sm text-luxury-brown/70 mt-1">
@@ -264,3 +264,4 @@ export default function ContactPage() {
     </main>
   );
 }
+

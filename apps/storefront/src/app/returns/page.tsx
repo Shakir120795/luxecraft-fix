@@ -20,7 +20,7 @@ export default function ReturnsPage() {
           {/* Introduction */}
           <section className="mb-12">
             <p className="text-luxury-brown text-lg leading-relaxed">
-              We want you to love your LuxeCraft furniture. If you're not completely satisfied, we offer 
+              We want you to love your Wolhomes furniture. If you're not completely satisfied, we offer 
               a straightforward return policy to ensure your peace of mind.
             </p>
           </section>
@@ -80,8 +80,8 @@ export default function ReturnsPage() {
                   </h3>
                   <p>
                     Email us at{' '}
-                    <a href="mailto:returns@luxecraft.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                      returns@luxecraft.com
+                    <a href="mailto:returns@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+                      returns@wolhomes.com
                     </a>{' '}
                     or call{' '}
                     <a href="tel:+1234567890" className="text-luxury-gold underline hover:text-luxury-brown">
@@ -149,7 +149,7 @@ export default function ReturnsPage() {
               </div>
 
               <div className="border-l-4 border-luxury-gold pl-6">
-                <h4 className="font-serif text-luxury-charcoal mb-2">LuxeCraft Responsibility:</h4>
+                <h4 className="font-serif text-luxury-charcoal mb-2">Wolhomes Responsibility:</h4>
                 <p>
                   If we sent the wrong item, or the item arrived damaged or defective, we'll cover all 
                   return shipping costs and send a prepaid label.
@@ -235,8 +235,8 @@ export default function ReturnsPage() {
                   <li>
                     <strong>Contact Us Immediately:</strong> Within 48 hours, email photos of the damage 
                     to{' '}
-                    <a href="mailto:support@luxecraft.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                      support@luxecraft.com
+                    <a href="mailto:support@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+                      support@wolhomes.com
                     </a>
                   </li>
                   <li>
@@ -280,8 +280,8 @@ export default function ReturnsPage() {
               <p>
                 <strong>Before Production:</strong> Orders can be cancelled within 24 hours of placement 
                 for a full refund. Contact us immediately at{' '}
-                <a href="mailto:support@luxecraft.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                  support@luxecraft.com
+                <a href="mailto:support@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+                  support@wolhomes.com
                 </a>
               </p>
               <p>
@@ -320,7 +320,7 @@ export default function ReturnsPage() {
             Our Warranty
           </h3>
           <p className="text-luxury-brown mb-6 text-center max-w-2xl mx-auto">
-            All LuxeCraft furniture includes a 5-year warranty against manufacturing defects. 
+            All Wolhomes furniture includes a 5-year warranty against manufacturing defects. 
             Custom pieces include a lifetime structural warranty.
           </p>
           <div className="text-center">
@@ -370,3 +370,4 @@ export default function ReturnsPage() {
     </main>
   );
 }
+

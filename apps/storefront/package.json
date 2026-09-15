@@ -2,7 +2,7 @@
   "name": "@luxecraft/storefront",
   "version": "1.0.0",
   "private": true,
-  "description": "LuxeCraft Customer Storefront â€” Next.js",
+  "description": "Wolhomes Customer Storefront â€” Next.js",
   "scripts": {
     "dev": "next dev -p 3003",
     "build": "next build",
@@ -31,4 +31,5 @@
     "typescript": "^5.7.2"
   }
 }
+
 

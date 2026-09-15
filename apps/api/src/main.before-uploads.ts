@@ -70,11 +70,12 @@ async function bootstrap() {
 
   const port = process.env.API_PORT ?? 3001;
   await app.listen(port);
-  logger.log(`LuxeCraft API running on http://localhost:${port}/api/v1`);
+  logger.log(`Wolhomes API running on http://localhost:${port}/api/v1`);
   logger.log(`Health:  GET http://localhost:${port}/api/v1/health`);
   logger.log(`Auth:    POST http://localhost:${port}/api/v1/auth/register`);
   logger.log(`Admin:   POST http://localhost:${port}/api/v1/admin/auth/login`);
 }
 
 bootstrap();
+
 
