@@ -1,6 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
@@ -14,6 +15,9 @@ import {
   getShippingMethods,
   getPaymentConfiguration,
   createOrder,
+  verifyRazorpayPayment,
+  capturePayPalPayment,
+  verifyCryptoPayment,
   Cart,
   Address,
   ShippingMethod,
@@ -53,16 +57,38 @@ export default function CheckoutPage() {
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod | null>(null);
 
   // Payment provider state
-  const [paymentProvider, setPaymentProvider] = useState('none');
+  const [paymentProvider, setPaymentProvider] = useState<'razorpay' | 'paypal' | 'crypto' | 'none'>('none');
+  const [availablePaymentProviders, setAvailablePaymentProviders] = useState<string[]>([]);
+  const [cryptoNetworks, setCryptoNetworks] = useState<string[]>([]);
+  const [cryptoAssets, setCryptoAssets] = useState<string[]>([]);
+  const [selectedCryptoNetwork, setSelectedCryptoNetwork] = useState('ethereum');
+  const [selectedCryptoAsset, setSelectedCryptoAsset] = useState('USDT');
+  const [cryptoPayment, setCryptoPayment] = useState<{ network: string; asset: string; address: string; amount: number; currency: string; instructions: string } | null>(null);
+  const [cryptoTxHash, setCryptoTxHash] = useState('');
+  const [cryptoQrCode, setCryptoQrCode] = useState<string | null>(null);
   const [paymentConfigured, setPaymentConfigured] = useState(false);
   const [paymentPublicKey, setPaymentPublicKey] = useState<string | undefined>();
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
+  const [paymentProviderOrderId, setPaymentProviderOrderId] = useState<string | null>(null);
   const [paymentGuestAccessToken, setPaymentGuestAccessToken] = useState<string | null>(null);
 
   useEffect(() => {
     loadCheckoutData();
   }, []);
+  useEffect(() => {
+    if (!cryptoPayment) {
+      setCryptoQrCode(null);
+      return;
+    }
+
+    const qrPayload = `WOLHOMES|${cryptoPayment.network}|${cryptoPayment.asset}|${cryptoPayment.address}|${cryptoPayment.amount}`;
+    QRCode.toDataURL(qrPayload, { margin: 2, width: 240 })
+      .then(setCryptoQrCode)
+      .catch(() => setCryptoQrCode(null));
+  }, [cryptoPayment]);
+
+
 
   async function loadCheckoutData() {
     try {
@@ -78,8 +104,11 @@ export default function CheckoutPage() {
 
       // Load payment provider configuration for the cart currency
       const paymentConfig = await getPaymentConfiguration(cartData.currency);
-      setPaymentProvider(paymentConfig.provider);
-      setPaymentConfigured(paymentConfig.configured && paymentConfig.currencySupported);
+      setPaymentProvider(paymentConfig.provider as 'razorpay' | 'paypal' | 'crypto' | 'none');
+      setAvailablePaymentProviders(paymentConfig.providers || []);
+      setCryptoNetworks(paymentConfig.cryptoNetworks || []);
+      setCryptoAssets(paymentConfig.cryptoSupportedAssets || []);
+      setPaymentConfigured(paymentConfig.currencySupported && (paymentConfig.configured || (paymentConfig.providers || []).length > 0));
       setPaymentPublicKey(paymentConfig.publicKey);
 
       // Check authentication
@@ -181,13 +210,12 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (paymentProvider !== 'stripe' || !paymentConfigured) {
-      setError('Payment service is currently unavailable. Please try again later.');
+    if (!paymentConfigured || !['razorpay', 'paypal', 'crypto'].includes(paymentProvider)) {
+      setError('Please select an available payment method.');
       return;
     }
 
     setCurrentStep('payment');
-    await handlePlaceOrder();
   }
 
   async function handlePlaceOrder() {
@@ -200,9 +228,64 @@ export default function CheckoutPage() {
     setSubmitting(true);
 
     try {
+      const accessToken = paymentGuestAccessToken || undefined;
+
+      if (paymentProvider === 'crypto' && cryptoPayment && paymentOrderId) {
+        if (!cryptoTxHash.trim()) {
+          setError('Please enter the transaction hash after sending the payment.');
+          setSubmitting(false);
+          return;
+        }
+
+        const verification = await verifyCryptoPayment({
+          orderId: paymentOrderId,
+          txHash: cryptoTxHash.trim(),
+          network: cryptoPayment.network,
+          asset: cryptoPayment.asset,
+          accessToken,
+        });
+
+        if (!verification.success) {
+          setError(verification.message || 'Crypto payment verification failed.');
+          setSubmitting(false);
+          return;
+        }
+
+        const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
+        if (accessToken) confirmationQuery.set('access', accessToken);
+        router.push(`/order-confirmation?${confirmationQuery.toString()}`);
+        return;
+      }
+
+      if (paymentProvider === 'paypal' && paymentProviderOrderId && paymentOrderId) {
+        const capture = await capturePayPalPayment({
+          orderId: paymentOrderId,
+          paypalOrderId: paymentProviderOrderId,
+          accessToken,
+        });
+
+        if (!capture.success) {
+          setError(capture.message || 'PayPal payment capture failed.');
+          setSubmitting(false);
+          return;
+        }
+
+        const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
+        if (accessToken) confirmationQuery.set('access', accessToken);
+        router.push(`/order-confirmation?${confirmationQuery.toString()}`);
+        return;
+      }
+
+      const selectedCryptoMethod =
+        paymentProvider === 'crypto'
+          ? `crypto:${selectedCryptoAsset}:${selectedCryptoNetwork}`
+          : paymentProvider;
+
       const result = await createOrder({
         shippingAddressId: selectedShippingAddressId || undefined,
         shippingMethodId: shippingMethod.id,
+        paymentProvider: paymentProvider as 'razorpay' | 'paypal' | 'crypto',
+        paymentMethod: selectedCryptoMethod,
         guestEmail: isGuest ? guestEmail : undefined,
         guestShippingAddress: isGuest
           ? {
@@ -219,29 +302,117 @@ export default function CheckoutPage() {
           : undefined,
       });
 
-      if (result.success && result.data) {
-        if (paymentProvider === 'stripe' && result.data.clientSecret) {
-          setPaymentOrderId(result.data.order.id);
-          setPaymentGuestAccessToken(result.data.guestAccessToken || null);
-          setPaymentClientSecret(result.data.clientSecret);
+      if (!result.success || !result.data) {
+        setError(result.message || 'Failed to place order');
+        setSubmitting(false);
+        return;
+      }
+
+      setPaymentOrderId(result.data.order.id);
+      setPaymentProviderOrderId(result.data.providerOrderId || null);
+      setPaymentGuestAccessToken(result.data.guestAccessToken || null);
+      setPaymentClientSecret(result.data.clientSecret || null);
+
+      if (paymentProvider === 'crypto' && result.data.crypto) {
+        setCryptoPayment(result.data.crypto);
+        setSubmitting(false);
+        return;
+      }
+
+      if (paymentProvider === 'razorpay') {
+        if (!result.data.providerOrderId || !result.data.publicKey) {
+          setError('Razorpay payment could not be initialized.');
           setSubmitting(false);
           return;
         }
-        // Redirect to order confirmation
-        const confirmationQuery = new URLSearchParams({ orderId: result.data.order.id });
-        if (result.data.guestAccessToken) confirmationQuery.set('access', result.data.guestAccessToken);
-        router.push(`/order-confirmation?${confirmationQuery.toString()}`);
-      } else {
-        setError(result.message || 'Failed to place order');
+
+        const loadRazorpay = () =>
+          new Promise<void>((resolve, reject) => {
+            const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+            if (existing) {
+              resolve();
+              return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Unable to load Razorpay Checkout.'));
+            document.body.appendChild(script);
+          });
+
+        await loadRazorpay();
+
+        const RazorpayCtor = (window as Window & {
+          Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+        }).Razorpay;
+
+        if (!RazorpayCtor) {
+          throw new Error('Razorpay Checkout is unavailable.');
+        }
+
+        const razorpay = new RazorpayCtor({
+          key: result.data.publicKey,
+          order_id: result.data.providerOrderId,
+          amount: Math.round(Number(result.data.payment?.amount || 0) * 100),
+          currency: result.data.payment?.currency || cart.currency,
+          name: 'Wolhomes',
+          description: `Order ${result.data.order.orderNumber}`,
+          handler: async (response: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
+            setSubmitting(true);
+
+            const verification = await verifyRazorpayPayment({
+              orderId: result.data!.order.id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              accessToken: result.data!.guestAccessToken || undefined,
+            });
+
+            if (!verification.success) {
+              setError(verification.message || 'Razorpay payment verification failed.');
+              setSubmitting(false);
+              return;
+            }
+
+            const confirmationQuery = new URLSearchParams({ orderId: result.data!.order.id });
+            if (result.data!.guestAccessToken) {
+              confirmationQuery.set('access', result.data!.guestAccessToken);
+            }
+            router.push(`/order-confirmation?${confirmationQuery.toString()}`);
+          },
+        });
+
+        razorpay.open();
         setSubmitting(false);
+        return;
       }
-    } catch (err) {
-      setError('Failed to place order');
+
+      if (paymentProvider === 'paypal') {
+        if (!result.data.approveUrl || !result.data.providerOrderId) {
+          setError('PayPal payment could not be initialized.');
+          setSubmitting(false);
+          return;
+        }
+
+        window.open(result.data.approveUrl, '_blank', 'noopener,noreferrer');
+        setError('PayPal approval page opened in a new tab. Complete the payment there, then return here and click Capture PayPal Payment.');
+        setSubmitting(false);
+        return;
+      }
+
       setSubmitting(false);
+    } catch (err) {
       console.error(err);
+      setError(err instanceof Error ? err.message : 'Failed to place order');
+      setSubmitting(false);
     }
   }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-luxury-cream flex items-center justify-center">
@@ -458,59 +629,211 @@ export default function CheckoutPage() {
             )}            {/* Payment Step */}
             {currentStep === 'payment' && (
               <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
-                <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Payment</h2>
+                <h2 className="mb-3 font-serif text-2xl font-normal text-luxury-charcoal">Choose Payment Method</h2>
+                <p className="mb-7 text-sm text-luxury-brown">Select a secure payment method to complete your Wolhomes order.</p>
 
-                {paymentProvider === 'stripe' && paymentConfigured ? (
-                  paymentClientSecret && paymentPublicKey && paymentOrderId ? (
-                    <Elements
-                      stripe={loadStripe(paymentPublicKey)}
-                      options={{ clientSecret: paymentClientSecret }}
-                    >
-                      <StripePaymentForm
-                        returnUrl={'/order-confirmation?orderId=' + encodeURIComponent(paymentOrderId) + (paymentGuestAccessToken ? '&access=' + encodeURIComponent(paymentGuestAccessToken) : '')}
-                        onSuccess={() => {
-                          const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
-                          if (paymentGuestAccessToken) confirmationQuery.set('access', paymentGuestAccessToken);
-                          router.push('/order-confirmation?' + confirmationQuery.toString());
-                        }}
-                        onError={setError}
-                      />
-                    </Elements>
-                  ) : (
-                    <div className="space-y-6">
-                      <div className="border border-luxury-sand bg-luxury-cream p-6">
-                        <p className="text-luxury-charcoal text-center">
-                          {submitting ? 'Preparing secure payment...' : 'Unable to initialize payment. Please try again.'}
-                        </p>
-                      </div>
-                      <div className="flex gap-4 pt-4">
-                        <button
-                          type="button"
-                          onClick={() => setCurrentStep('shipping')}
-                          className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white"
-                          disabled={submitting}
-                        >
-                          ' Back
-                        </button>
-                      </div>
+                {availablePaymentProviders.length > 0 && paymentConfigured ? (
+                  <div className="space-y-6">
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      {[
+                        { id: 'razorpay', label: 'Razorpay', description: 'Cards, UPI & Indian payment methods' },
+                        { id: 'paypal', label: 'PayPal', description: 'Pay securely with your PayPal account' },
+                        { id: 'crypto', label: 'Crypto', description: 'USDT / USDC stablecoin payment' },
+                      ].map((method) => {
+                        const available = availablePaymentProviders.includes(method.id);
+                        const selected = paymentProvider === method.id;
+
+                        return (
+                          <button
+                            key={method.id}
+                            type="button"
+                            disabled={!available || submitting}
+                            onClick={() => {
+                              setError(null);
+                              setPaymentProvider(method.id as 'razorpay' | 'paypal' | 'crypto');
+                              setCryptoPayment(null);
+                              setCryptoTxHash('');
+                            }}
+                            className={
+                              'rounded-lg border p-5 text-left transition ' +
+                              (selected
+                                ? 'border-[#302b35] bg-[#f5f1eb] shadow-sm'
+                                : 'border-[#ded8d0] bg-white hover:border-[#8f8579]') +
+                              (!available ? ' cursor-not-allowed opacity-40' : '')
+                            }
+                          >
+                            <div className="mb-2 flex items-center justify-between">
+                              <span className="font-serif text-lg text-luxury-charcoal">{method.label}</span>
+                              <span
+                                className={
+                                  'h-4 w-4 rounded-full border ' +
+                                  (selected ? 'border-[#302b35] bg-[#302b35]' : 'border-[#aaa29a]')
+                                }
+                              />
+                            </div>
+                            <p className="text-xs leading-5 text-luxury-brown">{method.description}</p>
+                            {!available && (
+                              <p className="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-terracotta">
+                                Currently unavailable
+                              </p>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  )
+
+                    {paymentProvider === 'crypto' && (
+                      <div className="space-y-5 rounded-lg border border-[#ded8d0] bg-[#faf9f6] p-5">
+                        <div>
+                          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
+                            Network
+                          </label>
+                          <select
+                            value={selectedCryptoNetwork}
+                            onChange={(e) => {
+                              setSelectedCryptoNetwork(e.target.value);
+                              if (e.target.value === 'tron' && selectedCryptoAsset === 'USDC') {
+                                setSelectedCryptoAsset('USDT');
+                              }
+                              setCryptoPayment(null);
+                              setCryptoTxHash('');
+                            }}
+                            disabled={submitting || !!cryptoPayment}
+                            className="w-full rounded-md border border-[#cfc8c0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none"
+                          >
+                            {(cryptoNetworks.length ? cryptoNetworks : ['ethereum', 'solana', 'tron']).map((network) => (
+                              <option key={network} value={network}>
+                                {network.charAt(0).toUpperCase() + network.slice(1)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
+                            Asset
+                          </label>
+                          <select
+                            value={selectedCryptoAsset}
+                            onChange={(e) => {
+                              setSelectedCryptoAsset(e.target.value);
+                              setCryptoPayment(null);
+                              setCryptoTxHash('');
+                            }}
+                            disabled={submitting || !!cryptoPayment}
+                            className="w-full rounded-md border border-[#cfc8c0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none"
+                          >
+                            {(cryptoAssets.length ? cryptoAssets : ['USDT', 'USDC'])
+                              .filter((asset) => !(selectedCryptoNetwork === 'tron' && asset === 'USDC'))
+                              .map((asset) => (
+                                <option key={asset} value={asset}>
+                                  {asset}
+                                </option>
+                              ))}
+                          </select>
+                        </div>
+
+                        {cryptoPayment && (
+                          <div className="space-y-5">
+                            <div className="rounded-md border border-[#ded8d0] bg-white p-5">
+                              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
+                                Send exactly
+                              </p>
+                              <p className="font-serif text-2xl text-luxury-charcoal">
+                                {cryptoPayment.amount.toFixed(6)} {cryptoPayment.asset}
+                              </p>
+                              <p className="mt-3 text-xs text-luxury-brown">
+                                {cryptoPayment.network} network
+                              </p>
+                            </div>
+
+                            <div>
+                              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
+                                Receiving address
+                              </p>
+                              <div className="break-all rounded-md border border-[#ded8d0] bg-white p-4 font-mono text-xs text-luxury-charcoal">
+                                {cryptoPayment.address}
+                              </div>
+                            </div>                            <div className="rounded-md border border-[#ded8d0] bg-white p-5 text-center">
+                              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
+                                Scan to Pay
+                              </p>
+                              {cryptoQrCode ? (
+                                <img
+                                  src={cryptoQrCode}
+                                  alt={`${cryptoPayment.asset} payment QR code`}
+                                  className="mx-auto h-48 w-48 rounded-md border border-[#ded8d0] bg-white p-2"
+                                />
+                              ) : (
+                                <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-md border border-dashed border-[#cfc8c0] text-xs text-luxury-brown">
+                                  Generating QR...
+                                </div>
+                              )}
+                              <p className="mt-3 text-xs text-luxury-brown">
+                                {cryptoPayment.asset} · {cryptoPayment.network}
+                              </p>
+                            </div>
+
+
+                            <div>
+                              <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
+                                Transaction hash
+                              </label>
+                              <input
+                                value={cryptoTxHash}
+                                onChange={(e) => setCryptoTxHash(e.target.value.trim())}
+                                placeholder="Paste your transaction hash"
+                                className="w-full rounded-md border border-[#cfc8c0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none focus:border-[#302b35]"
+                                disabled={submitting}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-4 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep('shipping')}
+                        disabled={submitting}
+                        className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white disabled:opacity-50"
+                      >
+                        Back
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handlePlaceOrder}
+                        disabled={submitting || paymentProvider === 'none'}
+                        className="flex-1 rounded-md bg-[#302b35] px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {submitting
+                          ? 'Preparing secure payment...'
+                          : cryptoPayment
+                            ? 'Payment details ready'
+                            : paymentProvider === 'razorpay'
+                              ? 'Continue with Razorpay'
+                              : paymentProvider === 'paypal'
+                                ? paymentProviderOrderId ? 'Capture PayPal Payment' : 'Continue with PayPal'
+                                : 'Continue with Crypto'}
+                      </button>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-6">
                     <div className="border border-luxury-terracotta/40 bg-luxury-terracotta/10 p-6">
                       <p className="text-luxury-charcoal text-center">
-                        Payment service is currently unavailable. Please try again later.
+                        No payment method is currently configured for this currency.
                       </p>
                     </div>
-                    <div className="flex gap-4 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep('shipping')}
-                        className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white"
-                      >
-                        ' Back
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep('shipping')}
+                      className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white"
+                    >
+                      Back
+                    </button>
                   </div>
                 )}
               </div>

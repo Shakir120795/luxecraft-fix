@@ -1,4 +1,4 @@
-﻿import { Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsOptional,
@@ -24,7 +24,10 @@ export class CreateCheckoutOrderDto {
   @IsOptional() @IsString() shippingMethodId?: string;
   @IsOptional() @IsString() shippingAddressId?: string;
   @IsOptional() @IsEmail() guestEmail?: string;
+  @IsOptional() @IsString() paymentProvider?: string;
+  @IsOptional() @IsString() paymentMethod?: string;
   @IsOptional() @ValidateNested() @Type(() => GuestCheckoutAddressDto)
   guestShippingAddress?: GuestCheckoutAddressDto;
 }
+
 

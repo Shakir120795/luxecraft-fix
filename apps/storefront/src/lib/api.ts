@@ -956,11 +956,74 @@ export interface Order {
 // PAYMENT API
 // ============================================
 
+export async function verifyRazorpayPayment(params: {
+  orderId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  accessToken?: string;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/payments/razorpay/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    return res.ok ? data : { success: false, message: data?.message || 'Razorpay verification failed' };
+  } catch (error) {
+    console.error('Razorpay verification failed:', error);
+    return { success: false, message: 'Razorpay verification failed' };
+  }
+}
+
+export async function capturePayPalPayment(params: {
+  orderId: string;
+  paypalOrderId: string;
+  accessToken?: string;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/payments/paypal/capture`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    return res.ok ? data : { success: false, message: data?.message || 'PayPal capture failed' };
+  } catch (error) {
+    console.error('PayPal capture failed:', error);
+    return { success: false, message: 'PayPal capture failed' };
+  }
+}
+
+export async function verifyCryptoPayment(params: {
+  orderId: string;
+  txHash: string;
+  network: string;
+  asset: string;
+  accessToken?: string;
+}): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const res = await fetch(`${API_URL}/payments/crypto/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
+      body: JSON.stringify(params),
+    });
+    const data = await res.json();
+    return res.ok ? data : { success: false, message: data?.message || 'Crypto verification failed' };
+  } catch (error) {
+    console.error('Crypto verification failed:', error);
+    return { success: false, message: 'Crypto verification failed' };
+  }
+}
 export async function getPaymentConfiguration(currency: string = 'USD'): Promise<{
   provider: string;
+  providers: string[];
   configured: boolean;
   currencySupported: boolean;
   publicKey?: string;
+  cryptoNetworks?: string[];
+  cryptoSupportedAssets?: string[];
 }> {
   try {
     const res = await fetch(`${API_URL}/payments/configuration?currency=${currency}`, {
@@ -969,10 +1032,10 @@ export async function getPaymentConfiguration(currency: string = 'USD'): Promise
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : { provider: 'none', configured: false, currencySupported: false };
+    return data.success ? data.data : { provider: 'none', providers: [], configured: false, currencySupported: false };
   } catch (error) {
     console.error('Failed to fetch payment configuration:', error);
-    return { provider: 'none', configured: false, currencySupported: false };
+    return { provider: 'none', providers: [], configured: false, currencySupported: false };
   }
 }
 
@@ -981,6 +1044,8 @@ export async function createOrder(params: {
   billingAddressId?: string;
   shippingMethodId: string;
   paymentMethodId?: string;
+  paymentProvider?: 'razorpay' | 'paypal' | 'crypto';
+  paymentMethod?: string;
   guestEmail?: string;
   guestShippingAddress?: any;
   guestBillingAddress?: any;
@@ -989,7 +1054,18 @@ export async function createOrder(params: {
   data?: { 
     order: Order; 
     payment: any; 
-    clientSecret?: string;  // Stripe client secret for payment confirmation
+    clientSecret?: string;
+    providerOrderId?: string;
+    publicKey?: string;
+    approveUrl?: string;
+    crypto?: {
+      network: string;
+      asset: string;
+      address: string;
+      amount: number;
+      currency: string;
+      instructions: string;
+    };
     guestAccessToken?: string 
   }; 
   message?: string 
@@ -1443,6 +1519,7 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
     return { success: false, message: 'Failed to clear wishlist' };
   }
 }
+
 
 
 

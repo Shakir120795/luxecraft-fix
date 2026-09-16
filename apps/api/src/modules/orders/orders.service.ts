@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
-import { Order, OrderStatus, PaymentStatus, FulfillmentStatus, Prisma } from '@prisma/client';
+import { Order, Payment, OrderStatus, PaymentStatus, FulfillmentStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -124,7 +124,7 @@ export class OrdersService {
     return order;
   }
 
-  async findOneForUser(id: string, userId: string): Promise<Order> {
+  async findOneForUser(id: string, userId: string): Promise<Order & { payments: Payment[] }> {
     const order = await this.prisma.order.findFirst({
       where: { id, userId },
       include: { items: true, payments: true },
@@ -133,7 +133,7 @@ export class OrdersService {
     return order;
   }
 
-  async findOneForGuest(id: string, accessToken: string): Promise<Order> {
+  async findOneForGuest(id: string, accessToken: string): Promise<Order & { payments: Payment[] }> {
     const order = await this.prisma.order.findFirst({
       where: { id, userId: null },
       include: { items: true, payments: true },

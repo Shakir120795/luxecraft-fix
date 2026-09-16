@@ -3,9 +3,12 @@ import { ConfigService } from '@nestjs/config';
 
 export type PaymentProviderStatus = {
   provider: string;
+  providers: string[];
   configured: boolean;
   currencySupported: boolean;
   publicKey?: string;
+  cryptoNetworks?: string[];
+  cryptoSupportedAssets?: string[];
 };
 
 /** Safe provider metadata for checkout; credentials never leave the API. */
@@ -14,42 +17,103 @@ export class PaymentProviderService {
   constructor(private readonly config: ConfigService) {}
 
   status(currency: string): PaymentProviderStatus {
-    const provider = this.config.get<string>('commerce.payment.provider', 'none');
-    const currencies = this.config.get<string[]>('commerce.supportedCurrencies', ['USD']);
-    
+    const configuredProvider = this.config.get<string>(
+      'commerce.payment.provider',
+      'none',
+    );
+
+    const configuredProviders = this.config.get<string[]>(
+      'commerce.payment.providers',
+      [],
+    );
+
+    const currencies = this.config.get<string[]>(
+      'commerce.supportedCurrencies',
+      ['USD'],
+    );
+
+    const providers = configuredProviders.filter((candidate) =>
+      this.isConfigured(candidate),
+    );
+
     let publicKey: string | undefined;
-    if (provider === 'stripe') {
-      publicKey = this.config.get<string>('commerce.payment.stripePublishableKey');
-    } else if (provider === 'razorpay') {
-      publicKey = this.config.get<string>('commerce.payment.razorpayKeyId');
+
+    if (configuredProvider === 'razorpay') {
+      publicKey = this.config.get<string>(
+        'commerce.payment.razorpayKeyId',
+      );
+    } else if (configuredProvider === 'paypal') {
+      publicKey = this.config.get<string>(
+        'commerce.payment.paypalClientId',
+      );
     }
 
+    const cryptoNetworks = this.config.get<string[]>(
+      'commerce.payment.cryptoNetworks',
+      [],
+    );
+
+    const cryptoSupportedAssets = this.config.get<string[]>(
+      'commerce.payment.cryptoSupportedAssets',
+      [],
+    );
+
     return {
-      provider,
-      configured: this.isConfigured(provider),
+      provider: configuredProvider,
+      providers,
+      configured: this.isConfigured(configuredProvider),
       currencySupported: currencies.includes(currency.toUpperCase()),
-      ...(publicKey && { publicKey }),
+      ...(publicKey ? { publicKey } : {}),
+      ...(providers.includes('crypto')
+        ? { cryptoNetworks, cryptoSupportedAssets }
+        : {}),
     };
   }
 
   private isConfigured(provider: string): boolean {
-    switch (provider) {
-      case 'stripe': 
+    switch (provider.toLowerCase()) {
+      case 'razorpay':
         return Boolean(
-          this.config.get<string>('commerce.payment.stripeSecretKey') && 
-          this.config.get<string>('commerce.payment.stripePublishableKey')
+          this.config.get<string>('commerce.payment.razorpayKeyId') &&
+            this.config.get<string>('commerce.payment.razorpayKeySecret'),
         );
-      case 'razorpay': 
+
+      case 'paypal':
         return Boolean(
-          this.config.get<string>('commerce.payment.razorpayKeyId') && 
-          this.config.get<string>('commerce.payment.razorpayKeySecret')
+          this.config.get<string>('commerce.payment.paypalClientId') &&
+            this.config.get<string>('commerce.payment.paypalClientSecret'),
         );
-      case 'paypal': 
-        return Boolean(
-          this.config.get<string>('commerce.payment.paypalClientId') && 
-          this.config.get<string>('commerce.payment.paypalClientSecret')
+
+      case 'crypto': {
+        const enabled = String(
+          this.config.get('commerce.payment.cryptoEnabled') ?? 'false',
+        ).toLowerCase() === 'true';
+
+        const networks = this.config.get<string[]>(
+          'commerce.payment.cryptoNetworks',
+          [],
         );
-      default: 
+
+        const assets = this.config.get<string[]>(
+          'commerce.payment.cryptoSupportedAssets',
+          [],
+        );
+
+        const wallets =
+          this.config.get<Record<string, string>>(
+            'commerce.payment.cryptoWallets',
+            {},
+          ) || {};
+
+        return (
+          enabled &&
+          networks.length > 0 &&
+          assets.length > 0 &&
+          Object.values(wallets).some(Boolean)
+        );
+      }
+
+      default:
         return false;
     }
   }

@@ -12,6 +12,8 @@ import {
 import { Request } from 'express';
 import { Public } from '../../common/decorators/public.decorator';
 import { StripeProvider } from './providers/stripe.provider';
+import { RazorpayProvider } from './providers/razorpay.provider';
+import { ConfigService } from '@nestjs/config';
 import { WebhookService } from './webhook.service';
 import Stripe from 'stripe';
 
@@ -30,6 +32,8 @@ export class WebhooksController {
 
   constructor(
     private readonly stripeProvider: StripeProvider,
+    private readonly razorpayProvider: RazorpayProvider,
+    private readonly config: ConfigService,
     private readonly webhookService: WebhookService,
   ) {}
 
@@ -45,7 +49,237 @@ export class WebhooksController {
    * 
    * PRODUCTION: Use live mode webhook secret in production
    */
+  /**
+   * Razorpay webhook endpoint
+   * Endpoint: POST /webhooks/razorpay
+   */
   @Public()
+  @Post('razorpay')
+  @HttpCode(HttpStatus.OK)
+  async handleRazorpayWebhook(
+    @Headers('x-razorpay-signature') signature: string,
+    @Headers('x-razorpay-event-id') eventIdHeader: string,
+    @Req() request: RawBodyRequest<Request>,
+  ): Promise<{ received: boolean }> {
+    if (!signature) {
+      throw new BadRequestException('Missing Razorpay signature header');
+    }
+
+    if (!request.rawBody) {
+      throw new BadRequestException('Raw body required for Razorpay webhook verification');
+    }
+
+    const rawBody = request.rawBody.toString('utf8');
+
+    try {
+      this.razorpayProvider.verifyWebhook(rawBody, signature);
+    } catch (error) {
+      this.logger.error(`Razorpay webhook signature verification failed: ${error.message}`);
+      throw new BadRequestException('Invalid Razorpay webhook signature');
+    }
+
+    let event: Record<string, any>;
+    try {
+      event = JSON.parse(rawBody);
+    } catch {
+      throw new BadRequestException('Invalid Razorpay webhook payload');
+    }
+
+    const eventId = eventIdHeader || String(event.id || '');
+    const eventType = String(event.event || '');
+
+    if (!eventId) {
+      throw new BadRequestException('Missing Razorpay event ID');
+    }
+
+    if (await this.webhookService.isEventProcessed('razorpay', eventId)) {
+      return { received: true };
+    }
+
+    await this.webhookService.recordWebhookEvent({
+      provider: 'razorpay',
+      eventType,
+      eventId,
+      payload: event,
+      status: 'processing',
+    });
+
+    try {
+      const paymentEntity = event.payload?.payment?.entity;
+      const orderEntity = event.payload?.order?.entity;
+
+      const razorpayOrderId = String(
+        paymentEntity?.order_id || orderEntity?.id || '',
+      );
+
+      const orderId = String(
+        paymentEntity?.notes?.orderId ||
+        orderEntity?.notes?.orderId ||
+        '',
+      );
+
+      if (eventType === 'payment.captured' || eventType === 'order.paid') {
+        if (!orderId) {
+          this.logger.warn(`Razorpay event ${eventId} has no internal orderId`);
+        } else {
+          await this.webhookService.handlePaymentSuccess({
+            orderId,
+            paymentIntentId: razorpayOrderId,
+            amount: Number(paymentEntity?.amount || orderEntity?.amount || 0) / 100,
+            currency: String(paymentEntity?.currency || orderEntity?.currency || ''),
+          });
+        }
+      } else if (eventType === 'payment.failed') {
+        if (!orderId) {
+          this.logger.warn(`Razorpay failed event ${eventId} has no internal orderId`);
+        } else {
+          await this.webhookService.handlePaymentFailed({
+            orderId,
+            paymentIntentId: razorpayOrderId,
+            reason: String(
+              paymentEntity?.error_description ||
+              paymentEntity?.error_reason ||
+              'Razorpay payment failed',
+            ),
+          });
+        }
+      }
+
+      await this.webhookService.markEventProcessed('razorpay', eventId);
+      return { received: true };
+    } catch (error) {
+      await this.webhookService.markEventFailed(
+        'razorpay',
+        eventId,
+        error instanceof Error ? error.message : 'Razorpay webhook processing failed',
+      );
+      throw error;
+    }
+  }
+  @Public()
+  /**
+   * PayPal webhook endpoint
+   * Endpoint: POST /webhooks/paypal
+   */
+  @Public()
+  @Post('paypal')
+  @HttpCode(HttpStatus.OK)
+  async handlePayPalWebhook(
+    @Headers('paypal-transmission-id') transmissionId: string,
+    @Headers('paypal-transmission-time') transmissionTime: string,
+    @Headers('paypal-cert-url') certUrl: string,
+    @Headers('paypal-transmission-sig') transmissionSig: string,
+    @Headers('paypal-auth-algo') authAlgo: string,
+    @Req() request: RawBodyRequest<Request>,
+  ): Promise<{ received: boolean }> {
+    if (!request.rawBody) throw new BadRequestException('Raw body required for PayPal webhook verification');
+    if (!transmissionId || !transmissionTime || !certUrl || !transmissionSig || !authAlgo) {
+      throw new BadRequestException('Missing PayPal webhook signature headers');
+    }
+
+    const rawBody = request.rawBody.toString('utf8');
+    let event: Record<string, any>;
+
+    try {
+      event = JSON.parse(rawBody);
+    } catch {
+      throw new BadRequestException('Invalid PayPal webhook payload');
+    }
+
+    const webhookId = this.config.get<string>('commerce.payment.paypalWebhookId') || '';
+    if (!webhookId) throw new BadRequestException('PayPal webhook ID is not configured');
+
+    const accessToken = await this.getPayPalWebhookAccessToken();
+    const baseUrl = this.config.get<string>('commerce.payment.paypalBaseUrl') || 'https://api-m.sandbox.paypal.com';
+
+    const verifyResponse = await fetch(`${baseUrl}/v1/notifications/verify-webhook-signature`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        auth_algo: authAlgo,
+        cert_url: certUrl,
+        transmission_id: transmissionId,
+        transmission_sig: transmissionSig,
+        transmission_time: transmissionTime,
+        webhook_id: webhookId,
+        webhook_event: event,
+      }),
+    });
+
+    const verification = await verifyResponse.json();
+    if (!verifyResponse.ok || verification.verification_status !== 'SUCCESS') {
+      throw new BadRequestException('Invalid PayPal webhook signature');
+    }
+
+    const eventId = String(event.id || transmissionId);
+    const eventType = String(event.event_type || '');
+
+    if (await this.webhookService.isEventProcessed('paypal', eventId)) {
+      return { received: true };
+    }
+
+    await this.webhookService.recordWebhookEvent({
+      provider: 'paypal',
+      eventType,
+      eventId,
+      payload: event,
+      status: 'processing',
+    });
+
+    try {
+      const resource = event.resource || {};
+      const customId = String(resource.custom_id || resource.purchase_units?.[0]?.custom_id || '');
+      const captureId = String(resource.id || '');
+      const amount = Number(resource.amount?.value || 0);
+      const currency = String(resource.amount?.currency_code || '');
+
+      if (eventType === 'PAYMENT.CAPTURE.COMPLETED' && customId) {
+        await this.webhookService.handlePaymentSuccess({
+          orderId: customId,
+          paymentIntentId: captureId,
+          amount,
+          currency,
+        });
+      }
+
+      await this.webhookService.markEventProcessed('paypal', eventId);
+      return { received: true };
+    } catch (error) {
+      await this.webhookService.markEventFailed(
+        'paypal',
+        eventId,
+        error instanceof Error ? error.message : 'PayPal webhook processing failed',
+      );
+      throw error;
+    }
+  }
+
+  private async getPayPalWebhookAccessToken(): Promise<string> {
+    const baseUrl = this.config.get<string>('commerce.payment.paypalBaseUrl') || 'https://api-m.sandbox.paypal.com';
+    const clientId = this.config.get<string>('commerce.payment.paypalClientId') || '';
+    const clientSecret = this.config.get<string>('commerce.payment.paypalClientSecret') || '';
+
+    if (!clientId || !clientSecret) throw new BadRequestException('PayPal credentials are not configured');
+
+    const response = await fetch(`${baseUrl}/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials',
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.access_token) {
+      throw new BadRequestException('Failed to authenticate with PayPal');
+    }
+
+    return data.access_token;
+  }
   @Post('stripe')
   @HttpCode(HttpStatus.OK)
   async handleStripeWebhook(

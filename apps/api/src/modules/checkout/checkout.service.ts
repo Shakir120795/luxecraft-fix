@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { CartService } from '../cart/cart.service';
 import { AddressesService } from '../addresses/addresses.service';
 import { ShippingService } from '../shipping/shipping.service';
@@ -174,7 +174,7 @@ export class CheckoutService {
     }
 
     // 3. Create order with reserved stock
-    let order, payment, clientSecret;
+    let order, payment, clientSecret, approveUrl;
 
     try {
       order = await this.orders.create({
@@ -192,18 +192,25 @@ export class CheckoutService {
         total,
         currency: cart.currency,
       });
+      // 4. Create payment with the selected provider
+      const paymentProvider = (input.dto.paymentProvider || '').toLowerCase().trim();
+      if (!['razorpay', 'paypal', 'crypto'].includes(paymentProvider)) {
+        throw new BadRequestException('Please select Razorpay, PayPal, or Crypto as your payment method.');
+      }
 
-      // 4. Create Stripe payment intent
-      const paymentResult = await this.payments.createPaymentIntent({
+      const paymentResult = await this.payments.createPayment({
         orderId: order.id,
         amount: total,
         currency: cart.currency,
+        provider: paymentProvider,
+        paymentMethod: input.dto.paymentMethod,
+        metadata: { orderNumber: order.orderNumber },
       });
 
       payment = paymentResult.payment;
-      clientSecret = paymentResult.clientSecret;
+      approveUrl = paymentResult.approveUrl;
 
-      this.logger.log(`Order created: ${order.orderNumber}, Payment intent: ${payment.providerPaymentId}`);
+      this.logger.log(`Payment created for ${order.orderNumber}: ${payment.provider}`);
 
     } catch (error) {
       // If order/payment creation fails, release reserved stock
@@ -230,7 +237,11 @@ export class CheckoutService {
     return {
       order,
       payment,
-      clientSecret, // Frontend needs this to confirm payment
+      clientSecret,
+      providerOrderId: payment?.providerPaymentId,
+      approveUrl,
+      paymentProvider: payment?.provider,
+      ...(payment?.provider === 'crypto' && payment.metadata && typeof payment.metadata === 'object' && !Array.isArray(payment.metadata) ? { crypto: { network: (payment.metadata as Record<string, unknown>).network, asset: (payment.metadata as Record<string, unknown>).asset, address: (payment.metadata as Record<string, unknown>).receivingAddress, amount: (payment.metadata as Record<string, unknown>).expectedAmount, currency: (payment.metadata as Record<string, unknown>).settlementCurrency } } : {}),
       ...(!input.userId ? { guestAccessToken: this.orders.createGuestAccessToken(order) } : {}),
     };
   }
@@ -365,6 +376,7 @@ export class CheckoutService {
     return { order, payment };
   }
 }
+
 
 
 

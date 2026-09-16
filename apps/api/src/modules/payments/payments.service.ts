@@ -2,7 +2,9 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Payment, PaymentStatus, Prisma } from '@prisma/client';
 import { StripeProvider } from './providers/stripe.provider';
-import { ConfigService } from '@nestjs/config';
+import { RazorpayProvider } from './providers/razorpay.provider';
+import { PayPalProvider } from './providers/paypal.provider';
+import { CryptoProvider } from './providers/crypto.provider';
 
 @Injectable()
 export class PaymentsService {
@@ -11,7 +13,9 @@ export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeProvider: StripeProvider,
-    private readonly config: ConfigService,
+    private readonly razorpayProvider: RazorpayProvider,
+    private readonly paypalProvider: PayPalProvider,
+    private readonly cryptoProvider: CryptoProvider,
   ) {}
 
   async create(data: {
@@ -35,52 +39,150 @@ export class PaymentsService {
     });
   }
 
-  /**
-   * Create payment intent with provider (Stripe)
-   * Returns client secret for frontend payment confirmation
-   */
-  async createPaymentIntent(data: {
+  async createPayment(data: {
     orderId: string;
     amount: number;
     currency: string;
+    provider: string;
+    paymentMethod?: string;
     metadata?: Record<string, string>;
-  }): Promise<{ payment: Payment; clientSecret: string }> {
-    const provider = this.config.get<string>('commerce.payment.provider', 'none');
-    
-    if (provider !== 'stripe') {
-      throw new BadRequestException(`Payment provider ${provider} not supported for payment intent`);
+  }): Promise<{
+    payment: Payment;
+    provider: string;
+    providerOrderId?: string;
+    publicKey?: string;
+    approveUrl?: string;
+    crypto?: {
+      network: string;
+      asset: string;
+      address: string;
+      amount: number;
+      currency: string;
+      instructions: string;
+    };
+  }> {
+    const provider = data.provider.toLowerCase().trim();
+
+    if (!['razorpay', 'paypal', 'crypto'].includes(provider)) {
+      throw new BadRequestException(
+        `Payment provider ${provider} is not supported`,
+      );
     }
 
-    // Create payment intent with Stripe
-    const intent = await this.stripeProvider.createPaymentIntent(
-      data.orderId,
+    if (provider === 'razorpay') {
+      const result = await this.razorpayProvider.createOrder(
+        data.orderId,
+        data.amount,
+        data.currency,
+        data.metadata?.orderNumber,
+      );
+
+      const payment = await this.prisma.payment.create({
+        data: {
+          orderId: data.orderId,
+          provider: 'razorpay',
+          providerPaymentId: result.orderId,
+          amount: data.amount,
+          currency: data.currency,
+          status: PaymentStatus.PENDING,
+          paymentMethod: data.paymentMethod,
+          metadata: {
+            ...data.metadata,
+            razorpayOrderId: result.orderId,
+          } as Prisma.InputJsonValue,
+        },
+      });
+
+      return {
+        payment,
+        provider: 'razorpay',
+        providerOrderId: result.orderId,
+        publicKey: this.razorpayProvider.getKeyId(),
+      };
+    }
+
+    if (provider === 'paypal') {
+      const result = await this.paypalProvider.createOrder(
+        data.orderId,
+        data.amount,
+        data.currency,
+      );
+
+      const payment = await this.prisma.payment.create({
+        data: {
+          orderId: data.orderId,
+          provider: 'paypal',
+          providerPaymentId: result.orderId,
+          amount: data.amount,
+          currency: data.currency,
+          status: PaymentStatus.PENDING,
+          paymentMethod: data.paymentMethod,
+          metadata: {
+            ...data.metadata,
+            paypalOrderId: result.orderId,
+            paypalStatus: result.status,
+          } as Prisma.InputJsonValue,
+        },
+      });
+
+      return {
+        payment,
+        provider: 'paypal',
+        providerOrderId: result.orderId,
+        publicKey: this.paypalProvider.getClientId(),
+        approveUrl: result.approveUrl,
+      };
+    }
+
+    const method = (data.paymentMethod || '').split(':');
+    const asset = (method[1] || '').toUpperCase();
+    const network = (method[2] || '').toLowerCase();
+
+    if (!asset || !network) {
+      throw new BadRequestException(
+        'Crypto payment requires paymentMethod format crypto:USDT:ethereum, crypto:USDC:solana, etc.',
+      );
+    }
+
+    const crypto = this.cryptoProvider.createPayment(
       data.amount,
-      data.currency,
-      data.metadata,
+      network,
+      asset,
     );
 
-    // Create payment record in database
     const payment = await this.prisma.payment.create({
       data: {
         orderId: data.orderId,
-        provider: 'stripe',
-        providerPaymentId: intent.paymentIntentId,
+        provider: 'crypto',
+        providerPaymentId: null,
         amount: data.amount,
         currency: data.currency,
         status: PaymentStatus.PENDING,
+        paymentMethod: data.paymentMethod,
         metadata: {
           ...data.metadata,
-          clientSecret: intent.clientSecret,
+          network: crypto.network,
+          asset: crypto.asset,
+          receivingAddress: crypto.address,
+          expectedAmount: crypto.amount,
+          settlementCurrency: crypto.currency,
         } as Prisma.InputJsonValue,
       },
     });
 
-    this.logger.log(`Payment intent created for order ${data.orderId}: ${intent.paymentIntentId}`);
-
     return {
       payment,
-      clientSecret: intent.clientSecret,
+      provider: 'crypto',
+      crypto,
     };
+  }
+
+  async capturePayPalOrder(paypalOrderId: string): Promise<Record<string, unknown>> {
+    return this.paypalProvider.captureOrder(paypalOrderId);
+  }
+
+  verifyRazorpaySignature(orderId: string, paymentId: string, signature: string): boolean {
+    return this.razorpayProvider.verifyPayment(orderId, paymentId, signature);
   }
 
   async updateStatus(
@@ -100,22 +202,20 @@ export class PaymentsService {
   }
 
   async refund(paymentId: string, amount: number): Promise<Payment> {
-    const payment = await this.prisma.payment.findUnique({ where: { id: paymentId } });
-    if (!payment) throw new BadRequestException(`Payment ${paymentId} not found.`);
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+    });
 
-    // Process refund with provider if it's Stripe
-    if (payment.provider === 'stripe' && payment.providerPaymentId) {
-      try {
-        await this.stripeProvider.refund(
-          payment.providerPaymentId,
-          amount,
-          'requested_by_customer',
-        );
-        this.logger.log(`Stripe refund processed for payment ${paymentId}`);
-      } catch (error) {
-        this.logger.error(`Stripe refund failed: ${error.message}`);
-        throw error;
-      }
+    if (!payment) {
+      throw new BadRequestException(`Payment ${paymentId} not found.`);
+    }
+
+    if (payment.provider === 'razorpay' && payment.providerPaymentId) {
+      await this.razorpayProvider.refund(payment.providerPaymentId, amount);
+    } else if (payment.provider === 'paypal') {
+      throw new BadRequestException(
+        'PayPal refund flow must be processed through PayPal capture/refund handling.',
+      );
     }
 
     const newRefundedAmount = Number(payment.refundedAmount) + amount;
@@ -125,7 +225,9 @@ export class PaymentsService {
       where: { id: paymentId },
       data: {
         refundedAmount: newRefundedAmount,
-        status: isFullRefund ? PaymentStatus.REFUNDED : PaymentStatus.PARTIALLY_REFUNDED,
+        status: isFullRefund
+          ? PaymentStatus.REFUNDED
+          : PaymentStatus.PARTIALLY_REFUNDED,
         refundedAt: new Date(),
       },
     });

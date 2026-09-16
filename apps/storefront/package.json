@@ -13,14 +13,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "15.3.9",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "@stripe/react-stripe-js": "^6.8.2",
-    "@stripe/stripe-js": "^9.15.0"
+    "@stripe/stripe-js": "^9.15.0",
+    "next": "15.3.9",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.1",
     "@types/react-dom": "^19.0.1",
     "autoprefixer": "^10.4.17",
@@ -31,5 +33,3 @@
     "typescript": "^5.7.2"
   }
 }
-
-
