@@ -10,6 +10,7 @@ COPY apps/api/package.json ./apps/api/package.json
 RUN npm ci
 
 COPY apps/storefront ./apps/storefront
+COPY scripts ./scripts
 
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
