@@ -26,4 +26,4 @@ COPY --from=builder /app/apps/admin/.next/standalone ./
 COPY --from=builder /app/apps/admin/.next/static ./apps/admin/.next/static
 
 EXPOSE 3002
-CMD ["node", "apps/admin/server.js"]
+CMD ["sh", "-c", "PORT=3002 node apps/admin/server.js"]
