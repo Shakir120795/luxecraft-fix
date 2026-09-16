@@ -29,6 +29,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 # Install only runtime dependencies. Prisma's generated engine is copied below.
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
