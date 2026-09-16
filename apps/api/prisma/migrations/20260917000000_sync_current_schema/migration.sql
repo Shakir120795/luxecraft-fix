@@ -1,4 +1,4 @@
-﻿-- AlterTable
+-- AlterTable
 ALTER TABLE "products" ADD COLUMN "careInstructions" TEXT,
 ADD COLUMN "collection" TEXT,
 ADD COLUMN "color" TEXT,
