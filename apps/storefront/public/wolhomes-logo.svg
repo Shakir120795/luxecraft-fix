@@ -1,0 +1,16 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="title desc">
+  <title id="title">Wolhomes</title>
+  <desc id="desc">Wolhomes luxury rugs and home decor logo with woven W emblem and elegant wordmark.</desc>
+  <g fill="#B08A5A">
+    <path d="M350 105h54l88 116-34 45-108-140z"/>
+    <path d="M472 74l40-48 132 170-35 46L472 74z"/>
+    <path d="M530 26h54l92 119-34 44-112-143z"/>
+    <path d="M650 140l39-45 88 111-39 45z"/>
+    <path d="M690 231l42-48 67 87-42 46z"/>
+    <path d="M395 279l37-49 53 67-37 49z"/>
+    <path d="M733 228l40-48 78-101v65l-83 103z"/>
+  </g>
+  <path d="M454 170l53-69 91 117-33 44z" fill="#F7F4EE"/>
+  <path d="M511 127l37-48 94 120-34 44z" fill="#F7F4EE"/>
+  <text x="600" y="415" text-anchor="middle" fill="#171717" font-family="Georgia, 'Times New Roman', serif" font-size="94" letter-spacing="18">WOLHOMES</text>
+</svg>
