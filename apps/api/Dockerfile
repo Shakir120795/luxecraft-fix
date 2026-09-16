@@ -32,7 +32,7 @@ WORKDIR /app
 # Install only runtime dependencies. Prisma's generated engine is copied below.
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
-RUN npm ci --omit=dev --workspace=apps/api --ignore-scripts
+RUN npm ci --omit=dev --workspace=apps/api
 
 # Copy built application from builder
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
