@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
+import { CmsPageOverride } from '@/components/CmsPageOverride';
 import { Cormorant_Garamond, Playfair_Display, Inter } from 'next/font/google';
 
 const cormorant = Cormorant_Garamond({
@@ -47,10 +48,9 @@ export default function RootLayout({
     >
       <body>
         <SiteHeader />
-        {children}
+        <CmsPageOverride>{children}</CmsPageOverride>
         <SiteFooter />
       </body>
     </html>
   );
 }
-
