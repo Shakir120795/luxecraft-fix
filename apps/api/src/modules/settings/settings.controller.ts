@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { SettingsService } from './settings.service';
 
@@ -15,5 +15,18 @@ export class SettingsController {
   @Put('currency')
   updateCurrency(@Body() data: { currency: string }) {
     return this.settings.updateDefaultCurrency(data.currency);
+  }
+
+  @Get('pages')
+  getSitePages() {
+    return this.settings.getSitePages();
+  }
+
+  @Put('pages/:slug')
+  updateSitePage(
+    @Param('slug') slug: string,
+    @Body() data: { title?: string; lastUpdated?: string; content?: string },
+  ) {
+    return this.settings.updateSitePage(slug, data);
   }
 }
