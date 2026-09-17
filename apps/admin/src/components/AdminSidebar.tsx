@@ -11,7 +11,7 @@ interface NavItem {
 
 const navigation: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard', icon: '' },
-    { href: '/products', label: 'Products', icon: 'Products' },
+  { href: '/products', label: 'Products', icon: 'Products' },
   { href: '/shipping', label: 'Shipping', icon: 'Shipping' },
   { href: '/coupons', label: 'Coupons', icon: 'Coupons' },
   { href: '/categories', label: 'Categories', icon: '' },
@@ -20,6 +20,7 @@ const navigation: NavItem[] = [
   { href: '/custom-requests', label: 'Custom Requests', icon: '' },
   { href: '/contact-messages', label: 'Contact Messages', icon: '' },
   { href: '/faqs', label: 'FAQs', icon: '' },
+  { href: '/site-pages', label: 'Site Pages', icon: '' },
   { href: '/settings', label: 'Settings', icon: '' },
 ];
 
@@ -44,7 +45,7 @@ export function AdminSidebar() {
       <nav className="flex-1 p-4 space-y-1">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`);
-          
+
           return (
             <Link
               key={item.href}
@@ -70,4 +71,3 @@ export function AdminSidebar() {
     </aside>
   );
 }
-
