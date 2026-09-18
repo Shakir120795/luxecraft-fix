@@ -231,15 +231,36 @@ export class WebhooksController {
 
     try {
       const resource = event.resource || {};
-      const customId = String(resource.custom_id || resource.purchase_units?.[0]?.custom_id || '');
+      const purchaseUnit = Array.isArray(resource.purchase_units)
+        ? resource.purchase_units[0] || {}
+        : {};
+      const customId = String(
+        resource.custom_id ||
+          purchaseUnit.custom_id ||
+          resource.supplementary_data?.related_ids?.order_id ||
+          '',
+      );
       const captureId = String(resource.id || '');
-      const amount = Number(resource.amount?.value || 0);
-      const currency = String(resource.amount?.currency_code || '');
+      const paypalOrderId = String(
+        purchaseUnit.reference_id ||
+          resource.supplementary_data?.related_ids?.order_id ||
+          '',
+      );
+      const amount = Number(
+        resource.amount?.value ||
+          resource.seller_receivable_breakdown?.gross_amount?.value ||
+          0,
+      );
+      const currency = String(
+        resource.amount?.currency_code ||
+          resource.seller_receivable_breakdown?.gross_amount?.currency_code ||
+          '',
+      );
 
       if (eventType === 'PAYMENT.CAPTURE.COMPLETED' && customId) {
         await this.webhookService.handlePaymentSuccess({
           orderId: customId,
-          paymentIntentId: captureId,
+          paymentIntentId: paypalOrderId || captureId,
           amount,
           currency,
         });
