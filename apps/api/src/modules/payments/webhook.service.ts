@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentStatus, OrderStatus } from '@prisma/client';
 import { InventoryService } from '../inventory/inventory.service';
@@ -24,7 +24,7 @@ export class WebhookService {
       where: { eventId },
     });
 
-    return existing !== null;
+    return existing?.status === 'completed' || Boolean(existing?.processedAt);
   }
 
   /**
@@ -37,13 +37,21 @@ export class WebhookService {
     payload: any;
     status: string;
   }): Promise<void> {
-    await this.prisma.webhookEvent.create({
-      data: {
+    await this.prisma.webhookEvent.upsert({
+      where: { eventId: data.eventId },
+      create: {
         provider: data.provider,
         eventType: data.eventType,
         eventId: data.eventId,
         payload: data.payload,
         status: data.status,
+      },
+      update: {
+        provider: data.provider,
+        eventType: data.eventType,
+        payload: data.payload,
+        status: data.status,
+        processedAt: null,
       },
     });
   }
@@ -99,15 +107,41 @@ export class WebhookService {
     }
 
     // Find the payment record
-    const payment = order.payments.find(
-      (p) => p.providerPaymentId === data.paymentIntentId,
-    );
+    const payment = order.payments.find((p) => {
+      if (p.providerPaymentId === data.paymentIntentId) return true;
+
+      if (p.provider === 'paypal') {
+        const metadata =
+          p.metadata &&
+          typeof p.metadata === 'object' &&
+          !Array.isArray(p.metadata)
+            ? (p.metadata as Record<string, unknown>)
+            : {};
+
+        return String(metadata.paypalOrderId || '') === data.paymentIntentId;
+      }
+
+      return false;
+    });
 
     if (!payment) {
       this.logger.error(
-        `Payment with intent ${data.paymentIntentId} not found for order ${data.orderId}`,
+        `Payment with provider reference ${data.paymentIntentId} not found for order ${data.orderId}`,
       );
       throw new NotFoundException('Payment not found');
+    }
+
+    if (
+      payment.provider !== 'crypto' &&
+      Math.abs(Number(payment.amount) - data.amount) > 0.01
+    ) {
+      throw new BadRequestException('Payment amount does not match the order');
+    }
+
+    if (
+      payment.currency.toUpperCase() !== data.currency.toUpperCase()
+    ) {
+      throw new BadRequestException('Payment currency does not match the order');
     }
 
     // Use transaction to ensure atomicity
