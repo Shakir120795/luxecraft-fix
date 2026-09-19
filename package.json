@@ -46,7 +46,8 @@
     "vps:logs": "docker compose --env-file .env.vps -f docker-compose.vps.yml logs -f",
     "health": "node scripts/health-check.js",
     "setup": "node scripts/setup.js",
-    "logs": "npm run docker:logs"
+    "logs": "npm run docker:logs",
+    "postinstall": "npm run db:generate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1123.0"
@@ -55,5 +56,3 @@
     "@types/nodemailer": "^8.0.1"
   }
 }
-
-
