@@ -21,6 +21,7 @@ export interface Product {
   style?: string | null;
   collection?: string | null;
   color?: string | null;
+  filterData?: Record<string, string[]> | null;
   deliveryInfo?: string | null;
   shippingInfo?: string | null;
   returnsInfo?: string | null;
@@ -171,6 +172,36 @@ export async function getFaqs(): Promise<FaqItem[]> {
     return [];
   }
 }
+export interface ProductFilterValueSetting {
+  slug: string;
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ProductFilterSetting {
+  slug: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  values: ProductFilterValueSetting[];
+}
+
+export async function getProductFilters(): Promise<ProductFilterSetting[]> {
+  try {
+    const res = await fetch(`${API_URL}/storefront/pages/product-filters`, {
+      cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    return data.success && Array.isArray(data.data) ? data.data : [];
+  } catch (error) {
+    console.error('Failed to fetch product filters:', error);
+    return [];
+  }
+}
+
 export async function getHero(): Promise<HeroSection | null> {
   try {
     const res = await fetch(`${API_URL}/storefront/hero`, {
