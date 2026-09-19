@@ -1130,32 +1130,20 @@ export default function ProductEditPage() {
                 </div>
               </div>
 
-              <div>
-                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">Filter Attributes</h3>
-                <div className="grid gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-sm font-medium">Material</label>
-                    <input value={form.material} onChange={(event) => updateForm('material', event.target.value)} className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]" placeholder="e.g. Wool" />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium">Style</label>
-                    <input value={form.style} onChange={(event) => updateForm('style', event.target.value)} className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]" placeholder="e.g. Contemporary" />
-                  </div>
-                  <div>
-                    <label className="mb-2 block text-sm font-medium">Color</label>
-                    <input value={form.color} onChange={(event) => updateForm('color', event.target.value)} className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]" placeholder="e.g. Ivory" />
-                  </div>
-                </div>
-              </div>
-
               <div className="border-t border-[var(--color-border)] pt-6">
                 <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
-                  Dynamic Filter Attributes
+                  Product Filters
                 </h3>
                 <ProductFilterFields
                   filters={filterConfig}
                   selected={selectedFilters}
                   onChange={setSelectedFilters}
+                  textValues={{ color: form.color }}
+                  onTextChange={(attributeSlug, value) => {
+                    if (attributeSlug === 'color') {
+                      updateForm('color', value);
+                    }
+                  }}
                 />
               </div>
 
