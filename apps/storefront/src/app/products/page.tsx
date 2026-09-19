@@ -2,8 +2,9 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getProducts, getCategories, Product, Category } from '@/lib/api';
+import { getProducts, getCategories, getProductFilters, Product, Category, ProductFilterSetting } from '@/lib/api';
 import { ProductCard } from '@/components/ProductCard';
+import { ProductFilterBar } from '@/components/ProductFilterBar';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -39,15 +40,13 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [productFilters, setProductFilters] = useState<ProductFilterSetting[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedMaterial, setSelectedMaterial] = useState('');
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedStyle, setSelectedStyle] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
   const [selectedAvailability, setSelectedAvailability] = useState('');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(10000);
@@ -65,13 +64,15 @@ function ProductsContent() {
       try {
         setLoading(true);
 
-        const [productsData, categoriesData] = await Promise.all([
-          getProducts(),
+        const [productsData, categoriesData, filtersData] = await Promise.all([
+          getProducts(1000),
           getCategories(),
+          getProductFilters(),
         ]);
 
         setProducts(productsData);
         setCategories(categoriesData);
+        setProductFilters(filtersData.filter((filter) => filter.isActive));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load products');
       } finally {
@@ -82,11 +83,22 @@ function ProductsContent() {
     loadData();
   }, []);
 
-  const filterOptions = {
-    materials: Array.from(new Set(products.map((product) => product.material?.trim()).filter(Boolean))).sort(),
-    styles: Array.from(new Set(products.map((product) => product.style?.trim()).filter(Boolean))).sort(),
-    colors: Array.from(new Set(products.map((product) => product.color?.trim()).filter(Boolean))).sort(),
-    sizes: Array.from(new Set(products.flatMap((product) => (product.variants ?? []).map((variant) => variant.name?.trim()).filter(Boolean)))).sort(),
+  const slugifyFilterValue = (value: string) =>
+    value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+  const getProductFilterValues = (product: Product, filter: ProductFilterSetting): string[] => {
+    const savedValues = product.filterData?.[filter.slug];
+    if (Array.isArray(savedValues) && savedValues.length > 0) return savedValues;
+    if (filter.slug === 'material' && product.material) return [slugifyFilterValue(product.material)];
+    if (filter.slug === 'style' && product.style) return [slugifyFilterValue(product.style)];
+    if (filter.slug === 'color' && product.color) return [slugifyFilterValue(product.color)];
+    if (filter.slug === 'size') {
+      return (product.variants ?? [])
+        .map((variant) => variant.name?.trim())
+        .filter((value): value is string => Boolean(value))
+        .map(slugifyFilterValue);
+    }
+    return [];
   };
 
   const filteredProducts = products.filter((product) => {
@@ -97,17 +109,13 @@ function ProductsContent() {
     const matchesCategory =
       !selectedCategory || product.categoryId === selectedCategory;
 
-    const matchesMaterial =
-      !selectedMaterial || product.material?.trim() === selectedMaterial;
-
-    const matchesStyle =
-      !selectedStyle || product.style?.trim() === selectedStyle;
-
-    const matchesColor =
-      !selectedColor || product.color?.trim() === selectedColor;
-
-    const matchesSize =
-      !selectedSize || (product.variants ?? []).some((variant) => variant.name?.trim() === selectedSize);
+    const matchesDynamicFilters = productFilters
+      .filter((filter) => filter.isActive)
+      .every((filter) => {
+        const selectedValue = selectedFilters[filter.slug];
+        if (!selectedValue) return true;
+        return getProductFilterValues(product, filter).includes(selectedValue);
+      });
 
     const matchesAvailability =
       !selectedAvailability ||
@@ -122,7 +130,7 @@ function ProductsContent() {
     const matchesPrice =
       displayPrice >= minPrice && displayPrice <= maxPrice;
 
-    return matchesSearch && matchesCategory && matchesMaterial && matchesStyle && matchesColor && matchesSize && matchesAvailability && matchesPrice;
+    return matchesSearch && matchesCategory && matchesDynamicFilters && matchesAvailability && matchesPrice;
   });
 
   let sortedProducts = [...filteredProducts];
@@ -161,53 +169,38 @@ function ProductsContent() {
               </div>
             )}
 
-<div className="mb-10 border-y border-[rgb(var(--luxecraft-border))] py-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="mr-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[rgb(var(--luxecraft-muted))]">
-                  Filter by
-                </span>
-
-                <select value={selectedMaterial} onChange={(event) => { setSelectedMaterial(event.target.value); setVisibleCount(16); }} className="min-w-[150px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
-                  <option value="">Material</option>
-                  {filterOptions.materials.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-
-                <select value={selectedSize} onChange={(event) => { setSelectedSize(event.target.value); setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
-                  <option value="">Size</option>
-                  {filterOptions.sizes.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-
-                <select value={selectedStyle} onChange={(event) => { setSelectedStyle(event.target.value); setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
-                  <option value="">Style</option>
-                  {filterOptions.styles.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-
-                <select value={minPrice === 0 && maxPrice === 10000 ? '' : `${minPrice}-${maxPrice}`} onChange={(event) => { const value = event.target.value; if (!value) { setMinPrice(0); setMaxPrice(10000); } else { const [min, max] = value.split('-').map(Number); setMinPrice(min); setMaxPrice(max); } setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
-                  <option value="">Price</option>
-                  <option value="0-500">$0  $500</option>
-                  <option value="500-1000">$500  $1,000</option>
-                  <option value="1000-2500">$1,000  $2,500</option>
-                  <option value="2500-5000">$2,500  $5,000</option>
-                  <option value="5000-10000">$5,000+</option>
-                </select>
-
-                <select value={selectedColor} onChange={(event) => { setSelectedColor(event.target.value); setVisibleCount(16); }} className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
-                  <option value="">Color</option>
-                  {filterOptions.colors.map((option) => <option key={option} value={option}>{option}</option>)}
-                </select>
-
-                <select value={selectedAvailability} onChange={(event) => { setSelectedAvailability(event.target.value); setVisibleCount(16); }} className="min-w-[155px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]">
-                  <option value="">Availability</option>
-                  <option value="in-stock">In Stock</option>
-                  <option value="out-of-stock">Out of Stock</option>
-                </select>
-
-                <button type="button" onClick={() => { setSelectedMaterial(''); setSelectedSize(''); setSelectedStyle(''); setSelectedColor(''); setSelectedAvailability(''); setMinPrice(0); setMaxPrice(10000); setVisibleCount(16); }} className="ml-auto px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[rgb(var(--luxecraft-olive))] transition-colors hover:text-[rgb(var(--luxecraft-ink))]">
-                  Clear
-                </button>
-              </div>
-            </div>
-
+            <ProductFilterBar
+              filters={productFilters}
+              selected={selectedFilters}
+              onSelect={(slug, value) => {
+                setSelectedFilters((current) => ({ ...current, [slug]: value }));
+                setVisibleCount(16);
+              }}
+              selectedAvailability={selectedAvailability}
+              onAvailabilityChange={(value) => {
+                setSelectedAvailability(value);
+                setVisibleCount(16);
+              }}
+              priceRange={minPrice === 0 && maxPrice === 10000 ? '' : minPrice + '-' + maxPrice}
+              onPriceRangeChange={(value) => {
+                if (!value) {
+                  setMinPrice(0);
+                  setMaxPrice(10000);
+                } else {
+                  const [min, max] = value.split('-').map(Number);
+                  setMinPrice(min);
+                  setMaxPrice(max);
+                }
+                setVisibleCount(16);
+              }}
+              onClear={() => {
+                setSelectedFilters({});
+                setSelectedAvailability('');
+                setMinPrice(0);
+                setMaxPrice(10000);
+                setVisibleCount(16);
+              }}
+            />
             <div className="mb-8 flex items-center justify-between border-b border-[rgb(var(--luxecraft-border))] pb-4">
               <div className="flex items-center gap-4">
                 <span className="text-sm text-[rgb(var(--luxecraft-ink))]">{sortedProducts.length} products</span>
