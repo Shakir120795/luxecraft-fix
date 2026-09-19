@@ -244,10 +244,11 @@ export default function ProductEditPage() {
         getProductFilters(),
       ]);
       setCategories(categoryData.filter((category) => category.isActive));
-      setFilterConfig(productFilters.filter((filter) => filter.isActive));
+      const activeProductFilters = productFilters.filter((filter) => filter.isActive);
+      setFilterConfig(activeProductFilters);
 
       if (!isNew) {
-        await loadProduct();
+        await loadProduct(activeProductFilters);
       }
     } catch (err) {
       console.error(err);
@@ -257,7 +258,7 @@ export default function ProductEditPage() {
     }
   }
 
-  async function loadProduct() {
+  async function loadProduct(activeFilters: ProductFilterSetting[] = filterConfig) {
     const product = await getProduct(productId);
 
     setForm({
@@ -304,7 +305,7 @@ export default function ProductEditPage() {
         ? { ...product.filterData }
         : {};
 
-    for (const filter of filterConfig) {
+    for (const filter of activeFilters) {
       if (Array.isArray(savedFilterData[filter.slug]) && savedFilterData[filter.slug].length > 0) {
         continue;
       }
