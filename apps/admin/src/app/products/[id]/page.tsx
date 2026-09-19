@@ -29,7 +29,10 @@ import {
   CreateProductRequest,
   CreateVariantRequest,
   AddCustomizationOptionRequest,
+  getProductFilters,
+  ProductFilterSetting,
 } from '@/lib/api';
+import { ProductFilterFields } from '@/components/ProductFilterFields';
 
 type ProductStatus = 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
 
@@ -206,6 +209,8 @@ export default function ProductEditPage() {
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [filterConfig, setFilterConfig] = useState<ProductFilterSetting[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
   const [media, setMedia] = useState<MediaDraft[]>([]);
   const [variants, setSizes] = useState<VariantDraft[]>([]);
   const [customizations, setCustomizations] = useState<CustomizationDraft[]>([]);
@@ -234,8 +239,12 @@ export default function ProductEditPage() {
     try {
       setLoading(true);
       setError('');
-      const categoryData = await getCategories();
+      const [categoryData, productFilters] = await Promise.all([
+        getCategories(),
+        getProductFilters(),
+      ]);
       setCategories(categoryData.filter((category) => category.isActive));
+      setFilterConfig(productFilters.filter((filter) => filter.isActive));
 
       if (!isNew) {
         await loadProduct();
@@ -289,6 +298,46 @@ export default function ProductEditPage() {
       isFeatured: product.isFeatured === true,
       isCustomizable: product.isCustomizable === true,
     });
+
+    const savedFilterData =
+      product.filterData && typeof product.filterData === 'object'
+        ? { ...product.filterData }
+        : {};
+
+    for (const filter of filterConfig) {
+      if (Array.isArray(savedFilterData[filter.slug]) && savedFilterData[filter.slug].length > 0) {
+        continue;
+      }
+
+      if (filter.slug === 'material' && product.material) {
+        savedFilterData[filter.slug] = [
+          filter.values.find((value) => value.label.toLowerCase() === product.material?.toLowerCase())?.slug ??
+            product.material.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        ];
+      } else if (filter.slug === 'style' && product.style) {
+        savedFilterData[filter.slug] = [
+          filter.values.find((value) => value.label.toLowerCase() === product.style?.toLowerCase())?.slug ??
+            product.style.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        ];
+      } else if (filter.slug === 'color' && product.color) {
+        savedFilterData[filter.slug] = [
+          filter.values.find((value) => value.label.toLowerCase() === product.color?.toLowerCase())?.slug ??
+            product.color.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        ];
+      } else if (filter.slug === 'size' && product.variants?.length) {
+        savedFilterData[filter.slug] = product.variants
+          .map((variant) => variant.name)
+          .filter(Boolean)
+          .map((name) => {
+            const matched = filter.values.find(
+              (value) => value.label.toLowerCase() === name.toLowerCase(),
+            );
+            return matched?.slug ?? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+          });
+      }
+    }
+
+    setSelectedFilters(savedFilterData as Record<string, string[]>);
 
     setMedia(
       (product.media ?? []).map((item: ProductMedia, index: number) => ({
@@ -626,14 +675,32 @@ export default function ProductEditPage() {
       throw new Error('Please select a category.');
     }
 
+    const filterDataToSave = Object.fromEntries(
+      Object.entries(selectedFilters).filter(([, values]) => Array.isArray(values) && values.length > 0),
+    );
+
+    const labelForSelection = (slug: string): string | undefined => {
+      const valueSlug = selectedFilters[slug]?.[0];
+      if (!valueSlug) return undefined;
+      return filterConfig
+        .find((filter) => filter.slug === slug)
+        ?.values.find((value) => value.slug === valueSlug)
+        ?.label;
+    };
+
+    const selectedMaterial = labelForSelection('material') || form.material.trim() || undefined;
+    const selectedStyle = labelForSelection('style') || form.style.trim() || undefined;
+    const selectedColor = labelForSelection('color') || form.color.trim() || undefined;
+
     const payload: CreateProductRequest = {
       name: form.name.trim(),
       slug: form.slug.trim() || undefined,
       sku: form.sku.trim() || undefined,
       categoryId: form.categoryId,
-      material: form.material.trim() || undefined,
-      style: form.style.trim() || undefined,
-      color: form.color.trim() || undefined,
+      material: selectedMaterial,
+      style: selectedStyle,
+      color: selectedColor,
+      filterData: filterDataToSave,
       description: form.description.trim() || undefined,
       shortDescription: form.shortDescription.trim() || undefined,
       deliveryInfo: form.deliveryInfo.trim() || undefined,
@@ -1078,6 +1145,17 @@ export default function ProductEditPage() {
                     <input value={form.color} onChange={(event) => updateForm('color', event.target.value)} className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]" placeholder="e.g. Ivory" />
                   </div>
                 </div>
+              </div>
+
+              <div className="border-t border-[var(--color-border)] pt-6">
+                <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-accent)]">
+                  Dynamic Filter Attributes
+                </h3>
+                <ProductFilterFields
+                  filters={filterConfig}
+                  selected={selectedFilters}
+                  onChange={setSelectedFilters}
+                />
               </div>
 
               <div>
