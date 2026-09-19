@@ -34,6 +34,9 @@ export class CreateProductDto {
   material?: string;
 
   @IsOptional()
+  filterData?: Record<string, string[]>;
+
+  @IsOptional()
   @IsString()
   @MaxLength(100)
   style?: string;
