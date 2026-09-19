@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getCountries, getStatesByShort } from 'countrycitystatejson/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAddresses, createAddress, updateAddress, deleteAddress, isAuthenticated, Address } from '@/lib/api';
+
+const COUNTRIES = getCountries().sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
 
 export default function AddressesPage() {
   const router = useRouter();
@@ -173,16 +176,31 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
     city: address?.city ?? '',
     stateProvince: address?.stateProvince ?? '',
     postalCode: address?.postalCode ?? '',
-    country: address?.country ?? 'US',
+    country: (address?.country ?? 'US').toUpperCase(),
     phone: address?.phone ?? '',
     isDefault: address?.isDefault ?? false,
     type: (address?.type ?? 'BOTH') as 'SHIPPING' | 'BILLING' | 'BOTH',
   });
+  const [availableStates, setAvailableStates] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setAvailableStates(getStatesByShort(formData.country) ?? []);
+  }, [formData.country]);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value, type } = e.target;
+
+    if (name === 'country') {
+      setFormData(prev => ({
+        ...prev,
+        country: value.toUpperCase(),
+        stateProvince: '',
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
@@ -194,7 +212,23 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
     setError(null);
     setSubmitting(true);
 
-    const result = address ? await updateAddress(address.id, formData) : await createAddress(formData);
+    const payload = {
+      ...formData,
+      firstName: formData.firstName.trim(),
+      lastName: formData.lastName.trim(),
+      company: formData.company.trim(),
+      addressLine1: formData.addressLine1.trim(),
+      addressLine2: formData.addressLine2.trim(),
+      city: formData.city.trim(),
+      stateProvince: formData.stateProvince.trim(),
+      postalCode: formData.postalCode.trim(),
+      country: formData.country.trim().toUpperCase(),
+      phone: formData.phone.trim(),
+    };
+
+    const result = address
+      ? await updateAddress(address.id, payload)
+      : await createAddress(payload);
 
     if (result.success) {
       onSuccess();
@@ -245,7 +279,29 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
         </div>
         <div>
           <label className="block text-sm font-serif text-luxury-charcoal mb-2">State</label>
-          <input name="stateProvince" value={formData.stateProvince} onChange={handleChange} className="input-luxury" />
+          {availableStates.length > 0 ? (
+            <select
+              name="stateProvince"
+              value={formData.stateProvince}
+              onChange={handleChange}
+              className="input-luxury"
+            >
+              <option value="">Select state / province</option>
+              {availableStates.map(state => (
+                <option key={state} value={state}>
+                  {state}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              name="stateProvince"
+              value={formData.stateProvince}
+              onChange={handleChange}
+              className="input-luxury"
+              placeholder="State / Province"
+            />
+          )}
         </div>
       </div>
 
@@ -256,7 +312,20 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
         </div>
         <div>
           <label className="block text-sm font-serif text-luxury-charcoal mb-2">Country *</label>
-          <select name="country" value={formData.country} onChange={handleChange} required className="input-luxury"><option value="IN">India</option><option value="US">United States</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option></select>
+          <select
+            name="country"
+            value={formData.country}
+            onChange={handleChange}
+            required
+            className="input-luxury"
+          >
+            <option value="">Select country</option>
+            {COUNTRIES.map(country => (
+              <option key={country.shortName} value={country.shortName}>
+                {country.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -294,4 +363,5 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
     </form>
   );
 }
+
 
