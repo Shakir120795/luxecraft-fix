@@ -23,8 +23,8 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# The postbuild step places static/public assets inside the actual standalone runtime root.
 COPY --from=builder /app/apps/storefront/.next/standalone ./
-COPY --from=builder /app/apps/storefront/.next/static ./apps/storefront/.next/static
 
 EXPOSE 3000
-CMD ["node", "apps/storefront/server.js"]
+CMD ["sh", "-c", "if [ -f /app/apps/storefront/server.js ]; then exec node /app/apps/storefront/server.js; else exec node /app/server.js; fi"]
