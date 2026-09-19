@@ -167,6 +167,7 @@ export interface Product {
   style: string | null;
   collection: string | null;
   color: string | null;
+  filterData: Record<string, string[]> | null;
   deliveryInfo: string | null;
   shippingInfo: string | null;
   returnsInfo: string | null;
@@ -441,6 +442,10 @@ function mapProduct(product: any): Product {
     isActive: product.status === 'ACTIVE',
     isFeatured: product.isFeatured === true,
     isCustomizable: product.isCustomizable === true,
+    filterData:
+      product.filterData && typeof product.filterData === 'object'
+        ? product.filterData
+        : null,
     categoryId: product.categoryId ?? '',
     stockQuantity: variants.reduce(
       (total, variant) => total + Number(variant.stockQty ?? 0),
@@ -876,6 +881,32 @@ export async function getProducts(): Promise<Product[]> {
   return data.items.map(mapProduct);
 }
 
+export interface ProductFilterValueSetting {
+  slug: string;
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ProductFilterSetting {
+  slug: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  values: ProductFilterValueSetting[];
+}
+
+export async function getProductFilters(): Promise<ProductFilterSetting[]> {
+  return adminApi.get<ProductFilterSetting[]>('/admin/settings/product-filters');
+}
+
+export async function updateProductFilters(
+  filters: ProductFilterSetting[],
+): Promise<ProductFilterSetting[]> {
+  return adminApi.put<ProductFilterSetting[]>('/admin/settings/product-filters', filters);
+}
+
+
 export async function getProduct(id: string): Promise<Product> {
   return mapProduct(await adminApi.get<any>(`/admin/products/${id}`));
 }
@@ -902,6 +933,7 @@ export interface CreateProductRequest {
   style?: string;
   collection?: string;
   color?: string;
+  filterData?: Record<string, string[]>;
   status?: 'DRAFT' | 'ACTIVE' | 'HIDDEN' | 'ARCHIVED';
 
   weightKg?: number;
