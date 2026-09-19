@@ -10,6 +10,11 @@ export class StorefrontPagesController {
     return this.settings.getSitePages();
   }
 
+  @Get('product-filters')
+  getProductFilters() {
+    return this.settings.getProductFilters();
+  }
+
   @Get(':slug')
   getPage(@Param('slug') slug: string) {
     return this.settings.getSitePage(slug);
