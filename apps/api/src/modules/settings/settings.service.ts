@@ -18,6 +18,95 @@ export interface SitePageSettings {
   content: string;
 }
 
+export interface ProductFilterValueSetting {
+  slug: string;
+  label: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ProductFilterSetting {
+  slug: string;
+  name: string;
+  sortOrder: number;
+  isActive: boolean;
+  values: ProductFilterValueSetting[];
+}
+
+
+const DEFAULT_PRODUCT_FILTERS: ProductFilterSetting[] = [
+  {
+    slug: 'style',
+    name: 'Style',
+    sortOrder: 0,
+    isActive: true,
+    values: [
+      ['floral-rugs', 'Floral Rugs'],
+      ['chinese-rugs', 'Chinese Rugs'],
+      ['vintage-rugs', 'Vintage Rugs'],
+      ['persian-rugs', 'Persian Rugs'],
+    ].map(([slug, label], sortOrder) => ({ slug, label, sortOrder, isActive: true })),
+  },
+  {
+    slug: 'size',
+    name: 'Size',
+    sortOrder: 1,
+    isActive: true,
+    values: [
+      ['3x6', '3x6'],
+      ['4x6', '4x6'],
+      ['5x8', '5x8'],
+    ].map(([slug, label], sortOrder) => ({ slug, label, sortOrder, isActive: true })),
+  },
+  {
+    slug: 'shape',
+    name: 'Shape',
+    sortOrder: 2,
+    isActive: true,
+    values: [
+      ['irregular-rugs', 'Irregular Rugs'],
+      ['area-rugs', 'Area Rugs'],
+      ['round-rugs', 'Round Rugs'],
+      ['runner-rugs', 'Runner Rugs'],
+    ].map(([slug, label], sortOrder) => ({ slug, label, sortOrder, isActive: true })),
+  },
+  {
+    slug: 'color',
+    name: 'Colour',
+    sortOrder: 3,
+    isActive: true,
+    values: [
+      ['red', 'Red'],
+      ['black', 'Black'],
+      ['white', 'White'],
+      ['blue', 'Blue'],
+    ].map(([slug, label], sortOrder) => ({ slug, label, sortOrder, isActive: true })),
+  },
+  {
+    slug: 'material',
+    name: 'Material',
+    sortOrder: 4,
+    isActive: true,
+    values: [
+      ['wool', 'Wool'],
+      ['silk', 'Silk'],
+      ['viscose', 'Viscose'],
+      ['jute', 'Jute'],
+    ].map(([slug, label], sortOrder) => ({ slug, label, sortOrder, isActive: true })),
+  },
+  {
+    slug: 'weave-type',
+    name: 'Weave Type',
+    sortOrder: 5,
+    isActive: true,
+    values: [
+      ['hand-tufted', 'Hand Tufted'],
+      ['hand-knotted', 'Hand Knotted'],
+      ['flat-weave-rugs', 'Flat Weave Rugs'],
+    ].map(([slug, label], sortOrder) => ({ slug, label, sortOrder, isActive: true })),
+  },
+];
+
 const DEFAULT_SITE_PAGES: Record<SitePageSlug, SitePageSettings> = {
   privacy: {
     slug: 'privacy',
@@ -521,6 +610,41 @@ By submitting this form, you agree to our Privacy Policy`,
 export class SettingsService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getProductFilters(): Promise<ProductFilterSetting[]> {
+    const rows = await this.prisma.$queryRaw<Array<{ productFilters: unknown }>>`
+      SELECT "productFilters"
+      FROM "app_settings"
+      WHERE "id" = 'default'
+      LIMIT 1
+    `;
+
+    const value = rows[0]?.productFilters;
+    if (!Array.isArray(value) || value.length === 0) {
+      return DEFAULT_PRODUCT_FILTERS;
+    }
+
+    return this.normalizeProductFilters(value as ProductFilterSetting[]);
+  }
+
+  async updateProductFilters(filters: ProductFilterSetting[]): Promise<ProductFilterSetting[]> {
+    const normalized = this.normalizeProductFilters(filters);
+
+    await this.prisma.appSetting.upsert({
+      where: { id: 'default' },
+      update: {},
+      create: { id: 'default', defaultCurrency: 'USD' },
+    });
+
+    await this.prisma.$executeRaw`
+      UPDATE "app_settings"
+      SET "productFilters" = ${JSON.stringify(normalized)}::jsonb,
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = 'default'
+    `;
+
+    return normalized;
+  }
+
   async getDefaultCurrency(): Promise<string> {
     const setting = await this.prisma.appSetting.findUnique({
       where: { id: 'default' },
@@ -595,6 +719,46 @@ export class SettingsService {
     `;
 
     return updated;
+  }
+
+  private normalizeProductFilters(filters: ProductFilterSetting[]): ProductFilterSetting[] {
+    return filters
+      .filter((attribute) => attribute && attribute.slug && attribute.name)
+      .map((attribute, attributeIndex) => {
+        const values = Array.isArray(attribute.values)
+          ? attribute.values
+              .filter((value) => value && value.slug && value.label)
+              .map((value, valueIndex) => ({
+                slug: String(value.slug).trim().toLowerCase(),
+                label: String(value.label).trim(),
+                sortOrder: Number.isFinite(Number(value.sortOrder))
+                  ? Number(value.sortOrder)
+                  : valueIndex,
+                isActive: value.isActive !== false,
+              }))
+          : [];
+
+        return {
+          slug: String(attribute.slug).trim().toLowerCase(),
+          name: String(attribute.name).trim(),
+          sortOrder: Number.isFinite(Number(attribute.sortOrder))
+            ? Number(attribute.sortOrder)
+            : attributeIndex,
+          isActive: attribute.isActive !== false,
+          values,
+        };
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((attribute, index) => ({
+        ...attribute,
+        sortOrder: index,
+        values: attribute.values
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((value, valueIndex) => ({
+            ...value,
+            sortOrder: valueIndex,
+          })),
+      }));
   }
 
   private normalizeSlug(slug: string): SitePageSlug {
