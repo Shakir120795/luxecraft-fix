@@ -8,6 +8,22 @@ import { getAddresses, createAddress, updateAddress, deleteAddress, isAuthentica
 
 const COUNTRIES = getCountries().sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
 
+function getPhonePrefix(countryCode?: string): string {
+  const country = COUNTRIES.find(item => item.shortName === (countryCode ?? '').toUpperCase());
+  return country?.phone ? `+${country.phone}` : '+';
+}
+
+function getLocalPhone(phone: string | null | undefined, countryCode: string): string {
+  const raw = (phone ?? '').trim();
+  const prefix = getPhonePrefix(countryCode);
+
+  if (prefix !== '+' && raw.startsWith(prefix)) {
+    return raw.slice(prefix.length).trim();
+  }
+
+  return raw;
+}
+
 export default function AddressesPage() {
   const router = useRouter();
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -177,7 +193,7 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
     stateProvince: address?.stateProvince ?? '',
     postalCode: address?.postalCode ?? '',
     country: (address?.country ?? 'US').toUpperCase(),
-    phone: address?.phone ?? '',
+    phone: getLocalPhone(address?.phone, (address?.country ?? 'US').toUpperCase()),
     isDefault: address?.isDefault ?? false,
     type: (address?.type ?? 'BOTH') as 'SHIPPING' | 'BILLING' | 'BOTH',
   });
@@ -223,7 +239,10 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
       stateProvince: formData.stateProvince.trim(),
       postalCode: formData.postalCode.trim(),
       country: formData.country.trim().toUpperCase(),
-      phone: formData.phone.trim(),
+      phone: (() => {
+        const digits = formData.phone.replace(/\D/g, '');
+        return digits ? `${getPhonePrefix(formData.country)}${digits}` : '';
+      })(),
     };
 
     const result = address
@@ -331,7 +350,20 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
 
       <div>
         <label className="block text-sm font-serif text-luxury-charcoal mb-2">Phone *</label>
-        <input name="phone" type="tel" value={formData.phone} onChange={handleChange} required className="input-luxury" />
+        <div className="flex">
+          <span className="flex items-center border border-r-0 border-[#ded8d0] bg-[#faf9f7] px-3 text-sm text-[#6a636b]">
+            {getPhonePrefix(formData.country)}
+          </span>
+          <input
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={handleChange}
+            required
+            className="input-luxury flex-1"
+            placeholder="Phone number"
+          />
+        </div>
       </div>
 
       <div>
