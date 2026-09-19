@@ -22,6 +22,16 @@ export class SettingsController {
     return this.settings.getSitePages();
   }
 
+  @Get('product-filters')
+  getProductFilters() {
+    return this.settings.getProductFilters();
+  }
+
+  @Put('product-filters')
+  updateProductFilters(@Body() data: any[]) {
+    return this.settings.updateProductFilters(data);
+  }
+
   @Put('pages/:slug')
   updateSitePage(
     @Param('slug') slug: string,
