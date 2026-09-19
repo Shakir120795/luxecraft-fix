@@ -6,18 +6,29 @@ type Props = {
   filters: ProductFilterSetting[];
   selected: Record<string, string[]>;
   onChange: (next: Record<string, string[]>) => void;
+  textValues?: Record<string, string>;
+  onTextChange?: (attributeSlug: string, value: string) => void;
 };
 
-export function ProductFilterFields({ filters, selected, onChange }: Props) {
-  function toggle(attributeSlug: string, valueSlug: string, checked: boolean) {
-    const current = selected[attributeSlug] ?? [];
-    const nextValues = checked
-      ? Array.from(new Set([...current, valueSlug]))
-      : current.filter((item) => item !== valueSlug);
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
+export function ProductFilterFields({
+  filters,
+  selected,
+  onChange,
+  textValues = {},
+  onTextChange,
+}: Props) {
+  function selectValue(attributeSlug: string, valueSlug: string) {
     onChange({
       ...selected,
-      [attributeSlug]: nextValues,
+      [attributeSlug]: valueSlug ? [valueSlug] : [],
     });
   }
 
@@ -30,47 +41,63 @@ export function ProductFilterFields({ filters, selected, onChange }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-5 md:grid-cols-2">
       {filters
         .filter((attribute) => attribute.isActive)
         .sort((a, b) => a.sortOrder - b.sortOrder)
-        .map((attribute) => (
-          <div key={attribute.slug}>
-            <label className="mb-3 block text-sm font-medium">
-              {attribute.name}
-            </label>
+        .map((attribute) => {
+          const selectedValue = selected[attribute.slug]?.[0] ?? '';
 
-            <div className="flex flex-wrap gap-2">
-              {attribute.values
-                .filter((value) => value.isActive)
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((value) => {
-                  const checked = (selected[attribute.slug] ?? []).includes(value.slug);
+          if (attribute.slug === 'color') {
+            const colorValue = textValues.color ?? '';
 
-                  return (
-                    <label
-                      key={value.slug}
-                      className={`inline-flex cursor-pointer items-center gap-2 border px-3 py-2 text-sm transition-colors ${
-                        checked
-                          ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
-                          : 'border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)]'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) =>
-                          toggle(attribute.slug, value.slug, event.target.checked)
-                        }
-                        className="sr-only"
-                      />
+            return (
+              <div key={attribute.slug}>
+                <label className="mb-2 block text-sm font-medium">
+                  {attribute.name}
+                </label>
+                <input
+                  value={colorValue}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    onTextChange?.(attribute.slug, value);
+                    selectValue(attribute.slug, value ? slugify(value) : '');
+                  }}
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+                  placeholder="e.g. Ivory, Sand, Charcoal"
+                />
+                <p className="mt-1 text-xs text-[var(--color-muted)]">
+                  Enter any color name. No predefined list is required.
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div key={attribute.slug}>
+              <label className="mb-2 block text-sm font-medium">
+                {attribute.name}
+              </label>
+              <select
+                value={selectedValue}
+                onChange={(event) =>
+                  selectValue(attribute.slug, event.target.value)
+                }
+                className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 outline-none focus:border-[var(--color-accent)]"
+              >
+                <option value="">Select {attribute.name}</option>
+                {attribute.values
+                  .filter((value) => value.isActive)
+                  .sort((a, b) => a.sortOrder - b.sortOrder)
+                  .map((value) => (
+                    <option key={value.slug} value={value.slug}>
                       {value.label}
-                    </label>
-                  );
-                })}
+                    </option>
+                  ))}
+              </select>
             </div>
-          </div>
-        ))}
+          );
+        })}
     </div>
   );
 }
