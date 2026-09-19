@@ -24,6 +24,9 @@ export class UpdateProductDto {
   material?: string;
 
   @IsOptional()
+  filterData?: Record<string, string[]>;
+
+  @IsOptional()
   @IsString()
   style?: string;
 
