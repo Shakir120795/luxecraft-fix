@@ -4,6 +4,7 @@ import { ProductFilterSetting } from '@/lib/api';
 
 type Props = {
   filters: ProductFilterSetting[];
+  valueOptions?: Record<string, { slug: string; label: string }[]>;
   selected: Record<string, string>;
   onSelect: (slug: string, value: string) => void;
   selectedAvailability: string;
@@ -15,6 +16,7 @@ type Props = {
 
 export function ProductFilterBar({
   filters,
+  valueOptions = {},
   selected,
   onSelect,
   selectedAvailability,
@@ -41,9 +43,7 @@ export function ProductFilterBar({
               className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]"
             >
               <option value="">{filter.name}</option>
-              {filter.values
-                .filter((value) => value.isActive)
-                .sort((a, b) => a.sortOrder - b.sortOrder)
+              {(valueOptions[filter.slug] ?? filter.values)
                 .map((value) => (
                   <option key={value.slug} value={value.slug}>
                     {value.label}
