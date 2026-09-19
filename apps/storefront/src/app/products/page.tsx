@@ -86,6 +86,19 @@ function ProductsContent() {
   const slugifyFilterValue = (value: string) =>
     value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
+  const filterValueOptions: Record<string, { slug: string; label: string }[]> = {
+    color: Array.from(
+      new Map(
+        products
+          .map((product) => product.color?.trim())
+          .filter((value): value is string => Boolean(value))
+          .map((value) => [slugifyFilterValue(value), value]),
+      ).entries(),
+    )
+      .map(([slug, label]) => ({ slug, label }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  };
+
   const getProductFilterValues = (product: Product, filter: ProductFilterSetting): string[] => {
     const savedValues = product.filterData?.[filter.slug];
     if (Array.isArray(savedValues) && savedValues.length > 0) return savedValues;
@@ -171,6 +184,7 @@ function ProductsContent() {
 
             <ProductFilterBar
               filters={productFilters}
+              valueOptions={filterValueOptions}
               selected={selectedFilters}
               onSelect={(slug, value) => {
                 setSelectedFilters((current) => ({ ...current, [slug]: value }));
