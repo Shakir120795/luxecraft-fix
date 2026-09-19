@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { getStorefrontCategories, getProducts, getHero, Product, Category, HeroSection } from '@/lib/api';
 import { ProductCard } from '@/components/ProductCard';
@@ -19,6 +19,8 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
   const [categoryProducts, setCategoryProducts] = useState<Product[]>([]);
   const [categoryLoading, setCategoryLoading] = useState(false);
+  const categorySliderRef = useRef<HTMLDivElement | null>(null);
+  const collectionHoverRef = useRef(false);
 
   async function handleCategoryHover(category: Category) {
     setActiveCategory(category);
@@ -59,20 +61,55 @@ export default function HomePage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (loading || categories.length <= 1) return;
+
+    const slider = categorySliderRef.current;
+    if (!slider || slider.scrollWidth <= slider.clientWidth) return;
+
+    const interval = window.setInterval(() => {
+      if (collectionHoverRef.current) return;
+
+      const firstCard = slider.firstElementChild as HTMLElement | null;
+      if (!firstCard) return;
+
+      const styles = window.getComputedStyle(slider);
+      const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+      const step = firstCard.getBoundingClientRect().width + gap;
+      const maxScrollLeft = slider.scrollWidth - slider.clientWidth;
+
+      if (slider.scrollLeft + step >= maxScrollLeft - 8) {
+        slider.scrollTo({
+          left: 0,
+          behavior: 'smooth',
+        });
+      } else {
+        slider.scrollBy({
+          left: step,
+          behavior: 'smooth',
+        });
+      }
+    }, 2000);
+
+    return () => window.clearInterval(interval);
+  }, [loading, categories.length]);
+
+
+
+
+
   const heroCategory = categories[0];
   const heroImage = hero?.imageUrl || heroCategory?.imageUrl || products[0]?.media?.find((media) => media.isMain)?.url || products[0]?.media?.[0]?.url || '';
   const sideCategoryTwo = categories[2];
 
-  const sideImageOne = hero?.hero2ImageUrl || products[1]?.media?.find((media) => media.isMain)?.url || products[1]?.media?.[0]?.url || '';
-    heroCategory?.imageUrl ||
-    products[0]?.media?.find((media) => media.isMain)?.url ||
-    products[0]?.media?.[0]?.url ||
-    '';
-  const sideImageTwo = hero?.hero3ImageUrl || products[2]?.media?.find((media) => media.isMain)?.url || products[2]?.media?.[0]?.url || '';
+  const sideImageOne =
+    hero?.hero2ImageUrl ||
     products[1]?.media?.find((media) => media.isMain)?.url ||
     products[1]?.media?.[0]?.url ||
     '';
 
+  const sideImageTwo =
+    hero?.hero3ImageUrl ||
     products[2]?.media?.find((media) => media.isMain)?.url ||
     products[2]?.media?.[0]?.url ||
     '';
@@ -224,6 +261,13 @@ export default function HomePage() {
 
             <div
               id="luxecraft-collection-slider"
+              ref={categorySliderRef}
+              onMouseEnter={() => {
+                collectionHoverRef.current = true;
+              }}
+              onMouseLeave={() => {
+                collectionHoverRef.current = false;
+              }}
               className="luxecraft-collection-slider flex gap-4 overflow-x-auto scroll-smooth pb-2 snap-x snap-mandatory"
             >
               {categories.map((category, index) => (
@@ -493,60 +537,5 @@ export default function HomePage() {
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
