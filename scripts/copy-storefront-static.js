@@ -1,18 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Copy static assets for Next.js standalone build (Storefront)
- * 
- * This script runs automatically after `npm run build` in storefront.
- * It ensures .next/static is properly copied into the standalone directory.
- * 
- * Standalone structure:
- * .next/standalone/
- *   apps/
- *     storefront/
- *       server.js              ← entry point
- *       .next/
- *         static/              ← static assets MUST be here
+ * Copy static/public assets into the exact Next.js standalone runtime root.
+ * Next.js can emit either a flat or nested standalone layout for a workspace build.
  */
 
 const fs = require('fs');
@@ -20,66 +10,48 @@ const path = require('path');
 
 const STOREFRONT_DIR = path.join(__dirname, '..', 'apps', 'storefront');
 const STATIC_SRC = path.join(STOREFRONT_DIR, '.next', 'static');
-const STANDALONE_DIR = path.join(STOREFRONT_DIR, '.next', 'standalone', 'apps', 'storefront');
-const STATIC_DEST = path.join(STANDALONE_DIR, '.next', 'static');
+const PUBLIC_SRC = path.join(STOREFRONT_DIR, 'public');
+const STANDALONE_ROOT = path.join(STOREFRONT_DIR, '.next', 'standalone');
 
-console.log('📦 Wolhomes Storefront: Copying static assets for standalone build...\n');
+const nestedRuntime = path.join(STANDALONE_ROOT, 'apps', 'storefront');
+const flatRuntime = STANDALONE_ROOT;
+const RUNTIME_DIR = fs.existsSync(path.join(nestedRuntime, 'server.js')) ? nestedRuntime : flatRuntime;
+const STATIC_DEST = path.join(RUNTIME_DIR, '.next', 'static');
+const PUBLIC_DEST = path.join(RUNTIME_DIR, 'public');
 
-// Check if standalone build exists
-if (!fs.existsSync(STANDALONE_DIR)) {
-  console.log('⚠️  Standalone directory not found. Skipping static asset copy.');
-  console.log('   This is normal if not using standalone mode.\n');
-  process.exit(0);
-}
+console.log('📦 Wolhomes Storefront: preparing standalone runtime...');
+console.log('Runtime:     ' + RUNTIME_DIR);
+console.log('Static src:  ' + STATIC_SRC);
+console.log('Static dest: ' + STATIC_DEST);
 
-// Check if source static dir exists
-if (!fs.existsSync(STATIC_SRC)) {
-  console.error('❌ Error: .next/static directory not found!');
-  console.error('   Build may have failed or not completed.\n');
+if (!fs.existsSync(path.join(STANDALONE_ROOT, 'server.js')) && !fs.existsSync(path.join(nestedRuntime, 'server.js'))) {
+  console.error('❌ Standalone server.js not found.');
   process.exit(1);
 }
 
-/**
- * Recursively copy directory
- */
+if (!fs.existsSync(STATIC_SRC)) {
+  console.error('❌ Error: .next/static directory not found.');
+  process.exit(1);
+}
+
 function copyRecursive(src, dest) {
-  if (!fs.existsSync(dest)) {
-    fs.mkdirSync(dest, { recursive: true });
-  }
-
-  const entries = fs.readdirSync(src, { withFileTypes: true });
-
-  for (const entry of entries) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
-
-    if (entry.isDirectory()) {
-      copyRecursive(srcPath, destPath);
-    } else {
-      fs.copyFileSync(srcPath, destPath);
-    }
+    if (entry.isDirectory()) copyRecursive(srcPath, destPath);
+    else fs.copyFileSync(srcPath, destPath);
   }
 }
 
 try {
-  // Create destination .next directory if needed
-  const nextDestDir = path.join(STANDALONE_DIR, '.next');
-  if (!fs.existsSync(nextDestDir)) {
-    fs.mkdirSync(nextDestDir, { recursive: true });
-  }
-
-  // Copy static assets
-  console.log(`Source:      ${STATIC_SRC}`);
-  console.log(`Destination: ${STATIC_DEST}\n`);
-
   copyRecursive(STATIC_SRC, STATIC_DEST);
-
-  console.log('✅ Static assets copied successfully!\n');
-  console.log('Standalone build is ready:');
-  console.log(`   node ${path.join(STANDALONE_DIR, 'server.js')}\n`);
-
+  if (fs.existsSync(PUBLIC_SRC)) {
+    copyRecursive(PUBLIC_SRC, PUBLIC_DEST);
+    console.log('Public dest:  ' + PUBLIC_DEST);
+  }
+  console.log('✅ Standalone assets ready.');
 } catch (error) {
-  console.error('❌ Error copying static assets:', error.message);
+  console.error('❌ Error preparing standalone assets:', error.message);
   process.exit(1);
 }
-
