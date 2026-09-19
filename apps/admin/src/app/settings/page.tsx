@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/AdminLayout';
+import { ProductFilterManager } from '@/components/ProductFilterManager';
 import {
   getAdminProfile,
   getProducts,
@@ -269,6 +270,8 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+        <ProductFilterManager />
+
         {/* HERO MANAGEMENT */}
         <div className="border border-[var(--color-border)] bg-[var(--color-surface)]">
           <div className="border-b border-[var(--color-border)] px-6 py-5">
