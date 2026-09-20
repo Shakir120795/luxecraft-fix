@@ -56,7 +56,26 @@ function ProductsContent() {
     setSearchTerm(searchParams.get('q') || '');
     setSelectedCategory(searchParams.get('category') || '');
     setSortBy(searchParams.get('sort') || 'featured');
-  }, [searchParams]);
+
+    const incomingFilters: Record<string, string> = {};
+    productFilters.forEach((filter) => {
+      const value = searchParams.get('filter_' + filter.slug);
+      if (value) incomingFilters[filter.slug] = value;
+    });
+    setSelectedFilters(incomingFilters);
+
+    const incomingPrice = searchParams.get('price');
+    if (incomingPrice) {
+      const [min, max] = incomingPrice.split('-').map(Number);
+      if (Number.isFinite(min) && Number.isFinite(max)) {
+        setMinPrice(min);
+        setMaxPrice(max);
+      }
+    } else {
+      setMinPrice(0);
+      setMaxPrice(10000);
+    }
+  }, [searchParams, productFilters]);
 
   useEffect(() => {
     async function loadData() {
