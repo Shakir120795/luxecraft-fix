@@ -5,7 +5,7 @@
   "description": "Wolhomes Customer Storefront â€” Next.js",
   "scripts": {
     "dev": "next dev -p 3003",
-    "build": "cd ../.. && next build apps/storefront",
+    "build": "../../node_modules/.bin/next build",
     "start": "next start -p 3003",
     "start:standalone": "node .next/standalone/apps/storefront/server.js",
     "postbuild": "node ../../scripts/copy-storefront-static.js",
