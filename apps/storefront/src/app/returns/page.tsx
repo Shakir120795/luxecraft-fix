@@ -80,8 +80,8 @@ export default function ReturnsPage() {
                   </h3>
                   <p>
                     Email us at{' '}
-                    <a href="mailto:returns@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                      returns@wolhomes.com
+                    <a href="mailto:info@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+                      info@wolhomes.com
                     </a>{' '}
                     or call{' '}
                     <a href="tel:+1234567890" className="text-luxury-gold underline hover:text-luxury-brown">
@@ -235,8 +235,8 @@ export default function ReturnsPage() {
                   <li>
                     <strong>Contact Us Immediately:</strong> Within 48 hours, email photos of the damage 
                     to{' '}
-                    <a href="mailto:support@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                      support@wolhomes.com
+                    <a href="mailto:info@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+                      info@wolhomes.com
                     </a>
                   </li>
                   <li>
@@ -280,8 +280,8 @@ export default function ReturnsPage() {
               <p>
                 <strong>Before Production:</strong> Orders can be cancelled within 24 hours of placement 
                 for a full refund. Contact us immediately at{' '}
-                <a href="mailto:support@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                  support@wolhomes.com
+                <a href="mailto:info@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+                  info@wolhomes.com
                 </a>
               </p>
               <p>
