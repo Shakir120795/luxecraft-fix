@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { getCartTotals, getStorefrontCategories, Category, isAuthenticated } from '@/lib/api';
+import { getCartTotals, getStorefrontCategories, getProductFilters, Category, ProductFilterSetting, isAuthenticated } from '@/lib/api';
 
 const navigation = [
   { href: '/products', label: 'Shop' },
@@ -66,12 +66,14 @@ export function SiteHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [productFilters, setProductFilters] = useState<ProductFilterSetting[]>([]);
   const [isAuth, setIsAuth] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
     loadCartCount();
     loadCategories();
+    loadProductFilters();
     setIsAuth(isAuthenticated());
 
     const interval = setInterval(loadCartCount, 5000);
@@ -94,6 +96,20 @@ export function SiteHeader() {
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
+  }
+
+  async function loadProductFilters() {
+    try {
+      const filters = await getProductFilters();
+      setProductFilters(filters.filter((filter) => filter.isActive));
+    } catch (error) {
+      console.error('Failed to load product filters:', error);
+    }
+  }
+
+  function goToProductFilter(filterSlug: string, value: string) {
+    if (!value) return;
+    window.location.href = '/products?filter_' + encodeURIComponent(filterSlug) + '=' + encodeURIComponent(value);
   }
 
   function handleSearch(e: React.FormEvent) {
@@ -297,16 +313,16 @@ export function SiteHeader() {
         )}
       </div>
 
-      {showCategoryBar && categories.length > 0 && (
+      {showCategoryBar && (
         <div className="border-t border-black/10 bg-[#B94740]">
           <div className="relative mx-auto max-w-[1400px] px-10 py-2 sm:px-12">
             <button
               type="button"
-              aria-label="Scroll categories left"
+              aria-label="Scroll categories and filters left"
               onClick={() =>
                 document
                   .getElementById('site-category-scroll')
-                  ?.scrollBy({ left: -260, behavior: 'smooth' })
+                  ?.scrollBy({ left: -320, behavior: 'smooth' })
               }
               className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-black/10 bg-white/95 text-black shadow-sm transition-all hover:border-black hover:bg-black hover:text-white"
             >
@@ -329,12 +345,51 @@ export function SiteHeader() {
               {categories.map((category) => (
                 <Link
                   key={category.id}
-                  href={`/categories/${category.slug}`}
+                  href={'/categories/' + category.slug}
                   className="shrink-0 rounded-lg px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-black hover:text-white sm:px-4 sm:text-[12px] sm:tracking-[0.17em]"
                 >
                   {category.name}
                 </Link>
               ))}
+
+              {productFilters
+                .filter((filter) => filter.values.length > 0)
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((filter) => (
+                  <select
+                    key={filter.slug}
+                    defaultValue=""
+                    onChange={(event) => goToProductFilter(filter.slug, event.target.value)}
+                    className="shrink-0 cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white outline-none hover:bg-black sm:px-4 sm:text-[12px] sm:tracking-[0.17em]"
+                    aria-label={'Filter by ' + filter.name}
+                  >
+                    <option value="" className="bg-white text-black">
+                      {filter.name}
+                    </option>
+                    {filter.values.map((value) => (
+                      <option key={value.slug} value={value.slug} className="bg-white text-black">
+                        {value.label}
+                      </option>
+                    ))}
+                  </select>
+                ))}
+
+              <select
+                defaultValue=""
+                onChange={(event) => {
+                  if (!event.target.value) return;
+                  window.location.href = '/products?price=' + encodeURIComponent(event.target.value);
+                }}
+                className="shrink-0 cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white outline-none hover:bg-black sm:px-4 sm:text-[12px] sm:tracking-[0.17em]"
+                aria-label="Filter by price"
+              >
+                <option value="" className="bg-white text-black">Price</option>
+                <option value="0-500" className="bg-white text-black">$0 - $500</option>
+                <option value="500-1000" className="bg-white text-black">$500 - $1,000</option>
+                <option value="1000-2500" className="bg-white text-black">$1,000 - $2,500</option>
+                <option value="2500-5000" className="bg-white text-black">$2,500 - $5,000</option>
+                <option value="5000-10000" className="bg-white text-black">$5,000+</option>
+              </select>
 
               <Link
                 href="/custom-design"
@@ -346,16 +401,16 @@ export function SiteHeader() {
 
             <button
               type="button"
-              aria-label="Scroll categories right"
+              aria-label="Scroll categories and filters right"
               onClick={() =>
                 document
                   .getElementById('site-category-scroll')
-                  ?.scrollBy({ left: 260, behavior: 'smooth' })
+                  ?.scrollBy({ left: 320, behavior: 'smooth' })
               }
               className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-black/10 bg-white/95 text-black shadow-sm transition-all hover:border-black hover:bg-black hover:text-white"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
-                <path d="m9 18 6 6 6-6" />
+                <path d="m9 18 6-6 6 6" />
               </svg>
             </button>
           </div>
