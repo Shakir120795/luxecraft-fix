@@ -108,6 +108,7 @@ export interface Admin {
   role: 'SUPER_ADMIN' | 'ADMIN';
   emailVerified: boolean;
   isActive: boolean;
+  showOnHome: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -1437,6 +1438,7 @@ export interface CouponRequest {
   minOrderAmount?: number;
   maxUsageCount?: number;
   maxPerCustomer?: number;
+  showOnHome?: boolean;
 }
 
 export async function getCoupons(): Promise<{ items: Coupon[]; total: number }> {
