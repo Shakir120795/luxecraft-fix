@@ -434,13 +434,13 @@ export function SiteHeader() {
         >
           <div className="grid w-full grid-cols-1 items-center text-center sm:grid-cols-3">
             <span className="luxecraft-shipping-text text-white text-[11px] font-extrabold uppercase tracking-[0.14em] sm:text-[14px] sm:tracking-[0.18em]">
-              <span style={{color:"#ffffff"}}>FREE SHIPPING</span> <span style={{color:"#B94740"}}>&bull;</span> <span style={{color:"#ffffff"}}>WORLDWIDE</span>
+              Fast delivery
             </span>
             <span className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
-              <span style={{color:"#ffffff"}}>FREE SHIPPING</span> <span style={{color:"#B94740"}}>&bull;</span> <span style={{color:"#ffffff"}}>WORLDWIDE</span>
+              14 days return policy
             </span>
             <span className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
-              <span style={{color:"#ffffff"}}>FREE SHIPPING</span> <span style={{color:"#B94740"}}>&bull;</span> <span style={{color:"#ffffff"}}>WORLDWIDE</span>
+              FREE SHIPPING • WORLDWIDE
             </span>
           </div>
         </Link>
