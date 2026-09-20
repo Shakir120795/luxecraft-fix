@@ -336,7 +336,7 @@ export function SiteHeader() {
                       activeHeaderMenu === 'rugs'
                         ? 'visible pointer-events-auto opacity-100'
                         : 'invisible pointer-events-none opacity-0 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100'
-                    }`
+                    }`}
                     onMouseEnter={() => setActiveHeaderMenu('rugs')}
                   >
                     <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
@@ -389,7 +389,7 @@ export function SiteHeader() {
                           activeHeaderMenu === slug
                             ? 'visible pointer-events-auto opacity-100'
                             : 'invisible pointer-events-none opacity-0 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100'
-                        }`
+                        }`}
                         onMouseEnter={() => setActiveHeaderMenu(slug)}
                       >
                         <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
