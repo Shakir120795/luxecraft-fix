@@ -433,13 +433,22 @@ export function SiteHeader() {
           className="luxecraft-shipping-promo block border-t border-black/10 bg-black px-3 py-2 transition-all duration-300 sm:px-6 sm:py-2.5"
         >
           <div className="grid w-full grid-cols-1 items-center text-center sm:grid-cols-3">
-            <span className="luxecraft-shipping-text text-white text-[11px] font-extrabold uppercase tracking-[0.14em] sm:text-[14px] sm:tracking-[0.18em]">
+            <span
+              data-shipping-label="fast-delivery"
+              className="luxecraft-shipping-text text-white text-[11px] font-extrabold uppercase tracking-[0.14em] sm:text-[14px] sm:tracking-[0.18em]"
+            >
               Fast delivery
             </span>
-            <span className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
+            <span
+              data-shipping-label="returns"
+              className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block"
+            >
               14 days return policy
             </span>
-            <span className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block">
+            <span
+              data-shipping-label="free-shipping"
+              className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block"
+            >
               FREE SHIPPING • WORLDWIDE
             </span>
           </div>
