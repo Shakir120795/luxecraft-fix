@@ -7,10 +7,10 @@ export default function TermsPage() {
       <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] text-white py-20 md:py-24 lg:py-28">
         <div className="relative max-w-6xl mx-auto px-5 sm:px-8 lg:px-10">
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-serif font-light tracking-tight mb-5">
-            Terms & Conditions
+            Terms of Service
           </h1>
           <p className="text-base sm:text-lg md:text-xl text-luxury-cream/90 leading-relaxed max-w-2xl">
-            Last updated: January 1, 2024
+            Effective Date: September 19, 2026
           </p>
         </div>
       </section>
