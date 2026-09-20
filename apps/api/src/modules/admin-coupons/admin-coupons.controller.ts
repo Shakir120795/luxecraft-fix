@@ -27,6 +27,7 @@ export class AdminCouponsController {
     minOrderAmount?: number;
     maxUsageCount?: number;
     maxPerCustomer?: number;
+    showOnHome?: boolean;
   }) {
     return this.svc.create({
       ...body,
