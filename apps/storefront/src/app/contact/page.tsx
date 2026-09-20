@@ -115,10 +115,10 @@ export default function ContactPage() {
                     Email
                   </h3>
                   <a
-                    href="mailto:hello@wolhomes.com"
+                    href="mailto:info@wolhomes.com"
                     className="text-sm text-[#302b35] transition-colors hover:text-[#8a5d38]"
                   >
-                    hello@wolhomes.com
+                    info@wolhomes.com
                   </a>
                   <p className="mt-2 text-sm text-[#8b8389]">
                     We respond within 24 hours.
