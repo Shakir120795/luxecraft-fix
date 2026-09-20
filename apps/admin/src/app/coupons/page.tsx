@@ -20,6 +20,7 @@ type CouponForm = {
   minOrderAmount: string;
   maxUsageCount: string;
   maxPerCustomer: string;
+  showOnHome: boolean;
 };
 
 const emptyForm: CouponForm = {
@@ -31,6 +32,7 @@ const emptyForm: CouponForm = {
   minOrderAmount: '',
   maxUsageCount: '',
   maxPerCustomer: '',
+  showOnHome: false,
 };
 
 function numberOrUndefined(value: string) {
@@ -86,6 +88,7 @@ export default function CouponsPage() {
         coupon.maxUsageCount === null ? '' : String(coupon.maxUsageCount),
       maxPerCustomer:
         coupon.maxPerCustomer === null ? '' : String(coupon.maxPerCustomer),
+      showOnHome: coupon.showOnHome,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -126,6 +129,7 @@ export default function CouponsPage() {
       minOrderAmount: numberOrUndefined(form.minOrderAmount),
       maxUsageCount: numberOrUndefined(form.maxUsageCount),
       maxPerCustomer: numberOrUndefined(form.maxPerCustomer),
+      showOnHome: form.showOnHome,
     };
 
     try {
@@ -288,6 +292,22 @@ export default function CouponsPage() {
               placeholder="Uses per customer"
               className="border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
             />
+            <label className="flex min-h-[46px] items-center gap-3 border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-sm text-[var(--color-primary)]">
+              <input
+                type="checkbox"
+                checked={form.showOnHome}
+                onChange={(e) =>
+                  setForm({ ...form, showOnHome: e.target.checked })
+                }
+                className="h-4 w-4 accent-[var(--color-accent)]"
+              />
+              <span>
+                <span className="block font-medium">Show on homepage label</span>
+                <span className="block text-xs text-[var(--color-muted)]">
+                  Displays this coupon on the left side of the home page.
+                </span>
+              </span>
+            </label>
           </div>
 
           <button
