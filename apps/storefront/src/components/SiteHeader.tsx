@@ -67,6 +67,7 @@ export function SiteHeader() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [productFilters, setProductFilters] = useState<ProductFilterSetting[]>([]);
+  const [activeHeaderMenu, setActiveHeaderMenu] = useState<string | null>(null);
   const [isAuth, setIsAuth] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
@@ -92,7 +93,7 @@ export function SiteHeader() {
   async function loadCategories() {
     try {
       const cats = await getStorefrontCategories();
-      setCategories(cats.slice(0, 8));
+      setCategories(cats);
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
@@ -314,105 +315,96 @@ export function SiteHeader() {
       </div>
 
       {showCategoryBar && (
-        <div className="border-t border-black/10 bg-[#B94740]">
-          <div className="relative mx-auto max-w-[1400px] px-10 py-2 sm:px-12">
-            <button
-              type="button"
-              aria-label="Scroll categories and filters left"
-              onClick={() =>
-                document
-                  .getElementById('site-category-scroll')
-                  ?.scrollBy({ left: -320, behavior: 'smooth' })
-              }
-              className="absolute left-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-black/10 bg-white/95 text-black shadow-sm transition-all hover:border-black hover:bg-black hover:text-white"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </button>
-
-            <div
-              id="site-category-scroll"
-              className="flex items-center justify-center gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-3"
-            >
-              <Link
-                href="/products"
-                className="shrink-0 rounded-lg px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-black hover:text-white sm:px-4 sm:text-[12px] sm:tracking-[0.17em]"
+        <div className="relative z-50 border-t border-black/10 bg-[#B94740]">
+          <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
+              <div
+                className="relative shrink-0"
+                onMouseEnter={() => setActiveHeaderMenu('rugs')}
+                onMouseLeave={() => setActiveHeaderMenu(null)}
               >
-                All Collections
-              </Link>
-
-              {categories.map((category) => (
                 <Link
-                  key={category.id}
-                  href={'/categories/' + category.slug}
-                  className="shrink-0 rounded-lg px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-black hover:text-white sm:px-4 sm:text-[12px] sm:tracking-[0.17em]"
+                  href="/products"
+                  className="flex items-center gap-2 rounded-lg px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-all duration-200 hover:bg-black/20 hover:text-white sm:px-5"
                 >
-                  {category.name}
+                  Rugs
+                  <span className="text-[10px]">⌄</span>
                 </Link>
-              ))}
 
-              {productFilters
-                .filter((filter) => filter.values.length > 0)
-                .sort((a, b) => a.sortOrder - b.sortOrder)
-                .map((filter) => (
-                  <select
-                    key={filter.slug}
-                    defaultValue=""
-                    onChange={(event) => goToProductFilter(filter.slug, event.target.value)}
-                    className="shrink-0 cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white outline-none hover:bg-black sm:px-4 sm:text-[12px] sm:tracking-[0.17em]"
-                    aria-label={'Filter by ' + filter.name}
+                {activeHeaderMenu === 'rugs' && categories.length > 0 && (
+                  <div className="absolute left-0 top-full z-[100] w-[300px] rounded-b-xl border border-black/10 bg-white p-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)]">
+                    <div className="mb-3 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2f6b36]">
+                      All Rug Categories
+                    </div>
+                    <div className="grid grid-cols-2 gap-1">
+                      {categories.map((category) => (
+                        <Link
+                          key={category.id}
+                          href={'/categories/' + category.slug}
+                          className="rounded-lg px-3 py-2.5 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-4 hover:text-[#2f6b36]"
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
+                    <Link
+                      href="/products"
+                      className="mt-3 block border-t border-black/10 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a5a2c] transition-colors hover:text-[#2f6b36]"
+                    >
+                      View all rugs →
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              {(['color', 'size', 'style', 'material'] as const).map((slug) => {
+                const filter = productFilters.find((item) => item.slug === slug);
+                if (!filter) return null;
+
+                const label = slug === 'color' ? 'Colour' : filter.name;
+
+                return (
+                  <div
+                    key={slug}
+                    className="relative shrink-0"
+                    onMouseEnter={() => setActiveHeaderMenu(slug)}
+                    onMouseLeave={() => setActiveHeaderMenu(null)}
                   >
-                    <option value="" className="bg-white text-black">
-                      {filter.name}
-                    </option>
-                    {filter.values.map((value) => (
-                      <option key={value.slug} value={value.slug} className="bg-white text-black">
-                        {value.label}
-                      </option>
-                    ))}
-                  </select>
-                ))}
+                    <button
+                      type="button"
+                      className="flex items-center gap-2 rounded-lg px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-all duration-200 hover:bg-black/20 hover:text-white sm:px-5"
+                      aria-haspopup="menu"
+                      aria-expanded={activeHeaderMenu === slug}
+                    >
+                      {label}
+                      <span className="text-[10px]">⌄</span>
+                    </button>
 
-              <select
-                defaultValue=""
-                onChange={(event) => {
-                  if (!event.target.value) return;
-                  window.location.href = '/products?price=' + encodeURIComponent(event.target.value);
-                }}
-                className="shrink-0 cursor-pointer rounded-lg border-0 bg-transparent px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white outline-none hover:bg-black sm:px-4 sm:text-[12px] sm:tracking-[0.17em]"
-                aria-label="Filter by price"
-              >
-                <option value="" className="bg-white text-black">Price</option>
-                <option value="0-500" className="bg-white text-black">$0 - $500</option>
-                <option value="500-1000" className="bg-white text-black">$500 - $1,000</option>
-                <option value="1000-2500" className="bg-white text-black">$1,000 - $2,500</option>
-                <option value="2500-5000" className="bg-white text-black">$2,500 - $5,000</option>
-                <option value="5000-10000" className="bg-white text-black">$5,000+</option>
-              </select>
-
-              <Link
-                href="/custom-design"
-                className="shrink-0 rounded-lg border border-[#E8C98A] bg-[#E8C98A] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#2b2118] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-black hover:bg-black hover:text-white sm:px-4 sm:text-[11px] sm:tracking-[0.17em]"
-              >
-                Custom Design
-              </Link>
+                    {activeHeaderMenu === slug && filter.values.length > 0 && (
+                      <div className="absolute left-1/2 top-full z-[100] w-[220px] -translate-x-1/2 rounded-b-xl border border-black/10 bg-white p-3 shadow-[0_18px_45px_rgba(0,0,0,0.16)]">
+                        <div className="mb-2 border-b border-black/10 px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2f6b36]">
+                          Filter by {label}
+                        </div>
+                        <div className="max-h-[320px] overflow-y-auto">
+                          {filter.values
+                            .filter((value) => value.isActive)
+                            .sort((a, b) => a.sortOrder - b.sortOrder)
+                            .map((value) => (
+                              <Link
+                                key={value.slug}
+                                href={'/products?filter_' + filter.slug + '=' + encodeURIComponent(value.slug)}
+                                className="block rounded-lg px-3 py-2.5 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-4 hover:text-[#2f6b36]"
+                              >
+                                {value.label}
+                              </Link>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-
-            <button
-              type="button"
-              aria-label="Scroll categories and filters right"
-              onClick={() =>
-                document
-                  .getElementById('site-category-scroll')
-                  ?.scrollBy({ left: 320, behavior: 'smooth' })
-              }
-              className="absolute right-2 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-black/10 bg-white/95 text-black shadow-sm transition-all hover:border-black hover:bg-black hover:text-white"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4">
-                <path d="m9 18 6-6 6 6" />
-              </svg>
-            </button>
           </div>
         </div>
       )}
