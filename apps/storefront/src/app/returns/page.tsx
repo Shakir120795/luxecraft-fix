@@ -1,371 +1,102 @@
-import Link from 'next/link';
+const sections = [
+  {
+    title: '14-Day Return Window',
+    paragraphs: [
+      'We offer a 14-day return policy. You have 14 days from the date you receive your item to request a return.',
+      'To be eligible for a return:',
+      'Your item must be unused, unworn, and in the same condition that you received it.',
+      'It must be in the original packaging with all tags attached.',
+      'Proof of purchase (order number or receipt) is required.',
+    ],
+  },
+  {
+    title: 'Non-Returnable Items (Custom & Personalized Orders)',
+    paragraphs: [
+      'Please note that Custom and Personalized Orders CANNOT be returned or exchanged.',
+      'Why? Custom items are specially made-to-order according to your unique specifications, measurements, or designs, making them non-resalable.',
+      'Defective or Damaged Custom Orders: If your custom item arrives damaged, defective, or incorrect due to our error, please contact us within 48 hours of delivery with photos, and we will immediately send a free replacement or issue a full refund.',
+    ],
+  },
+  {
+    title: 'How to Initiate a Return',
+    paragraphs: [
+      'Contact Us: Send an email to info@wolhomes.com with your Order ID and the reason for the return.',
+      'Get Approval: Our team will review your request and send you the return shipping instructions and factory return address.',
+      'Ship the Item: Package the item securely and send it back to our factory using a trackable shipping method.',
+    ],
+  },
+  {
+    title: 'Important Return Shipping & Duty Notice',
+    paragraphs: [
+      'The buyer is solely responsible for paying all return shipping charges, including any applicable customs duties, taxes, and import fees required to deliver the package directly to our Factory (Delivered Duty Paid / DDP). Returns shipped with unpaid duties or postage-due will not be accepted at our factory. (Note: Return shipping fees will only be covered by us if the item arrived damaged, defective, or incorrect).',
+    ],
+  },
+  {
+    title: 'Refunds',
+    paragraphs: [
+      'Once we receive and inspect your returned item at our factory, we will notify you via email regarding the approval or rejection of your refund.',
+      'If approved, your refund will be processed immediately to your original method of payment (Credit Card, PayPal, etc.).',
+      'Please allow 3 to 7 business days for the refund to reflect in your bank account, depending on your card issuer.',
+    ],
+  },
+  {
+    title: 'Damaged, Defective, or Incorrect Items',
+    paragraphs: [
+      'Please inspect your order upon arrival. If the item is defective, damaged, or if you received the wrong item, contact us immediately at info@wolhomes.com so we can evaluate the issue and make it right for you.',
+    ],
+  },
+];
 
 export default function ReturnsPage() {
   return (
     <main className="min-h-screen bg-[#f8f6f2]">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] text-white py-20 md:py-24 lg:py-28">
-        <div className="relative max-w-6xl mx-auto px-5 sm:px-8 lg:px-10">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-serif font-light tracking-tight mb-5">
-            Returns & Refunds
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] py-20 text-white md:py-24 lg:py-28">
+        <div className="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d4a556]">
+            Returns
+          </p>
+          <h1 className="font-serif text-5xl font-light tracking-tight sm:text-6xl md:text-7xl">
+            Return & Refund Policy
           </h1>
-          <p className="text-base sm:text-lg md:text-xl text-luxury-cream/90 leading-relaxed max-w-2xl">
-            Your satisfaction is our priority
+          <p className="mt-5 max-w-3xl text-base leading-8 text-luxury-cream/90 sm:text-xl">
+            Thank you for shopping with us! We want you to love your purchase. If you are not completely satisfied, we are here to help.
           </p>
         </div>
       </section>
 
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-14 md:py-20">
-        <div className="prose prose-lg max-w-none">
-          {/* Introduction */}
-          <section className="mb-12">
-            <p className="text-luxury-brown text-lg leading-relaxed">
-              We want you to love your Wolhomes furniture. If you're not completely satisfied, we offer 
-              a straightforward return policy to ensure your peace of mind.
-            </p>
-          </section>
+      <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8 md:py-20 lg:px-10">
+        <div className="space-y-12">
+          {sections.map((section) => (
+            <section key={section.title} className="border-b border-[#d8cec2] pb-10">
+              <h2 className="mb-6 font-serif text-3xl font-light text-luxury-charcoal md:text-4xl">
+                {section.title}
+              </h2>
+              <div className="space-y-4 text-lg leading-relaxed text-luxury-brown">
+                {section.paragraphs.map((paragraph) => (
+                  <p key={paragraph}>{paragraph}</p>
+                ))}
+              </div>
+            </section>
+          ))}
 
-          {/* Section 1 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              30-Day Return Policy
+          <section className="border-b border-[#d8cec2] pb-10">
+            <h2 className="mb-6 font-serif text-3xl font-light text-luxury-charcoal md:text-4xl">
+              Contact Us
             </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <div className="rounded-2xl border border-[#d8c5a7] bg-white p-6 md:p-7 shadow-sm">
-                <p className="font-serif text-lg text-luxury-charcoal mb-3">
-                  Standard Products
-                </p>
-                <p>
-                  You may return any standard (non-custom) product within <strong>30 days of delivery</strong> 
-                  for a full refund, provided the item is:
-                </p>
-                <ul className="list-disc pl-6 mt-2 space-y-1">
-                  <li>In original, unused condition</li>
-                  <li>In original packaging with all materials</li>
-                  <li>Free from damage, stains, or alterations</li>
-                  <li>Accompanied by proof of purchase</li>
-                </ul>
-              </div>
-
-              <div className="rounded-2xl border border-[#d9c8bd] bg-[#f4ede7] p-6 md:p-7 shadow-sm">
-                <p className="font-serif text-lg text-luxury-charcoal mb-3">
-                  Custom & Made-to-Order Products
-                </p>
-                <p>
-                  Custom-made and made-to-order items are <strong>non-refundable</strong> except in cases of:
-                </p>
-                <ul className="list-disc pl-6 mt-2 space-y-1">
-                  <li>Manufacturing defects</li>
-                  <li>Damage during shipping</li>
-                  <li>Significant deviation from approved specifications</li>
-                </ul>
-                <p className="mt-3 text-sm">
-                  These items are crafted specifically for you and cannot be resold.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 2 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              How to Initiate a Return
-            </h2>
-            <div className="space-y-7 text-luxury-brown leading-relaxed">
-              <div className="flex gap-5 items-start">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">1</div>
-                <div className="flex-1">
-                  <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
-                    Contact Us
-                  </h3>
-                  <p>
-                    Email us at{' '}
-                    <a href="mailto:info@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                      info@wolhomes.com
-                    </a>{' '}
-                    or call{' '}
-                    <a href="tel:+1234567890" className="text-luxury-gold underline hover:text-luxury-brown">
-                      +1 (234) 567-890
-                    </a>
-                    {' '}within 30 days of delivery. Provide your order number and reason for return.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-5 items-start">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">2</div>
-                <div className="flex-1">
-                  <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
-                    Receive Authorization
-                  </h3>
-                  <p>
-                    We'll review your request and send a Return Authorization (RA) number within 1-2 
-                    business days, along with return instructions.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-5 items-start">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">3</div>
-                <div className="flex-1">
-                  <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
-                    Package & Ship
-                  </h3>
-                  <p>
-                    Carefully repackage the item in its original packaging. Include the RA number on 
-                    the outside of the box. Ship via a tracked service (you're responsible for return 
-                    shipping costs).
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex gap-5 items-start">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#b7925e] text-white text-lg font-serif">4</div>
-                <div className="flex-1">
-                  <h3 className="font-serif text-lg text-luxury-charcoal mb-2">
-                    Receive Refund
-                  </h3>
-                  <p>
-                    Once we receive and inspect your return, we'll process your refund within 7-10 
-                    business days to your original payment method.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 3 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              Return Shipping Costs
-            </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <div className="rounded-r-xl border-l-4 border-[#b7925e] bg-white px-6 py-5 shadow-sm">
-                <h4 className="font-serif text-luxury-charcoal mb-2">Customer Responsibility:</h4>
-                <p>
-                  If you're returning an item because you changed your mind, you're responsible for 
-                  return shipping costs. We recommend using a tracked service with insurance.
-                </p>
-              </div>
-
-              <div className="rounded-r-xl border-l-4 border-[#b7925e] bg-white px-6 py-5 shadow-sm">
-                <h4 className="font-serif text-luxury-charcoal mb-2">Wolhomes Responsibility:</h4>
-                <p>
-                  If we sent the wrong item, or the item arrived damaged or defective, we'll cover all 
-                  return shipping costs and send a prepaid label.
-                </p>
-              </div>
-
-              <div className="rounded-r-xl border-l-4 border-[#b7925e] bg-white px-6 py-5 shadow-sm">
-                <h4 className="font-serif text-luxury-charcoal mb-2">Large Items:</h4>
-                <p>
-                  For furniture requiring freight shipping, please contact us to arrange return logistics. 
-                  Special handling fees may apply.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 4 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              Refund Processing
-            </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
+            <div className="space-y-4 text-lg leading-relaxed text-luxury-brown">
+              <p>If you have any questions about our Return Policy, please reach out to us:</p>
               <p>
-                Once your return is received and inspected:
-              </p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>
-                  <strong>Approved Returns:</strong> Full refund processed within 7-10 business days 
-                  to your original payment method
-                </li>
-                <li>
-                  <strong>Original Shipping Fees:</strong> Not refundable (unless we made an error)
-                </li>
-                <li>
-                  <strong>Partial Refunds:</strong> May apply if item shows signs of use or damage
-                </li>
-                <li>
-                  <strong>Rejected Returns:</strong> Items not meeting return criteria will be sent 
-                  back at your expense
-                </li>
-              </ul>
-              <p className="mt-4 text-sm">
-                Depending on your bank, it may take an additional 2-3 business days for the refund 
-                to appear in your account.
-              </p>
-            </div>
-          </section>
-
-          {/* Section 5 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              Exchanges
-            </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <p>
-                We currently do not offer direct exchanges. If you'd like a different item:
-              </p>
-              <ol className="list-decimal pl-6 space-y-2">
-                <li>Return the original item following our return process</li>
-                <li>Once your refund is processed, place a new order</li>
-              </ol>
-              <p className="mt-4">
-                For size or color variations within the same product line, contact uswe may be 
-                able to arrange a direct exchange.
-              </p>
-            </div>
-          </section>
-
-          {/* Section 6 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              Damaged or Defective Items
-            </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <p>
-                If your item arrives damaged or has a manufacturing defect:
-              </p>
-              <div className="rounded-2xl border border-[#ddd2c5] bg-white p-6 md:p-7 shadow-sm">
-                <ol className="list-decimal pl-6 space-y-3">
-                  <li>
-                    <strong>Inspect Upon Delivery:</strong> Note any visible damage on the delivery receipt
-                  </li>
-                  <li>
-                    <strong>Contact Us Immediately:</strong> Within 48 hours, email photos of the damage 
-                    to{' '}
-                    <a href="mailto:info@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
-                      info@wolhomes.com
-                    </a>
-                  </li>
-                  <li>
-                    <strong>Resolution:</strong> We'll send a replacement or issue a full refund, including 
-                    original shipping costs
-                  </li>
-                  <li>
-                    <strong>No Return Needed:</strong> In many cases, we won't require you to return 
-                    damaged items
-                  </li>
-                </ol>
-              </div>
-            </div>
-          </section>
-
-          {/* Section 7 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              Non-Returnable Items
-            </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <p>
-                The following items cannot be returned:
-              </p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>Custom-made or personalized products</li>
-                <li>Final sale or clearance items (marked as such)</li>
-                <li>Items damaged due to misuse or negligence</li>
-                <li>Items without original packaging or RA number</li>
-                <li>Items returned after 30 days</li>
-              </ul>
-            </div>
-          </section>
-
-          {/* Section 8 */}
-          <section className="mb-14 pb-10 border-b border-[#d8cec2]">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              Cancellations
-            </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <p>
-                <strong>Before Production:</strong> Orders can be cancelled within 24 hours of placement 
-                for a full refund. Contact us immediately at{' '}
+                Email:{' '}
                 <a href="mailto:info@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
                   info@wolhomes.com
                 </a>
               </p>
-              <p>
-                <strong>After Production Begins:</strong> Once an item enters production, it cannot be 
-                cancelled. Our team begins crafting your piece shortly after order confirmation.
-              </p>
-              <p>
-                <strong>Custom Orders:</strong> Cannot be cancelled once the design is approved and 
-                deposit is paid, as materials are specifically sourced for your project.
-              </p>
+              <p>Customer Support Hours: Monday - Friday (9 AM - 5 PM EST)</p>
+              <p>Factory Address: 575/2-C, Devpurwa Road, Mirzapur, Uttar Pradesh, India</p>
             </div>
           </section>
-
-          {/* Section 9 */}
-          <section className="mb-12">
-            <h2 className="text-3xl md:text-4xl font-serif font-light text-luxury-charcoal mb-7">
-              International Returns
-            </h2>
-            <div className="space-y-4 text-luxury-brown leading-relaxed">
-              <p>
-                International customers may return items following the same policy, with these notes:
-              </p>
-              <ul className="list-disc pl-6 space-y-2">
-                <li>You're responsible for all return shipping costs and customs fees</li>
-                <li>Items must clear customs and arrive in our facility within 30 days</li>
-                <li>Original customs duties and taxes are non-refundable</li>
-                <li>Contact us before returning to ensure proper documentation</li>
-              </ul>
-            </div>
-          </section>
-        </div>
-
-        {/* Warranty Info */}
-        <div className="mt-16 rounded-2xl border border-[#ddd2c5] bg-white p-8 md:p-10 shadow-sm">
-          <h3 className="text-3xl font-serif font-light text-luxury-charcoal mb-4 text-center">
-            Our Warranty
-          </h3>
-          <p className="text-luxury-brown mb-6 text-center max-w-2xl mx-auto">
-            All Wolhomes furniture includes a 5-year warranty against manufacturing defects. 
-            Custom pieces include a lifetime structural warranty.
-          </p>
-          <div className="text-center">
-            <Link href="/terms" className="text-luxury-gold underline hover:text-luxury-brown">
-              Read Full Warranty Terms 
-            </Link>
-          </div>
-        </div>
-
-        {/* Contact CTA */}
-        <div className="mt-8 rounded-2xl border border-[#ddd2c5] bg-[#f1ebe4] p-8 md:p-10 text-center">
-          <h3 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">
-            Questions About Returns?
-          </h3>
-          <p className="text-luxury-brown mb-8 max-w-2xl mx-auto">
-            Our customer service team is here to make the return process as smooth as possible.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/contact" className="btn-luxury px-8 py-3 inline-block">
-              Contact Support
-            </Link>
-            <Link href="/faq" className="btn-luxury-outline px-8 py-3 inline-block">
-              View FAQ
-            </Link>
-          </div>
-        </div>
-
-        {/* Related Links */}
-        <div className="mt-8 rounded-2xl border border-[#ddd2c5] bg-white p-7 md:p-8 shadow-sm">
-          <h3 className="text-2xl font-serif text-luxury-charcoal mb-6">Related Policies</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Link href="/terms" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-               Terms & Conditions
-            </Link>
-            <Link href="/privacy" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-               Privacy Policy
-            </Link>
-            <Link href="/account/orders" className="text-luxury-brown hover:text-luxury-gold transition-colors">
-               View Your Orders
-            </Link>
-          </div>
         </div>
       </div>
     </main>
   );
 }
-
-
