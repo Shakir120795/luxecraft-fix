@@ -111,134 +111,8 @@ const DEFAULT_SITE_PAGES: Record<SitePageSlug, SitePageSettings> = {
   privacy: {
     slug: 'privacy',
     title: 'Privacy Policy',
-    lastUpdated: 'January 1, 2024',
-    content: `Privacy Policy
-
-Last updated: January 1, 2024
-
-Introduction
-
-At Wolhomes, we take your privacy seriously. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or make a purchase from us.
-
-1. Information We Collect
-
-1.1 Personal Information
-
-When you make a purchase or create an account, we collect personal information including:
-
-- Name and contact information (email, phone, address)
-- Billing and shipping addresses
-- Payment information (processed securely through our payment providers)
-- Order history and preferences
-- Communication preferences
-
-1.2 Automatically Collected Information
-
-When you visit our website, we automatically collect certain information:
-
-- IP address and browser type
-- Device information and operating system
-- Pages visited and time spent on our site
-- Referring website and search terms
-- Cookies and similar tracking technologies
-
-1.3 Custom Design Information
-
-For custom design requests, we collect additional information including design preferences, measurements, material choices, and photos or sketches you provide.
-
-2. How We Use Your Information
-
-We use the information we collect to:
-
-- Process and fulfill your orders
-- Communicate with you about your orders and account
-- Provide customer support and respond to inquiries
-- Send marketing communications (with your consent)
-- Improve your website, products, and services
-- Prevent fraud and enhance security
-- Comply with legal obligations
-- Analyze website usage and optimize user experience
-
-3. Information Sharing
-
-We do not sell your personal information. We may share your information with:
-
-- Service Providers: Payment processors, shipping companies, and email service providers who assist in operating our business
-- Legal Requirements: When required by law, court order, or government regulation
-- Business Transfers: In connection with a merger, acquisition, or sale of assets
-- Protection: To protect our rights, property, or safety, and that of our customers
-
-All third-party service providers are contractually obligated to protect your information and use it only for the purposes we specify.
-
-4. Cookies & Tracking Technologies
-
-We use cookies and similar technologies to enhance your browsing experience. Cookies are small data files stored on your device that help us:
-
-- Remember your preferences and settings
-- Keep you logged into your account
-- Maintain items in your shopping cart
-- Analyze website traffic and usage patterns
-- Deliver personalized content and advertisements
-
-You can control cookie settings through your browser preferences. However, disabling cookies may limit your ability to use certain features of our website.
-
-5. Data Security
-
-We implement appropriate technical and organizational measures to protect your personal information:
-
-- SSL encryption for data transmission
-- Secure servers and databases
-- Regular security audits and updates
-- Access controls and authentication
-- Employee training on data protection
-
-While we strive to protect your information, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security.
-
-6. Your Rights & Choices
-
-You have the right to:
-
-- Access: Request a copy of the personal information we hold about you
-- Correction: Update or correct inaccurate information
-- Deletion: Request deletion of your personal information (subject to legal requirements)
-- Opt-Out: Unsubscribe from marketing communications at any time
-- Data Portability: Request your data in a portable format
-- Object: Object to certain processing of your personal information
-
-To exercise these rights, please contact us at privacy@wolhomes.com
-
-7. Data Retention
-
-We retain your personal information for as long as necessary to fulfill the purposes outlined in this policy, unless a longer retention period is required or permitted by law.
-
-- Account information: Retained while your account is active
-- Order history: Retained for 7 years for tax and legal purposes
-- Marketing data: Retained until you opt-out
-- Website analytics: Anonymized after 26 months
-
-8. Children’s Privacy
-
-Our website is not intended for children under 18 years of age. We do not knowingly collect personal information from children. If we become aware that we have collected information from a child, we will promptly delete it.
-
-9. International Transfers
-
-Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. We ensure appropriate safeguards are in place to protect your information.
-
-10. Changes to This Policy
-
-We may update this Privacy Policy from time to time. We will notify you of significant changes by posting the new policy on our website and updating the "Last Updated" date. Continued use of our services after changes constitutes acceptance of the updated policy.
-
-11. Contact Us
-
-If you have questions or concerns about this Privacy Policy or our data practices:
-
-Wolhomes
-123 Artisan Boulevard
-New York, NY 10001
-United States
-
-Email: privacy@wolhomes.com
-Phone: +1 (234) 567-890`,
+    lastUpdated: 'September 19, 2026',
+    content: "Privacy Policy\n\nEffective Date: September 19, 2026\n\nAt WOLHOMES, accessible from our online store, protecting the privacy and security of our customers and website visitors is one of our main priorities. This Privacy Policy document outlines the types of information that is collected and recorded by WOLHOMES and how we use it.\n\nIf you have additional questions or require more information about our Privacy Policy, do not hesitate to contact us at info@wolhomes.com.\n\n1. Information We Collect\n\nWhen you visit our site or make a purchase, we collect certain personal information to process your order and provide a seamless shopping experience:\n\nPersonal Details: Name, email address, phone number, shipping address, and billing address.\n\nOrder & Customization Details: Specific dimensions, designs, or custom requirements for your handcrafted Hand-Tufted, Hand-Knotted or Flat Weave Rugs.\n\nPayment Information: Payment card details, PayPal information, or other financial details. (Note: All payments are processed securely through third-party encrypted payment gateways. We do not store your full payment card details on our servers.)\n\nTechnical & Usage Data: IP address, browser type, device information, pages viewed, and cookies to improve website functionality.\n\n2. How We Use Your Information\n\nWe use the information we collect for the following purposes:\n\nTo process, manufacture, and ship your orders directly from our factory in Mirzapur, Uttar Pradesh, India to your doorstep.\n\nTo communicate with you regarding order confirmations, tracking details, custom order approvals, or customer service requests.\n\nTo manage your WOLHOMES account.\n\nTo improve our website experience, products, and custom services.\n\nTo send promotional emails and newsletters (only if you have opted in; you can unsubscribe at any time).\n\n3. Sharing Your Information\n\nWe respect your privacy and do not sell, trade, or rent your personal information to third parties. We only share information with trusted third parties to facilitate operations, such as:\n\nShipping & Courier Partners: Global shipping carriers to handle door-to-door delivery from our factory to your destination.\n\nPayment Processors: Secure payment gateways to process transactions.\n\nLegal Requirements: If required by law, regulation, or legal process to protect our rights or comply with judicial proceedings.\n\n4. International Data Transfers\n\nAs our primary manufacturing facility and administrative operations are located at Devpurwa Road, Mirzapur, Uttar Pradesh, India, your data may be transferred and processed in India and other locations where our service providers operate. We ensure that appropriate security measures are taken to protect your personal data globally.\n\n5. Cookies and Tracking Technologies\n\nWOLHOMES uses cookies to remember user preferences, maintain session state, and enhance site navigation. You can choose to disable cookies through your individual browser options, though some site functions may be affected.\n\n6. Data Security\n\nWe implement industry-standard administrative, technical, and physical security measures to safeguard your personal information. While we strive to use commercially acceptable means to protect your personal data, no method of transmission over the Internet or electronic storage is 100% secure.\n\n7. Contact Us Regarding Your Privacy\n\nIf you wish to access, correct, or delete any personal information we have about you, or if you have any questions regarding this policy, please reach out to us:\n\nEmail: info@wolhomes.com\n\nFactory Address: 575/2-C, Devpurwa Road, Mirzapur, Uttar Pradesh – 231001, India",
   },
 
   terms: {
@@ -337,7 +211,7 @@ These items are crafted specifically for you and cannot be resold.
 
 2. How to Initiate a Return
 
-1. Contact Us — Email returns@wolhomes.com or call +1 (234) 567-890 within 30 days of delivery. Provide your order number and reason for the return.
+1. Contact Us — Email info@wolhomes.com or call +1 (234) 567-890 within 30 days of delivery. Provide your order number and reason for the return.
 
 2. Receive Authorization — We review your request and send a Return Authorization (RA) within 1-2 business days along with instructions.
 
@@ -384,7 +258,7 @@ For size or color variations within the same product line, contact uswe may be a
 If your item arrives damaged or defective:
 
 1. Inspect Upon Delivery — Note any visible damage on the delivery receipt.
-2. Contact Us Immediately — Contact us within 48 hours and email photos to support@wolhomes.com.
+2. Contact Us Immediately — Contact us within 48 hours and email photos to info@wolhomes.com.
 3. Resolution — We will arrange a replacement or full refund including original shipping costs.
 4. No Return Needed — Often, no return is required.
 
@@ -400,7 +274,7 @@ If your item arrives damaged or defective:
 
 Before Production
 
-You may cancel within 24 hours for a full refund. Contact support@wolhomes.com.
+You may cancel within 24 hours for a full refund. Contact info@wolhomes.com.
 
 After Production Begins
 
@@ -462,7 +336,7 @@ Saturday: 10:00 AM - 4:00 PM EST
 
 Email
 
-hello@wolhomes.com
+info@wolhomes.com
 We respond within 24 hours.
 
 Explore Wolhomes
