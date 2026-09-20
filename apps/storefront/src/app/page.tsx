@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getStorefrontCategories, getProducts, getHero, Product, Category, HeroSection } from '@/lib/api';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
+import { HomeCouponLabel } from '@/components/HomeCouponLabel';
 
 function getProductImage(product: Product) {
   return product.media?.find((media) => media.isMain)?.url || product.media?.[0]?.url || '';
@@ -116,6 +117,7 @@ export default function HomePage() {
 
   return (
     <main className="bg-white text-luxury-charcoal">
+      <HomeCouponLabel />
       <section className="bg-[#f4f0eb] px-3 pt-3 sm:px-5 lg:px-6">
         <div className="grid min-h-[620px] grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr] lg:min-h-[720px]">
 
