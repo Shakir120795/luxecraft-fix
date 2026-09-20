@@ -51,14 +51,6 @@ export class AdminCouponsService {
         showOnHome: true,
         validFrom: { lte: now },
         OR: [{ validTo: null }, { validTo: { gt: now } }],
-        AND: [
-          {
-            OR: [
-              { maxUsageCount: null },
-              { maxUsageCount: { gt: this.prisma.coupon.fields.usedCount } },
-            ],
-          },
-        ],
       },
       orderBy: { updatedAt: 'desc' },
       select: {
