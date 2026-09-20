@@ -47,7 +47,6 @@ function ProductsContent() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedAvailability, setSelectedAvailability] = useState('');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(10000);
   const [sortBy, setSortBy] = useState('featured');
@@ -130,11 +129,6 @@ function ProductsContent() {
         return getProductFilterValues(product, filter).includes(selectedValue);
       });
 
-    const matchesAvailability =
-      !selectedAvailability ||
-      (selectedAvailability === 'in-stock'
-        ? (product.variants ?? []).some((variant) => variant.isAvailable !== false && Number(variant.stockQty ?? 0) > 0)
-        : (product.variants ?? []).every((variant) => variant.isAvailable === false || Number(variant.stockQty ?? 0) <= 0));
 
     const displayPrice = parseFloat(
       String(product.salePrice || product.regularPrice)
@@ -143,7 +137,7 @@ function ProductsContent() {
     const matchesPrice =
       displayPrice >= minPrice && displayPrice <= maxPrice;
 
-    return matchesSearch && matchesCategory && matchesDynamicFilters && matchesAvailability && matchesPrice;
+    return matchesSearch && matchesCategory && matchesDynamicFilters && matchesPrice;
   });
 
   let sortedProducts = [...filteredProducts];
@@ -190,11 +184,6 @@ function ProductsContent() {
                 setSelectedFilters((current) => ({ ...current, [slug]: value }));
                 setVisibleCount(16);
               }}
-              selectedAvailability={selectedAvailability}
-              onAvailabilityChange={(value) => {
-                setSelectedAvailability(value);
-                setVisibleCount(16);
-              }}
               priceRange={minPrice === 0 && maxPrice === 10000 ? '' : minPrice + '-' + maxPrice}
               onPriceRangeChange={(value) => {
                 if (!value) {
@@ -209,7 +198,6 @@ function ProductsContent() {
               }}
               onClear={() => {
                 setSelectedFilters({});
-                setSelectedAvailability('');
                 setMinPrice(0);
                 setMaxPrice(10000);
                 setVisibleCount(16);
