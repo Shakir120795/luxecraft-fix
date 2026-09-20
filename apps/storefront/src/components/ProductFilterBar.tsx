@@ -7,8 +7,6 @@ type Props = {
   valueOptions?: Record<string, { slug: string; label: string }[]>;
   selected: Record<string, string>;
   onSelect: (slug: string, value: string) => void;
-  selectedAvailability: string;
-  onAvailabilityChange: (value: string) => void;
   priceRange: string;
   onPriceRangeChange: (value: string) => void;
   onClear: () => void;
@@ -19,8 +17,6 @@ export function ProductFilterBar({
   valueOptions = {},
   selected,
   onSelect,
-  selectedAvailability,
-  onAvailabilityChange,
   priceRange,
   onPriceRangeChange,
   onClear,
@@ -43,12 +39,11 @@ export function ProductFilterBar({
               className="min-w-[140px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]"
             >
               <option value="">{filter.name}</option>
-              {(valueOptions[filter.slug] ?? filter.values)
-                .map((value) => (
-                  <option key={value.slug} value={value.slug}>
-                    {value.label}
-                  </option>
-                ))}
+              {(valueOptions[filter.slug] ?? filter.values).map((value) => (
+                <option key={value.slug} value={value.slug}>
+                  {value.label}
+                </option>
+              ))}
             </select>
           ))}
 
@@ -63,16 +58,6 @@ export function ProductFilterBar({
           <option value="1000-2500">$1,000 - $2,500</option>
           <option value="2500-5000">$2,500 - $5,000</option>
           <option value="5000-10000">$5,000+</option>
-        </select>
-
-        <select
-          value={selectedAvailability}
-          onChange={(event) => onAvailabilityChange(event.target.value)}
-          className="min-w-[155px] border border-[rgb(var(--luxecraft-border))] bg-white px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em] text-[rgb(var(--luxecraft-ink))] outline-none focus:border-[rgb(var(--luxecraft-olive))]"
-        >
-          <option value="">Availability</option>
-          <option value="in-stock">In Stock</option>
-          <option value="out-of-stock">Out of Stock</option>
         </select>
 
         <button
