@@ -124,58 +124,9 @@ const DEFAULT_SITE_PAGES: Record<SitePageSlug, SitePageSettings> = {
 
   about: {
     slug: 'about',
-    title: 'About Wolhomes',
-    lastUpdated: '',
-    content: `About Wolhomes
-
-Where timeless craftsmanship meets contemporary elegance
-
-Our Story
-
-Founded in 2020, Wolhomes began with a simple vision: to create furniture that tells a story. Each piece we craft is more than just an objectit's a testament to the enduring beauty of artisanal excellence and thoughtful design.
-
-Our journey started in a small workshop, where our founders combined their passion for traditional woodworking with innovative design principles. Today, we've grown into a trusted name in luxury furniture, but our commitment to quality and craftsmanship remains unchanged.
-
-Every item in our collection is meticulously crafted by skilled artisans who pour their expertise and dedication into each detail. We source the finest materials from sustainable suppliers, ensuring that beauty and responsibility go hand in hand.
-
-Our Values
-
-Craftsmanship
-
-Every piece is handcrafted by master artisans who have honed their skills over decades. We believe in the power of human touch and the beauty of imperfection.
-
-Sustainability
-
-We're committed to environmental responsibility, using sustainably sourced materials and eco-friendly processes that minimize our impact on the planet.
-
-Timelessness
-
-Our designs transcend trends. We create furniture meant to be cherished for generations, becoming more beautiful with age and use.
-
-Our Process
-
-01 Design
-
-Our design team carefully sketches and refines each concept, balancing aesthetic appeal with functional excellence. Every curve, every joint is intentional.
-
-02 Material Selection
-
-We source only the finest hardwoods, metals, and fabrics from trusted suppliers who share our commitment to quality and sustainability.
-
-03 Crafting
-
-Master craftspeople bring the design to life through traditional techniques refined over generations, combined with modern precision tools.
-
-04 Quality Control
-
-Each piece undergoes rigorous inspection to ensure it meets our exacting standards before it's carefully packaged and delivered to your home.
-
-Experience Wolhomes
-
-Discover our curated collection of handcrafted furniture, or let us create something uniquely yours through our custom design service.
-
-Browse Collection
-Request Custom Design`,
+    title: 'About Us',
+    lastUpdated: 'September 19, 2026',
+    content: "About Us\n\nCrafting Timeless Heritage, Delivered Straight from Our Loom to Your Home.\n\nWelcome to WOLHOMES. We are master rug makers and artisans dedicated to the timeless art of handcrafted floor coverings.\n\nOur journey began in 1990 as a family tradition deeply rooted in perfecting ancient weaving techniques—specifically Tibetan Hand-Knotted and premium Hand-Tufted rug-making. Over the decades, our skilled artisans passed down these traditional skills from generation to generation. Building upon this 35+ years of heritage, our firm was formally registered in 2017 as a modern manufacturing unit, allowing us to serve global clients with structured quality standards.\n\nWhy Buyers & Interior Designers Worldwide Choose Us\n\nMaster Craftsmanship: Every rug we produce is a work of art. From intricate Tibetan hand-knotted patterns to luxurious hand-tufted textures, our master weavers pour exceptional skill, precision, and dedication into every piece.\n\nDirect Factory-to-Doorstep Model: Based in our manufacturing facility at Devpurwa Road, Mirzapur, Uttar Pradesh (India), we manage the entire production process in-house—from raw material selection to weaving, washing, and final quality inspection. Delivering directly from our factory to your door eliminates unnecessary middlemen and guarantees true factory-direct pricing.\n\nCustom & Bespoke Rugs: Because we own and operate our manufacturing factory, we offer full customization for trade professionals, architects, interior designers, and individual buyers worldwide. Whether you require a unique size, specific color palette, or custom design, we build your rug exactly to your specifications.\n\nGlobal Door-to-Door Delivery: We cater to rug lovers across the globe, providing reliable, fully tracked door-to-door shipping straight from our looms in India to your address, anywhere in the world.\n\nOur Promise\n\nWhether you are seeking a statement Tibetan hand-knotted heirloom or a bespoke hand-tufted rug crafted for your space, WOLHOMES promises uncompromised quality, authentic craftsmanship, and a seamless shopping experience from our factory to your home.\n\nFactory Address: Devpurwa Road, Mirzapur, Uttar Pradesh, India\n\nCustomer Care: info@wolhomes.com",
   },
 
   returns: {
