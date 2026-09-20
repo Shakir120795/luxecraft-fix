@@ -1,157 +1,94 @@
 import Link from 'next/link';
 
+const sections = [
+  {
+    title: 'Why Buyers & Interior Designers Worldwide Choose Us',
+    items: [
+      ['Master Craftsmanship', 'Every rug we produce is a work of art. From intricate Tibetan hand-knotted patterns to luxurious hand-tufted textures, our master weavers pour exceptional skill, precision, and dedication into every piece.'],
+      ['Direct Factory-to-Doorstep Model', 'Based in our manufacturing facility at Devpurwa Road, Mirzapur, Uttar Pradesh (India), we manage the entire production process in-house—from raw material selection to weaving, washing, and final quality inspection. Delivering directly from our factory to your door eliminates unnecessary middlemen and guarantees true factory-direct pricing.'],
+      ['Custom & Bespoke Rugs', 'Because we own and operate our manufacturing factory, we offer full customization for trade professionals, architects, interior designers, and individual buyers worldwide. Whether you require a unique size, specific color palette, or custom design, we build your rug exactly to your specifications.'],
+      ['Global Door-to-Door Delivery', 'We cater to rug lovers across the globe, providing reliable, fully tracked door-to-door shipping straight from our looms in India to your address, anywhere in the world.'],
+    ],
+  },
+];
+
 export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#f8f6f2]">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] text-white py-20 md:py-24 lg:py-28">
-        <div className="relative max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 text-center">
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-serif font-light tracking-tight mb-5">
-            About Wolhomes
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] py-20 text-white md:py-24 lg:py-28">
+        <div className="mx-auto max-w-6xl px-5 text-center sm:px-8 lg:px-10">
+          <p className="mb-5 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d4a556]">
+            About Us
+          </p>
+          <h1 className="font-serif text-5xl font-light tracking-tight sm:text-6xl md:text-7xl">
+            Crafting Timeless Heritage
           </h1>
-          <p className="text-base sm:text-xl md:text-2xl text-luxury-cream/90 leading-relaxed max-w-3xl mx-auto">
-            Where timeless craftsmanship meets contemporary elegance
+          <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-luxury-cream/90 sm:text-xl md:text-2xl">
+            Delivered Straight from Our Loom to Your Home.
           </p>
         </div>
       </section>
 
-      {/* Story Section */}
-      <section className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-16 md:py-20">
+      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8 md:py-20 lg:px-10">
         <div className="prose prose-lg max-w-none">
-          <h2 className="text-4xl font-serif font-light text-luxury-charcoal mb-8">Our Story</h2>
-          
-          <p className="text-luxury-brown text-lg leading-relaxed mb-6">
-            Founded in 2020, Wolhomes began with a simple vision: to create furniture that tells a story. 
-            Each piece we craft is more than just an objectit's a testament to the enduring beauty of 
-            artisanal excellence and thoughtful design.
-          </p>
-
-          <p className="text-luxury-brown text-lg leading-relaxed mb-6">
-            Our journey started in a small workshop, where our founders combined their passion for 
-            traditional woodworking with innovative design principles. Today, we've grown into a 
-            trusted name in luxury furniture, but our commitment to quality and craftsmanship remains 
-            unchanged.
-          </p>
-
-          <p className="text-luxury-brown text-lg leading-relaxed">
-            Every item in our collection is meticulously crafted by skilled artisans who pour their 
-            expertise and dedication into each detail. We source the finest materials from sustainable 
-            suppliers, ensuring that beauty and responsibility go hand in hand.
-          </p>
-        </div>
-      </section>
-
-      {/* Values Section */}
-      <section className="bg-[#eee7df] py-20 md:py-24">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10">
-          <h2 className="text-4xl font-serif font-light text-luxury-charcoal text-center mb-16">
-            Our Values
+          <h2 className="mb-6 font-serif text-4xl font-light text-luxury-charcoal">
+            Welcome to WOLHOMES
           </h2>
-
-          <div className="grid md:grid-cols-3 gap-10">
-            <div className="rounded-2xl border border-[#ddd2c5] bg-white p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300">
-              <h3 className="text-2xl font-serif text-luxury-charcoal mb-4">Craftsmanship</h3>
-              <p className="text-luxury-brown leading-relaxed">
-                Every piece is handcrafted by master artisans who have honed their skills over decades. 
-                We believe in the power of human touch and the beauty of imperfection.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#ddd2c5] bg-white p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300">
-              <h3 className="text-2xl font-serif text-luxury-charcoal mb-4">Sustainability</h3>
-              <p className="text-luxury-brown leading-relaxed">
-                We're committed to environmental responsibility, using sustainably sourced materials 
-                and eco-friendly processes that minimize our impact on the planet.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-[#ddd2c5] bg-white p-8 shadow-sm hover:-translate-y-1 transition-transform duration-300">
-              <h3 className="text-2xl font-serif text-luxury-charcoal mb-4">Timelessness</h3>
-              <p className="text-luxury-brown leading-relaxed">
-                Our designs transcend trends. We create furniture meant to be cherished for generations, 
-                becoming more beautiful with age and use.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Process Section */}
-      <section className="max-w-6xl mx-auto px-5 sm:px-8 lg:px-10 py-16 md:py-20">
-        <h2 className="text-4xl font-serif font-light text-luxury-charcoal mb-12 text-center">
-          Our Process
-        </h2>
-
-        <div className="space-y-10 md:space-y-12">
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="md:w-1/4">
-              <div className="text-5xl font-serif text-luxury-gold">01</div>
-            </div>
-            <div className="md:w-3/4">
-              <h3 className="text-2xl font-serif text-luxury-charcoal mb-3">Design</h3>
-              <p className="text-luxury-brown leading-relaxed">
-                Our design team carefully sketches and refines each concept, balancing aesthetic 
-                appeal with functional excellence. Every curve, every joint is intentional.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="md:w-1/4">
-              <div className="text-5xl font-serif text-luxury-gold">02</div>
-            </div>
-            <div className="md:w-3/4">
-              <h3 className="text-2xl font-serif text-luxury-charcoal mb-3">Material Selection</h3>
-              <p className="text-luxury-brown leading-relaxed">
-                We source only the finest hardwoods, metals, and fabrics from trusted suppliers 
-                who share our commitment to quality and sustainability.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="md:w-1/4">
-              <div className="text-5xl font-serif text-luxury-gold">03</div>
-            </div>
-            <div className="md:w-3/4">
-              <h3 className="text-2xl font-serif text-luxury-charcoal mb-3">Crafting</h3>
-              <p className="text-luxury-brown leading-relaxed">
-                Master craftspeople bring the design to life through traditional techniques 
-                refined over generations, combined with modern precision tools.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row gap-8 items-start">
-            <div className="md:w-1/4">
-              <div className="text-5xl font-serif text-luxury-gold">04</div>
-            </div>
-            <div className="md:w-3/4">
-              <h3 className="text-2xl font-serif text-luxury-charcoal mb-3">Quality Control</h3>
-              <p className="text-luxury-brown leading-relaxed">
-                Each piece undergoes rigorous inspection to ensure it meets our exacting standards 
-                before it's carefully packaged and delivered to your home.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-luxury-night text-white py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-serif font-light mb-6">
-            Experience Wolhomes
-          </h2>
-          <p className="text-xl text-luxury-cream/90 mb-10 leading-relaxed">
-            Discover our curated collection of handcrafted furniture, or let us create 
-            something uniquely yours through our custom design service.
+          <p className="text-lg leading-relaxed text-luxury-brown">
+            We are master rug makers and artisans dedicated to the timeless art of handcrafted floor coverings.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/products" className="btn-luxury px-10 py-4 inline-block">
+          <p className="text-lg leading-relaxed text-luxury-brown">
+            Our journey began in 1990 as a family tradition deeply rooted in perfecting ancient weaving techniques—specifically Tibetan Hand-Knotted and premium Hand-Tufted rug-making. Over the decades, our skilled artisans passed down these traditional skills from generation to generation. Building upon this 35+ years of heritage, our firm was formally registered in 2017 as a modern manufacturing unit, allowing us to serve global clients with structured quality standards.
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-[#eee7df] py-16 md:py-20">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
+          <h2 className="mb-12 text-center font-serif text-4xl font-light text-luxury-charcoal">
+            {sections[0].title}
+          </h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {sections[0].items.map(([title, text]) => (
+              <div key={title} className="rounded-2xl border border-[#ddd2c5] bg-white p-7 shadow-sm">
+                <h3 className="mb-4 font-serif text-2xl text-luxury-charcoal">{title}</h3>
+                <p className="leading-relaxed text-luxury-brown">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 py-16 sm:px-8 md:py-20 lg:px-10">
+        <div className="rounded-2xl border border-[#ddd2c5] bg-white p-8 shadow-sm md:p-10">
+          <h2 className="mb-5 font-serif text-4xl font-light text-luxury-charcoal">
+            Our Promise
+          </h2>
+          <p className="text-lg leading-relaxed text-luxury-brown">
+            Whether you are seeking a statement Tibetan hand-knotted heirloom or a bespoke hand-tufted rug crafted for your space, WOLHOMES promises uncompromised quality, authentic craftsmanship, and a seamless shopping experience from our factory to your home.
+          </p>
+          <div className="mt-8 border-t border-[#eee9e3] pt-6 text-sm leading-7 text-luxury-brown">
+            <strong className="text-luxury-charcoal">Factory Address:</strong> Devpurwa Road, Mirzapur, Uttar Pradesh, India
+            <br />
+            <strong className="text-luxury-charcoal">Customer Care:</strong>{' '}
+            <a href="mailto:info@wolhomes.com" className="text-luxury-gold underline hover:text-luxury-brown">
+              info@wolhomes.com
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-luxury-night py-20 text-white">
+        <div className="mx-auto max-w-4xl px-5 text-center sm:px-8 lg:px-10">
+          <h2 className="mb-6 font-serif text-4xl font-light">Explore WOLHOMES</h2>
+          <p className="mb-8 text-lg leading-relaxed text-luxury-cream/90">
+            Discover our handcrafted rug collection or talk to us about a custom rug made to your specifications.
+          </p>
+          <div className="flex flex-col justify-center gap-4 sm:flex-row">
+            <Link href="/products" className="btn-luxury px-10 py-4">
               Browse Collection
             </Link>
-            <Link href="/custom-design" className="btn-luxury-outline px-10 py-4 inline-block border-white text-white hover:bg-white hover:text-luxury-night">
+            <Link href="/custom-design" className="btn-luxury-outline px-10 py-4">
               Request Custom Design
             </Link>
           </div>
@@ -160,6 +97,3 @@ export default function AboutPage() {
     </main>
   );
 }
-
-
-
