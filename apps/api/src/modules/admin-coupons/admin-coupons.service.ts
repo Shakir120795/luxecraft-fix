@@ -18,18 +18,27 @@ export class AdminCouponsService {
     maxPerCustomer?: number;
     showOnHome?: boolean;
   }): Promise<any> {
-    return this.prisma.coupon.create({
-      data: {
-        code: data.code.toUpperCase(),
-        discountType: data.discountType,
-        discountValue: data.discountValue,
-        validFrom: data.validFrom,
-        validTo: data.validTo,
-        minOrderAmount: data.minOrderAmount,
-        maxUsageCount: data.maxUsageCount,
-        maxPerCustomer: data.maxPerCustomer,
-        showOnHome: data.showOnHome ?? false,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      if (data.showOnHome) {
+        await tx.coupon.updateMany({
+          where: { showOnHome: true },
+          data: { showOnHome: false },
+        });
+      }
+
+      return tx.coupon.create({
+        data: {
+          code: data.code.toUpperCase(),
+          discountType: data.discountType,
+          discountValue: data.discountValue,
+          validFrom: data.validFrom,
+          validTo: data.validTo,
+          minOrderAmount: data.minOrderAmount,
+          maxUsageCount: data.maxUsageCount,
+          maxPerCustomer: data.maxPerCustomer ?? null,
+          showOnHome: data.showOnHome ?? false,
+        },
+      });
     });
   }
 
@@ -42,6 +51,14 @@ export class AdminCouponsService {
         showOnHome: true,
         validFrom: { lte: now },
         OR: [{ validTo: null }, { validTo: { gt: now } }],
+        AND: [
+          {
+            OR: [
+              { maxUsageCount: null },
+              { maxUsageCount: { gt: this.prisma.coupon.fields.usedCount } },
+            ],
+          },
+        ],
       },
       orderBy: { updatedAt: 'desc' },
       select: {
@@ -83,7 +100,22 @@ export class AdminCouponsService {
   }
 
   async update(id: string, data: any): Promise<any> {
-    return this.prisma.coupon.update({ where: { id }, data });
+    return this.prisma.$transaction(async (tx) => {
+      if (data.showOnHome === true) {
+        await tx.coupon.updateMany({
+          where: {
+            showOnHome: true,
+            id: { not: id },
+          },
+          data: { showOnHome: false },
+        });
+      }
+
+      return tx.coupon.update({
+        where: { id },
+        data,
+      });
+    });
   }
 
   async deactivate(id: string): Promise<any> {
