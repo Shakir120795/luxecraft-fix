@@ -80,18 +80,46 @@ export default function ContactPage() {
               <div className="space-y-7">
                 <div className="border-t border-[#eee9e3] pt-5">
                   <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
-                    Address
+                    Email
                   </h3>
-                  <p className="text-sm leading-7 text-[#6a636b]">
-                    123 Artisan Boulevard
+                  <a
+                    href="mailto:info@wolhomes.com"
+                    className="text-sm text-[#302b35] transition-colors hover:text-[#8a5d38]"
+                  >
+                    info@wolhomes.com
+                  </a>
+                  <p className="mt-2 text-sm leading-6 text-[#8b8389]">
+                    Monday – Friday: 9:00 AM – 5:00 PM EST
                     <br />
-                    Design District
-                    <br />
-                    New York, NY 10001
-                    <br />
-                    United States
+                    We strive to respond within 24 to 48 hours.
                   </p>
                 </div>
+
+                <div className="border-t border-[#eee9e3] pt-5">
+                  <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
+                    Factory &amp; Manufacturing Facility Address
+                  </h3>
+                  <p className="text-sm leading-7 text-[#6a636b]">
+                    WOLHOMES
+                    <br />
+                    575/2-C, Devpurwa Road, Mirzapur,
+                    <br />
+                    Uttar Pradesh, India – 231001
+                  </p>
+                </div>
+
+                <div className="border-t border-[#eee9e3] pt-5">
+                  <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
+                    Custom &amp; Trade Inquiries
+                  </h3>
+                  <p className="text-sm leading-7 text-[#6a636b]">
+                    <strong>Custom Rug Orders:</strong> Have a specific size, color palette, or design in mind? Send us an email with your specifications or sketches, and our master artisans will bring it to life.
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-[#6a636b]">
+                    <strong>Trade &amp; Wholesale Program:</strong> Are you an interior designer, architect, or business owner looking for bulk or trade pricing? Contact us with your business details and resale certificate to join our trade program.
+                  </p>
+                </div>
+              </div>
 
                 <div className="border-t border-[#eee9e3] pt-5">
                   <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
