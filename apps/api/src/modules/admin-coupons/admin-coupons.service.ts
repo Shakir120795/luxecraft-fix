@@ -16,6 +16,7 @@ export class AdminCouponsService {
     minOrderAmount?: number;
     maxUsageCount?: number;
     maxPerCustomer?: number;
+    showOnHome?: boolean;
   }): Promise<any> {
     return this.prisma.coupon.create({
       data: {
@@ -27,8 +28,37 @@ export class AdminCouponsService {
         minOrderAmount: data.minOrderAmount,
         maxUsageCount: data.maxUsageCount,
         maxPerCustomer: data.maxPerCustomer,
+        showOnHome: data.showOnHome ?? false,
       },
     });
+  }
+
+  async getHomeCoupon(): Promise<any | null> {
+    const now = new Date();
+
+    const coupon = await this.prisma.coupon.findFirst({
+      where: {
+        isActive: true,
+        showOnHome: true,
+        validFrom: { lte: now },
+        OR: [{ validTo: null }, { validTo: { gt: now } }],
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: {
+        id: true,
+        code: true,
+        discountType: true,
+        discountValue: true,
+        currency: true,
+      },
+    });
+
+    if (!coupon) return null;
+
+    return {
+      ...coupon,
+      discountValue: Number(coupon.discountValue),
+    };
   }
 
   async findAll(params: { skip?: number; take?: number }): Promise<{ items: any[]; total: number }> {
