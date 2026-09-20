@@ -10,7 +10,7 @@ interface SitePage {
   content: string;
 }
 
-const EDITABLE_SLUGS = new Set(['privacy', 'terms', 'about', 'returns', 'contact']);
+const EDITABLE_SLUGS = new Set(['privacy', 'terms', 'about', 'returns']);
 
 function renderContent(content: string) {
   const blocks = content.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
@@ -96,7 +96,31 @@ export function CmsPageOverride({ children }: { children: React.ReactNode }) {
     return () => controller.abort();
   }, [slug]);
 
-  if (!checked || !page) {
+  if (!checked) {
+    return (
+      <main className="min-h-screen bg-[#f8f6f2]">
+        <section className="relative overflow-hidden bg-gradient-to-br from-[#40372f] via-[#51463c] to-[#29241f] py-20 text-white md:py-24 lg:py-28">
+          <div className="mx-auto max-w-6xl px-5 sm:px-8 lg:px-10">
+            <div className="h-3 w-28 animate-pulse rounded-full bg-white/20" />
+            <div className="mt-6 h-16 max-w-3xl animate-pulse rounded-xl bg-white/10 sm:h-20" />
+            <div className="mt-5 h-5 max-w-2xl animate-pulse rounded-full bg-white/10" />
+          </div>
+        </section>
+        <div className="mx-auto max-w-6xl px-5 py-14 sm:px-8 md:py-20 lg:px-10">
+          <div className="space-y-5">
+            <div className="h-5 w-11/12 animate-pulse rounded bg-[#e8e1d8]" />
+            <div className="h-5 w-10/12 animate-pulse rounded bg-[#e8e1d8]" />
+            <div className="h-5 w-8/12 animate-pulse rounded bg-[#e8e1d8]" />
+            <div className="mt-8 h-8 w-5/12 animate-pulse rounded bg-[#ddd4c8]" />
+            <div className="h-5 w-11/12 animate-pulse rounded bg-[#e8e1d8]" />
+            <div className="h-5 w-9/12 animate-pulse rounded bg-[#e8e1d8]" />
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!page) {
     return <>{children}</>;
   }
 
