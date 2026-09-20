@@ -292,7 +292,7 @@ export default function CouponsPage() {
               placeholder="Uses per customer"
               className="border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
             />
-            <label className="flex min-h-[46px] items-center gap-3 border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-sm text-[var(--color-primary)]">
+            <label className="flex min-h-[58px] items-center gap-3 border border-[var(--color-accent)] bg-[var(--color-bg)] px-4 py-3 text-sm text-[var(--color-primary)] lg:col-span-4">
               <input
                 type="checkbox"
                 checked={form.showOnHome}
@@ -302,9 +302,9 @@ export default function CouponsPage() {
                 className="h-4 w-4 accent-[var(--color-accent)]"
               />
               <span>
-                <span className="block font-medium">Show on homepage label</span>
+                <span className="block font-semibold uppercase tracking-[0.08em]">Show on homepage label</span>
                 <span className="block text-xs text-[var(--color-muted)]">
-                  Displays this coupon on the left side of the home page.
+                  When enabled, this coupon becomes the single active offer shown on the home page left edge.
                 </span>
               </span>
             </label>
@@ -360,6 +360,11 @@ export default function CouponsPage() {
                       >
                         {coupon.isActive ? 'Active' : 'Inactive'}
                       </span>
+                      {coupon.showOnHome && (
+                        <span className="bg-[var(--color-accent)] px-2 py-1 text-xs font-medium text-white">
+                          Homepage Label
+                        </span>
+                      )}
                     </div>
 
                     <p className="mt-2 text-sm text-[var(--color-muted)]">
