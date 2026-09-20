@@ -323,13 +323,12 @@ export function SiteHeader() {
                 onMouseEnter={() => setActiveHeaderMenu('rugs')}
                 onMouseLeave={() => setActiveHeaderMenu(null)}
               >
-                <button
-                  type="button"
-                  onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'rugs' ? null : 'rugs')}
+                <Link
+                  href="/products"
                   className={`block whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-black/15 ${activeHeaderMenu === 'rugs' ? 'bg-black/15' : ''}`}
                 >
                   Rugs
-                </button>
+                </Link>
 
                 {activeHeaderMenu === 'rugs' && categories.length > 0 && (
                   <div
@@ -373,13 +372,12 @@ export function SiteHeader() {
                     onMouseEnter={() => setActiveHeaderMenu(slug)}
                     onMouseLeave={() => setActiveHeaderMenu(null)}
                   >
-                    <button
-                      type="button"
-                      onClick={() => setActiveHeaderMenu(activeHeaderMenu === slug ? null : slug)}
+                    <Link
+                      href={'/products?filter_' + filter.slug}
                       className={`block whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-black/15 ${activeHeaderMenu === slug ? 'bg-black/15' : ''}`}
                     >
                       {label}
-                    </button>
+                    </Link>
 
                     {activeHeaderMenu === slug && filter.values.length > 0 && (
                       <div
