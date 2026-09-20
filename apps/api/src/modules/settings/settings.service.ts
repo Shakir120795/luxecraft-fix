@@ -310,80 +310,11 @@ View FAQ`,
   contact: {
     slug: 'contact',
     title: 'Contact Us',
-    lastUpdated: '',
-    content: `Wolhomes Concierge
-
-Let's create something meaningful.
-
-We'd love to hear from you. Whether you are exploring our collection, planning a bespoke rug, or simply have a question, our team is here to help.
-
-Get In Touch
-
-Contact Information
-
-Address
-
-123 Artisan Boulevard
-Design District
-New York, NY 10001
-United States
-
-Phone
-
-+1 (234) 567-890
-Monday - Friday: 9:00 AM - 6:00 PM EST
-Saturday: 10:00 AM - 4:00 PM EST
-
-Email
-
-info@wolhomes.com
-We respond within 24 hours.
-
-Explore Wolhomes
-
-Helpful Links
-
-Frequently Asked Questions
-Returns & Refunds
-Custom Design Services
-
-Concierge Support
-
-Send Us a Message
-
-Tell us what you're looking for and our team will get back to you with the right guidance.
-
-Message Sent
-
-Thank you for contacting us. We'll get back to you within 24 hours.
-
-Full Name *
-John Doe
-
-Email Address *
-john@example.com
-
-Phone Number
-+1 (234) 567-890
-
-Subject *
-
-Select a subject
-General Inquiry
-Order Status
-Custom Design
-Shipping & Delivery
-Returns & Refunds
-Product Information
-Other
-
-Message *
-Tell us how we can help you...
-
-Send Message
-
-By submitting this form, you agree to our Privacy Policy`,
+    lastUpdated: 'September 19, 2026',
+    content: "Contact Us\n\nWe would love to hear from you! Whether you have questions about our handcrafted rugs, need help placing a Custom & Made-to-Order request, or want to track your shipment, our team is here to assist you.\n\nGet in Touch\n\nEmail Customer Care: info@wolhomes.com\n\nCustomer Support Hours: Monday – Friday (9:00 AM – 5:00 PM EST)\n\nResponse Time: We strive to respond to all inquiries within 24 to 48 hours.\n\nFactory & Manufacturing Facility Address\n\nAll our Hand-Tufted and Hand-Knotted rugs are manufactured, quality-checked, and shipped directly from our main factory unit:\n\nWOLHOMES\n\n575/2-C, Devpurwa Road, Mirzapur,\n\nUttar Pradesh, India – 231001\n\nCustom & Trade Inquiries\n\nCustom Rug Orders: Have a specific size, color palette, or design in mind? Send us an email with your specifications or sketches, and our master artisans will bring it to life.\n\nTrade & Wholesale Program: Are you an interior designer, architect, or business owner looking for bulk or trade pricing? Contact us with your business details and resale certificate to join our trade program.\n\nSend Us a Message\n\n(If you are filling out our online contact form, please provide the following details so we can assist you faster)\n\nFull Name:\n\nEmail Address:\n\nOrder ID (if applicable):\n\nSubject: (General Inquiry / Custom Order / Shipping Status / Trade Request)\n\nMessage:",
   },
+
+
 };
 
 @Injectable()
