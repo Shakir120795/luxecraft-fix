@@ -316,32 +316,35 @@ export function SiteHeader() {
 
       {showCategoryBar && (
         <div className="relative z-50 border-t border-black/10 bg-[#B94740]">
-          <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:gap-2">
+          <div className="mx-auto flex max-w-[1400px] items-stretch justify-between px-4 sm:px-6 lg:px-8">
+            <nav className="flex min-w-0 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Product navigation">
               <div
                 className="relative shrink-0"
                 onMouseEnter={() => setActiveHeaderMenu('rugs')}
                 onMouseLeave={() => setActiveHeaderMenu(null)}
               >
-                <Link
-                  href="/products"
-                  className="flex items-center gap-2 rounded-lg px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-all duration-200 hover:bg-black/20 hover:text-white sm:px-5"
+                <button
+                  type="button"
+                  onClick={() => setActiveHeaderMenu(activeHeaderMenu === 'rugs' ? null : 'rugs')}
+                  className={`block whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-black/15 ${activeHeaderMenu === 'rugs' ? 'bg-black/15' : ''}`}
                 >
                   Rugs
-                  <span className="text-[10px]">⌄</span>
-                </Link>
+                </button>
 
                 {activeHeaderMenu === 'rugs' && categories.length > 0 && (
-                  <div className="absolute left-0 top-full z-[100] w-[300px] rounded-b-xl border border-black/10 bg-white p-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)]">
-                    <div className="mb-3 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2f6b36]">
-                      All Rug Categories
+                  <div
+                    className="absolute left-0 top-full z-[100] w-[min(760px,calc(100vw-32px))] rounded-b-xl border border-black/10 bg-white p-5 text-black shadow-[0_20px_50px_rgba(0,0,0,0.18)]"
+                    onMouseEnter={() => setActiveHeaderMenu('rugs')}
+                  >
+                    <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
+                      Rug Categories
                     </div>
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-1 md:grid-cols-3">
                       {categories.map((category) => (
                         <Link
                           key={category.id}
                           href={'/categories/' + category.slug}
-                          className="rounded-lg px-3 py-2.5 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-4 hover:text-[#2f6b36]"
+                          className="border-b border-black/10 px-2 py-2.5 text-sm text-black transition-colors duration-150 hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
                         >
                           {category.name}
                         </Link>
@@ -349,7 +352,7 @@ export function SiteHeader() {
                     </div>
                     <Link
                       href="/products"
-                      className="mt-3 block border-t border-black/10 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a5a2c] transition-colors hover:text-[#2f6b36]"
+                      className="mt-4 inline-block border-t border-black/10 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a5a2c] hover:text-[#2f6b36]"
                     >
                       View all rugs →
                     </Link>
@@ -372,20 +375,21 @@ export function SiteHeader() {
                   >
                     <button
                       type="button"
-                      className="flex items-center gap-2 rounded-lg px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-all duration-200 hover:bg-black/20 hover:text-white sm:px-5"
-                      aria-haspopup="menu"
-                      aria-expanded={activeHeaderMenu === slug}
+                      onClick={() => setActiveHeaderMenu(activeHeaderMenu === slug ? null : slug)}
+                      className={`block whitespace-nowrap px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-white transition-colors duration-200 hover:bg-black/15 ${activeHeaderMenu === slug ? 'bg-black/15' : ''}`}
                     >
                       {label}
-                      <span className="text-[10px]">⌄</span>
                     </button>
 
                     {activeHeaderMenu === slug && filter.values.length > 0 && (
-                      <div className="absolute left-1/2 top-full z-[100] w-[220px] -translate-x-1/2 rounded-b-xl border border-black/10 bg-white p-3 shadow-[0_18px_45px_rgba(0,0,0,0.16)]">
-                        <div className="mb-2 border-b border-black/10 px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#2f6b36]">
-                          Filter by {label}
+                      <div
+                        className="absolute left-0 top-full z-[100] w-[420px] rounded-b-xl border border-black/10 bg-white p-5 text-black shadow-[0_20px_50px_rgba(0,0,0,0.18)]"
+                        onMouseEnter={() => setActiveHeaderMenu(slug)}
+                      >
+                        <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
+                          {label}
                         </div>
-                        <div className="max-h-[320px] overflow-y-auto">
+                        <div className="grid max-h-[340px] grid-cols-2 gap-x-6 gap-y-1 overflow-y-auto">
                           {filter.values
                             .filter((value) => value.isActive)
                             .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -393,7 +397,7 @@ export function SiteHeader() {
                               <Link
                                 key={value.slug}
                                 href={'/products?filter_' + filter.slug + '=' + encodeURIComponent(value.slug)}
-                                className="block rounded-lg px-3 py-2.5 text-sm text-black transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-4 hover:text-[#2f6b36]"
+                                className="border-b border-black/10 px-2 py-2.5 text-sm text-black transition-colors duration-150 hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
                               >
                                 {value.label}
                               </Link>
@@ -404,7 +408,14 @@ export function SiteHeader() {
                   </div>
                 );
               })}
-            </div>
+            </nav>
+
+            <Link
+              href="/custom-design"
+              className="my-1.5 shrink-0 rounded-lg border border-[#E8C98A] bg-[#E8C98A] px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#2b2118] transition-all duration-200 hover:border-black hover:bg-black hover:text-white"
+            >
+              Custom Design
+            </Link>
           </div>
         </div>
       )}
