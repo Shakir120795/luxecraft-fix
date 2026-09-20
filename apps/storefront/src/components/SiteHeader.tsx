@@ -317,7 +317,7 @@ export function SiteHeader() {
       {showCategoryBar && (
         <div className="relative z-50 border-t border-black/10 bg-[#B94740]">
           <div className="mx-auto flex max-w-[1400px] items-stretch justify-between px-4 sm:px-6 lg:px-8">
-            <nav className="flex min-w-0 items-stretch overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="Product navigation">
+            <nav className="flex min-w-0 items-stretch overflow-visible whitespace-nowrap" aria-label="Product navigation">
               <div
                 className="group relative shrink-0"
                 onMouseEnter={() => setActiveHeaderMenu('rugs')}
@@ -330,9 +330,13 @@ export function SiteHeader() {
                   Rugs
                 </Link>
 
-                {activeHeaderMenu === 'rugs' && categories.length > 0 && (
+                {categories.length > 0 && (
                   <div
-                    className="invisible pointer-events-none absolute left-0 top-full z-[100] w-[min(760px,calc(100vw-32px))] rounded-b-xl border border-black/10 bg-white p-5 text-black opacity-0 shadow-[0_20px_50px_rgba(0,0,0,0.18)] transition-all duration-150 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100"
+                    className={`absolute left-0 top-full z-[100] w-[min(760px,calc(100vw-32px))] rounded-b-xl border border-black/10 bg-white p-5 text-black shadow-[0_20px_50px_rgba(0,0,0,0.18)] transition-all duration-150 ${
+                      activeHeaderMenu === 'rugs'
+                        ? 'visible pointer-events-auto opacity-100'
+                        : 'invisible pointer-events-none opacity-0 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100'
+                    }`
                     onMouseEnter={() => setActiveHeaderMenu('rugs')}
                   >
                     <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
@@ -379,9 +383,13 @@ export function SiteHeader() {
                       {label}
                     </Link>
 
-                    {activeHeaderMenu === slug && filter.values.length > 0 && (
+                    {filter.values.length > 0 && (
                       <div
-                        className="invisible pointer-events-none absolute left-0 top-full z-[100] w-[420px] rounded-b-xl border border-black/10 bg-white p-5 text-black opacity-0 shadow-[0_20px_50px_rgba(0,0,0,0.18)] transition-all duration-150 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100"
+                        className={`absolute left-0 top-full z-[100] w-[420px] rounded-b-xl border border-black/10 bg-white p-5 text-black shadow-[0_20px_50px_rgba(0,0,0,0.18)] transition-all duration-150 ${
+                          activeHeaderMenu === slug
+                            ? 'visible pointer-events-auto opacity-100'
+                            : 'invisible pointer-events-none opacity-0 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100'
+                        }`
                         onMouseEnter={() => setActiveHeaderMenu(slug)}
                       >
                         <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
