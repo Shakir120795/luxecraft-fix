@@ -108,7 +108,6 @@ export interface Admin {
   role: 'SUPER_ADMIN' | 'ADMIN';
   emailVerified: boolean;
   isActive: boolean;
-  showOnHome: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -1425,6 +1424,7 @@ export interface Coupon {
   validFrom: string;
   validTo: string | null;
   isActive: boolean;
+  showOnHome: boolean;
   createdAt: string;
   updatedAt: string;
 }
