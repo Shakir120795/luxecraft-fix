@@ -172,6 +172,29 @@ export async function getFaqs(): Promise<FaqItem[]> {
     return [];
   }
 }
+export interface HomeCouponLabel {
+  id: string;
+  code: string;
+  discountType: string;
+  discountValue: number;
+  currency: string;
+}
+
+export async function getHomeCouponLabel(): Promise<HomeCouponLabel | null> {
+  try {
+    const res = await fetch(`${API_URL}/storefront/coupon-label`, {
+      cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    return data.success ? data.data : null;
+  } catch (error) {
+    console.error('Failed to fetch homepage coupon label:', error);
+    return null;
+  }
+}
+
 export interface ProductFilterValueSetting {
   slug: string;
   label: string;
