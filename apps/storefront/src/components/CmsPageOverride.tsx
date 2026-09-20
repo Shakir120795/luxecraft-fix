@@ -96,6 +96,10 @@ export function CmsPageOverride({ children }: { children: React.ReactNode }) {
     return () => controller.abort();
   }, [slug]);
 
+  if (!slug) {
+    return <>{children}</>;
+  }
+
   if (!checked) {
     return (
       <main className="min-h-screen bg-[#f8f6f2]">
