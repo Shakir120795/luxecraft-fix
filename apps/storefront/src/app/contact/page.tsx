@@ -120,39 +120,6 @@ export default function ContactPage() {
                   </p>
                 </div>
               </div>
-
-                <div className="border-t border-[#eee9e3] pt-5">
-                  <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
-                    Phone
-                  </h3>
-                  <a
-                    href="tel:+1234567890"
-                    className="text-sm text-[#302b35] transition-colors hover:text-[#8a5d38]"
-                  >
-                    +1 (234) 567-890
-                  </a>
-                  <p className="mt-2 text-sm leading-6 text-[#8b8389]">
-                    Monday - Friday: 9:00 AM - 6:00 PM EST
-                    <br />
-                    Saturday: 10:00 AM - 4:00 PM EST
-                  </p>
-                </div>
-
-                <div className="border-t border-[#eee9e3] pt-5">
-                  <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
-                    Email
-                  </h3>
-                  <a
-                    href="mailto:info@wolhomes.com"
-                    className="text-sm text-[#302b35] transition-colors hover:text-[#8a5d38]"
-                  >
-                    info@wolhomes.com
-                  </a>
-                  <p className="mt-2 text-sm text-[#8b8389]">
-                    We respond within 24 hours.
-                  </p>
-                </div>
-              </div>
             </div>
 
             <div className="rounded-lg border border-[#ded8d0] bg-white p-7 shadow-sm sm:p-8">
