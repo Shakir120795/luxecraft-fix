@@ -2,11 +2,10 @@
 
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { login } from '@/lib/api';
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirect') || '/account';
 
@@ -23,7 +22,7 @@ function LoginForm() {
     const result = await login({ email, password });
 
     if (result.success) {
-      router.push(redirectTo);
+      window.location.assign(redirectTo);
     } else {
       setError(result.message || 'Login failed');
       setLoading(false);

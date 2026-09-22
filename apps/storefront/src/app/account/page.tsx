@@ -37,7 +37,7 @@ export default function AccountPage() {
 
   async function handleLogout() {
     await logout();
-    router.push('/');
+    window.location.assign('/');
   }
 
   if (loading) {
