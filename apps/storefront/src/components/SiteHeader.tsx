@@ -183,8 +183,6 @@ export function SiteHeader() {
 
             <div
               className="relative"
-              onMouseEnter={() => setAccountOpen(true)}
-              onMouseLeave={() => setAccountOpen(false)}
             >
               <button
                 type="button"
