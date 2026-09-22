@@ -23,7 +23,7 @@ import {
   ShippingMethod,
 } from '@/lib/api';
 
-type CheckoutStep = 'customer' | 'address' | 'shipping' | 'payment' | 'review';
+type CheckoutStep = 'customer' | 'address' | 'payment';
 
 const CURRENCY_SYMBOLS: Record<string,string> = { USD:'$', INR:'₹', CAD:'C$', GBP:'£', AUD:'A$', AED:'د.إ', EUR:'€', JPY:'¥', SGD:'S$', NZD:'NZ$', CHF:'CHF ', CNY:'¥' };
 function money(amount:number,currency:string){return (CURRENCY_SYMBOLS[currency] ?? (currency + ' ')) + amount.toFixed(2);}
@@ -181,40 +181,30 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Load shipping methods
+    // Keep the backend shipping method attached to the order while presenting
+    // shipping and payment together in one checkout step.
     const shippingAddr = authenticated
       ? addresses.find(a => a.id === selectedShippingAddressId)
       : guestShippingAddress;
-    if (shippingAddr && cart) {
-      const methods = await getShippingMethods({
-        country: shippingAddr.country,
-        weight: cart.items.reduce((sum, item) => sum + (item.product.weightKg || 0) * item.quantity, 0),
-        orderValue: cart.items.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0),
-      });
-      setShippingMethods(methods);
-      
-      if (methods.length > 0) {
-        setShippingMethod(methods[0]);
-      }
-    }
 
-    setCurrentStep('shipping');
-  }
-
-  async function handleShippingSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-
-    if (!shippingMethod) {
-      setError('Please select a shipping method');
+    if (!shippingAddr || !cart) {
+      setError('Shipping is unavailable for this address.');
       return;
     }
 
-    if (!paymentConfigured || !['razorpay', 'paypal', 'crypto'].includes(paymentProvider)) {
-      setError('Please select an available payment method.');
+    const methods = await getShippingMethods({
+      country: shippingAddr.country,
+      weight: cart.items.reduce((sum, item) => sum + (item.product.weightKg || 0) * item.quantity, 0),
+      orderValue: cart.items.reduce((sum, item) => sum + item.priceSnapshot * item.quantity, 0),
+    });
+
+    if (methods.length === 0) {
+      setError('Worldwide shipping is currently unavailable for this address.');
       return;
     }
 
+    setShippingMethods(methods);
+    setShippingMethod(methods[0]);
     setCurrentStep('payment');
   }
 
@@ -444,13 +434,11 @@ export default function CheckoutPage() {
         <div className="mb-10 text-center">
           <h1 className="mb-5 font-serif text-4xl font-light text-luxury-charcoal sm:text-5xl">Checkout</h1>
           <div className="flex items-center justify-center gap-3 text-sm">
-            <StepIndicator step={1} label="Customer" current={currentStep === 'customer'} completed={['address', 'shipping', 'payment', 'review'].includes(currentStep)} />
+            <StepIndicator step={1} label="Customer" current={currentStep === 'customer'} completed={['address', 'payment'].includes(currentStep)} />
             <div className="w-12 h-px bg-luxury-sand" />
-            <StepIndicator step={2} label="Address" current={currentStep === 'address'} completed={['shipping', 'payment', 'review'].includes(currentStep)} />
+            <StepIndicator step={2} label="Address" current={currentStep === 'address'} completed={currentStep === 'payment'} />
             <div className="w-12 h-px bg-luxury-sand" />
-            <StepIndicator step={3} label="Shipping" current={currentStep === 'shipping'} completed={['payment', 'review'].includes(currentStep)} />
-            <div className="w-12 h-px bg-luxury-sand" />
-            <StepIndicator step={4} label="Payment" current={currentStep === 'payment'} completed={currentStep === 'review'} />
+            <StepIndicator step={3} label="Shipping & Payment" current={currentStep === 'payment'} completed={false} />
           </div>
         </div>
 
@@ -629,7 +617,22 @@ export default function CheckoutPage() {
             )}            {/* Payment Step */}
             {currentStep === 'payment' && (
               <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
-                <h2 className="mb-3 font-serif text-2xl font-normal text-luxury-charcoal">Choose Payment Method</h2>
+                <h2 className="mb-3 font-serif text-2xl font-normal text-luxury-charcoal">Shipping & Payment</h2>
+                <div className="mb-7 rounded-lg border border-[#ded8d0] bg-[#faf9f6] p-5">
+                  <div className="flex items-start justify-between gap-6">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-luxury-brown/70">Shipping</p>
+                      <p className="mt-2 font-serif text-xl text-luxury-charcoal">Free Worldwide Shipping</p>
+                      <p className="mt-1 text-sm text-luxury-brown">All products are delivered worldwide with no shipping charge.</p>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-green-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-green-700">FREE</span>
+                  </div>
+                  {shippingMethod && (
+                    <p className="mt-4 border-t border-[#ded8d0] pt-4 text-sm text-luxury-brown">
+                      Delivery method: {shippingMethod.description || shippingMethod.name}
+                    </p>
+                  )}
+                </div>
                 <p className="mb-7 text-sm text-luxury-brown">Select a secure payment method to complete your Wolhomes order.</p>
 
                 {availablePaymentProviders.length > 0 && paymentConfigured ? (
@@ -795,7 +798,7 @@ export default function CheckoutPage() {
                     <div className="flex gap-4 pt-2">
                       <button
                         type="button"
-                        onClick={() => setCurrentStep('shipping')}
+                        onClick={() => setCurrentStep('address')}
                         disabled={submitting}
                         className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white disabled:opacity-50"
                       >
@@ -829,7 +832,7 @@ export default function CheckoutPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setCurrentStep('shipping')}
+                      onClick={() => setCurrentStep('address')}
                       className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white"
                     >
                       Back
@@ -892,21 +895,11 @@ export default function CheckoutPage() {
                   Back
                 </button>
                 <button type="submit" form="address-form" className="flex-1 rounded-md bg-[#302b35] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#211e24]">
-                  Continue to Shipping →
+                  Continue to Shipping & Payment →
                 </button>
               </div>
             )}
-            {currentStep === "shipping" && (
-              <div className="mt-4 flex gap-3">
-                <button type="button" onClick={() => setCurrentStep("address")} className="rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white">
-                  Back
-                </button>
-                <button type="submit" form="shipping-form" disabled={!shippingMethod} className="flex-1 rounded-md bg-[#302b35] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-50">
-                  Continue to Payment →
-                </button>
-              </div>
-            )}
-          </div>
+undefined          </div>
         </div>
       </div>
     </main>
