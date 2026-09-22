@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
+
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+
 import { SettingsService } from './settings.service';
 
 @Controller('admin/settings')
@@ -22,6 +24,14 @@ export class SettingsController {
     return this.settings.getSitePages();
   }
 
+  @Put('pages/:slug')
+  updateSitePage(
+    @Param('slug') slug: string,
+    @Body() data: { title?: string; lastUpdated?: string; content?: string },
+  ) {
+    return this.settings.updateSitePage(slug, data);
+  }
+
   @Get('product-filters')
   getProductFilters() {
     return this.settings.getProductFilters();
@@ -32,11 +42,13 @@ export class SettingsController {
     return this.settings.updateProductFilters(data);
   }
 
-  @Put('pages/:slug')
-  updateSitePage(
-    @Param('slug') slug: string,
-    @Body() data: { title?: string; lastUpdated?: string; content?: string },
-  ) {
-    return this.settings.updateSitePage(slug, data);
+  @Get('homepage-videos')
+  getHomepageVideos() {
+    return this.settings.getHomepageVideos();
+  }
+
+  @Put('homepage-videos')
+  updateHomepageVideos(@Body() data: any[]) {
+    return this.settings.updateHomepageVideos(data);
   }
 }

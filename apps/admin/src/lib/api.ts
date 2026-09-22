@@ -1506,3 +1506,24 @@ export async function updateDefaultCurrency(currency: string): Promise<string> {
 
 
 
+
+export type HomepageVideoPlatform = 'youtube' | 'instagram';
+
+export interface HomepageVideoSetting {
+  id: string;
+  title: string;
+  url: string;
+  platform: HomepageVideoPlatform;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export async function getHomepageVideos(): Promise<HomepageVideoSetting[]> {
+  return adminApi.get<HomepageVideoSetting[]>('/admin/settings/homepage-videos');
+}
+
+export async function updateHomepageVideos(
+  videos: HomepageVideoSetting[],
+): Promise<HomepageVideoSetting[]> {
+  return adminApi.put<HomepageVideoSetting[]>('/admin/settings/homepage-videos', videos);
+}

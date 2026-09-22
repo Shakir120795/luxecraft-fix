@@ -14,6 +14,9 @@ import {
   HeroSection,
   getDefaultCurrency,
   updateDefaultCurrency,
+  getHomepageVideos,
+  updateHomepageVideos,
+  HomepageVideoSetting,
 } from '@/lib/api';
 
 export default function SettingsPage() {
@@ -27,6 +30,9 @@ export default function SettingsPage() {
   const [defaultCurrency, setDefaultCurrency] = useState('USD');
   const [savingCurrency, setSavingCurrency] = useState(false);
   const [currencyMessage, setCurrencyMessage] = useState('');
+  const [homepageVideos, setHomepageVideos] = useState<HomepageVideoSetting[]>([]);
+  const [savingVideos, setSavingVideos] = useState(false);
+  const [videoMessage, setVideoMessage] = useState('');
   const [form, setForm] = useState({
     productId: '',
     imageUrl: '',
@@ -57,16 +63,18 @@ export default function SettingsPage() {
     try {
       setLoading(true);
 
-      const [profile, productList, heroData, currencyData] = await Promise.all([
+      const [profile, productList, heroData, currencyData, homepageVideoData] = await Promise.all([
         getAdminProfile(),
         getProducts(),
         getHero(),
         getDefaultCurrency(),
+        getHomepageVideos(),
       ]);
 
       setAdmin(profile);
       setDefaultCurrency(currencyData);
       setProducts(productList);
+      setHomepageVideos(homepageVideoData);
 
       if (heroData) {
         setHero(heroData);
@@ -188,6 +196,20 @@ export default function SettingsPage() {
     }
   }
 
+  async function saveHomepageVideos() {
+    try {
+      setSavingVideos(true);
+      setVideoMessage('');
+      const saved = await updateHomepageVideos(homepageVideos);
+      setHomepageVideos(saved);
+      setVideoMessage('Homepage videos saved successfully.');
+    } catch (error) {
+      console.error('Failed to save homepage videos:', error);
+      setVideoMessage('Failed to save homepage videos.');
+    } finally {
+      setSavingVideos(false);
+    }
+  }
   const selectedProduct = products.find(
     (product) => product.id === form.productId
   );
@@ -272,6 +294,189 @@ export default function SettingsPage() {
         </div>
         <ProductFilterManager />
 
+        {/* HOMEPAGE VIDEOS */}
+        <div className="border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <div className="border-b border-[var(--color-border)] px-6 py-5">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-medium text-[var(--color-text)]">Homepage Videos</h2>
+                <p className="mt-1 text-sm text-[var(--color-muted)]">
+                  Add YouTube or Instagram videos for the homepage carousel. Minimum 3 videos.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setHomepageVideos((current) => [
+                    ...current,
+                    {
+                      id: 'homepage-video-' + Date.now(),
+                      title: 'Video ' + (current.length + 1),
+                      url: '',
+                      platform: 'youtube',
+                      sortOrder: current.length,
+                      isActive: true,
+                    },
+                  ])
+                }
+                className="border border-[var(--color-primary)] bg-[var(--color-primary)] px-5 py-3 text-xs uppercase tracking-[0.15em] text-white"
+              >
+                Add Video
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4 p-6">
+            {homepageVideos.length === 0 ? (
+              <div className="border border-dashed border-[var(--color-border)] p-8 text-center text-sm text-[var(--color-muted)]">
+                No homepage videos added yet.
+              </div>
+            ) : (
+              homepageVideos.map((video, index) => (
+                <div
+                  key={video.id}
+                  className="border border-[var(--color-border)] p-5"
+                >
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <p className="text-sm font-medium text-[var(--color-text)]">
+                      Video {index + 1}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setHomepageVideos((current) =>
+                          current
+                            .filter((item) => item.id !== video.id)
+                            .map((item, itemIndex) => ({
+                              ...item,
+                              sortOrder: itemIndex,
+                            })),
+                        )
+                      }
+                      className="text-xs uppercase tracking-[0.12em] text-red-600"
+                    >
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                        Title
+                      </label>
+                      <input
+                        type="text"
+                        value={video.title}
+                        onChange={(e) =>
+                          setHomepageVideos((current) =>
+                            current.map((item) =>
+                              item.id === video.id
+                                ? { ...item, title: e.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                        className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                        placeholder="Video title"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                        Platform
+                      </label>
+                      <select
+                        value={video.platform}
+                        onChange={(e) =>
+                          setHomepageVideos((current) =>
+                            current.map((item) =>
+                              item.id === video.id
+                                ? {
+                                    ...item,
+                                    platform: e.target.value as HomepageVideoSetting['platform'],
+                                  }
+                                : item,
+                            ),
+                          )
+                        }
+                        className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                      >
+                        <option value="youtube">YouTube</option>
+                        <option value="instagram">Instagram</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                        Video URL
+                      </label>
+                      <input
+                        type="url"
+                        value={video.url}
+                        onChange={(e) =>
+                          setHomepageVideos((current) =>
+                            current.map((item) =>
+                              item.id === video.id
+                                ? { ...item, url: e.target.value }
+                                : item,
+                            ),
+                          )
+                        }
+                        className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                        placeholder={
+                          video.platform === 'youtube'
+                            ? 'https://www.youtube.com/watch?v=...'
+                            : 'https://www.instagram.com/reel/.../'
+                        }
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-3 text-sm text-[var(--color-text)]">
+                      <input
+                        type="checkbox"
+                        checked={video.isActive}
+                        onChange={(e) =>
+                          setHomepageVideos((current) =>
+                            current.map((item) =>
+                              item.id === video.id
+                                ? { ...item, isActive: e.target.checked }
+                                : item,
+                            ),
+                          )
+                        }
+                        className="h-4 w-4"
+                      />
+                      Active
+                    </label>
+                  </div>
+                </div>
+              ))
+            )}
+
+            <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-5 sm:flex-row sm:items-center">
+              <button
+                type="button"
+                onClick={saveHomepageVideos}
+                disabled={savingVideos || homepageVideos.length < 3}
+                className="border border-[var(--color-primary)] bg-[var(--color-primary)] px-6 py-3 text-xs uppercase tracking-[0.15em] text-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {savingVideos ? 'Saving...' : 'Save Homepage Videos'}
+              </button>
+
+              {homepageVideos.length < 3 && (
+                <p className="text-sm text-[var(--color-muted)]">
+                  Add at least 3 videos before saving.
+                </p>
+              )}
+
+              {videoMessage && (
+                <p className="text-sm text-[var(--color-muted)]">
+                  {videoMessage}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
         {/* HERO MANAGEMENT */}
         <div className="border border-[var(--color-border)] bg-[var(--color-surface)]">
           <div className="border-b border-[var(--color-border)] px-6 py-5">
@@ -843,6 +1048,18 @@ export default function SettingsPage() {
     </AdminLayout>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

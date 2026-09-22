@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { getCartTotals, getStorefrontCategories, getProductFilters, Category, ProductFilterSetting, isAuthenticated } from '@/lib/api';
+import { getCartTotals, getStorefrontCategories, Category, isAuthenticated } from '@/lib/api';
 
 const navigation = [
   { href: '/products', label: 'Shop' },
@@ -66,15 +66,12 @@ export function SiteHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [productFilters, setProductFilters] = useState<ProductFilterSetting[]>([]);
-  const [activeHeaderMenu, setActiveHeaderMenu] = useState<string | null>(null);
   const [isAuth, setIsAuth] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
     loadCartCount();
     loadCategories();
-    loadProductFilters();
     setIsAuth(isAuthenticated());
 
     const interval = setInterval(loadCartCount, 5000);
@@ -97,20 +94,6 @@ export function SiteHeader() {
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
-  }
-
-  async function loadProductFilters() {
-    try {
-      const filters = await getProductFilters();
-      setProductFilters(filters.filter((filter) => filter.isActive));
-    } catch (error) {
-      console.error('Failed to load product filters:', error);
-    }
-  }
-
-  function goToProductFilter(filterSlug: string, value: string) {
-    if (!value) return;
-    window.location.href = '/products?filter_' + encodeURIComponent(filterSlug) + '=' + encodeURIComponent(value);
   }
 
   function handleSearch(e: React.FormEvent) {
@@ -317,108 +300,32 @@ export function SiteHeader() {
       {showCategoryBar && (
         <div className="relative z-50 border-t border-black/10 bg-[#B94740]">
           <div className="mx-auto flex max-w-[1400px] items-stretch justify-between px-4 sm:px-6 lg:px-8">
-            <nav className="flex min-w-0 items-stretch overflow-visible whitespace-nowrap" aria-label="Product navigation">
-              <div
-                className="group relative shrink-0"
-                onMouseEnter={() => setActiveHeaderMenu('rugs')}
-                onMouseLeave={() => setActiveHeaderMenu(null)}
-              >
+            <nav
+              className="flex min-w-0 items-stretch overflow-visible whitespace-nowrap"
+              aria-label="Product navigation"
+            >
+              {[
+                'Rugs',
+                'Colour',
+                'Size',
+                'Style',
+                'Material',
+                'Pattern',
+                'Collection',
+              ].map((label) => (
                 <Link
+                  key={label}
                   href="/products"
-                  className={`block whitespace-nowrap px-5 py-3 text-[12px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15 ${activeHeaderMenu === 'rugs' ? 'bg-black/15' : ''}`}
+                  className="block shrink-0 whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15"
                 >
-                  Rugs
+                  {label}
                 </Link>
-
-                {categories.length > 0 && (
-                  <div
-                    className={`absolute left-0 top-full z-[100] w-[min(760px,calc(100vw-32px))] rounded-b-xl border border-black/10 bg-white p-5 text-black shadow-[0_20px_50px_rgba(0,0,0,0.18)] transition-all duration-150 ${
-                      activeHeaderMenu === 'rugs'
-                        ? 'visible pointer-events-auto opacity-100'
-                        : 'invisible pointer-events-none opacity-0 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100'
-                    }`}
-                    onMouseEnter={() => setActiveHeaderMenu('rugs')}
-                  >
-                    <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
-                      Rug Categories
-                    </div>
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-1 md:grid-cols-3">
-                      {categories.map((category) => (
-                        <Link
-                          key={category.id}
-                          href={'/categories/' + category.slug}
-                          className="border-b border-black/10 px-2 py-2.5 text-sm text-black transition-colors duration-150 hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
-                        >
-                          {category.name}
-                        </Link>
-                      ))}
-                    </div>
-                    <Link
-                      href="/products"
-                      className="mt-4 inline-block border-t border-black/10 pt-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a5a2c] hover:text-[#2f6b36]"
-                    >
-                      View all rugs →
-                    </Link>
-                  </div>
-                )}
-              </div>
-
-              {(['color', 'size', 'style', 'material'] as const).map((slug) => {
-                const filter = productFilters.find((item) => item.slug === slug);
-                if (!filter) return null;
-
-                const label = slug === 'color' ? 'Colour' : filter.name;
-
-                return (
-                  <div
-                    key={slug}
-                    className="group relative shrink-0"
-                    onMouseEnter={() => setActiveHeaderMenu(slug)}
-                    onMouseLeave={() => setActiveHeaderMenu(null)}
-                  >
-                    <Link
-                      href={'/products?filter_' + filter.slug}
-                      className={`block whitespace-nowrap px-5 py-3 text-[12px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15 ${activeHeaderMenu === slug ? 'bg-black/15' : ''}`}
-                    >
-                      {label}
-                    </Link>
-
-                    {filter.values.length > 0 && (
-                      <div
-                        className={`absolute left-0 top-full z-[100] w-[420px] rounded-b-xl border border-black/10 bg-white p-5 text-black shadow-[0_20px_50px_rgba(0,0,0,0.18)] transition-all duration-150 ${
-                          activeHeaderMenu === slug
-                            ? 'visible pointer-events-auto opacity-100'
-                            : 'invisible pointer-events-none opacity-0 group-hover:visible group-hover:pointer-events-auto group-hover:opacity-100'
-                        }`}
-                        onMouseEnter={() => setActiveHeaderMenu(slug)}
-                      >
-                        <div className="mb-4 border-b border-black/10 pb-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-[#2f6b36]">
-                          {label}
-                        </div>
-                        <div className="grid max-h-[340px] grid-cols-2 gap-x-6 gap-y-1 overflow-y-auto">
-                          {filter.values
-                            .filter((value) => value.isActive)
-                            .sort((a, b) => a.sortOrder - b.sortOrder)
-                            .map((value) => (
-                              <Link
-                                key={value.slug}
-                                href={'/products?filter_' + filter.slug + '=' + encodeURIComponent(value.slug)}
-                                className="border-b border-black/10 px-2 py-2.5 text-sm text-black transition-colors duration-150 hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
-                              >
-                                {value.label}
-                              </Link>
-                            ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              ))}
             </nav>
 
             <Link
               href="/custom-design"
-              className="my-1.5 shrink-0 rounded-lg border border-[#E8C98A] bg-[#E8C98A] px-4 py-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#2b2118] transition-all duration-200 hover:border-black hover:bg-black hover:text-white"
+              className="my-1.5 shrink-0 rounded-lg border border-[#E8C98A] bg-[#E8C98A] px-2 py-1 text-[16px] font-semibold uppercase tracking-[0.12em] text-[#2b2118] transition-all duration-200 hover:border-black hover:bg-black hover:text-white"
             >
               Custom Design
             </Link>
@@ -432,24 +339,24 @@ export function SiteHeader() {
           aria-label="Shop products with free worldwide shipping"
           className="luxecraft-shipping-promo block border-t border-black/10 bg-black px-3 py-2 transition-all duration-300 sm:px-6 sm:py-2.5"
         >
-          <div className="grid w-full grid-cols-1 items-center text-center sm:grid-cols-3">
+          <div className="flex w-full items-center justify-start gap-12">
             <span
               data-shipping-label="fast-delivery"
               className="luxecraft-shipping-text text-white text-[11px] font-extrabold uppercase tracking-[0.14em] sm:text-[14px] sm:tracking-[0.18em]"
             >
-              Fast delivery
+              ✅Fast delivery
             </span>
             <span
               data-shipping-label="returns"
               className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block"
             >
-              14 days return policy
+              ✅14 days return policy
             </span>
             <span
               data-shipping-label="free-shipping"
               className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block"
             >
-              FREE SHIPPING • WORLDWIDE
+              ✅FREE SHIPPING • WORLDWIDE
             </span>
           </div>
         </Link>

@@ -1020,6 +1020,8 @@ model FaqItem {
 model AppSetting {
   id             String   @id @default(cuid())
   defaultCurrency String  @default("USD")
+  productFilters Json?
+  sitePages      Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

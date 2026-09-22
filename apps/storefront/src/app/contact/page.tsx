@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useState } from 'react';
 import { submitContactMessage } from '@/lib/api';
 import Link from 'next/link';

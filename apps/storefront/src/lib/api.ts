@@ -188,7 +188,7 @@ export async function getHomeCouponLabel(): Promise<HomeCouponLabel | null> {
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : null;
+    return data.success ? data.data?.data ?? null : null;
   } catch (error) {
     console.error('Failed to fetch homepage coupon label:', error);
     return null;

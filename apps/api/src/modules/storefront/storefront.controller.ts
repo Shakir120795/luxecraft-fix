@@ -1,4 +1,5 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
+
 import { StorefrontService } from './storefront.service';
 
 @Controller('storefront')
@@ -10,8 +11,7 @@ export class StorefrontController {
     return this.svc.getHero();
   }
 
-  // Categories -------------------------------------------------
-
+  // Categories
   @Get('categories')
   getCategories() {
     return this.svc.getCategories();
@@ -22,8 +22,19 @@ export class StorefrontController {
     return this.svc.getCategoryBySlug(slug);
   }
 
-  // -- Products ---------------------------------------------------
+  // Product Filters
+  @Get('pages/product-filters')
+  getProductFilters() {
+    return this.svc.getProductFilters();
+  }
 
+  // Homepage Videos
+  @Get('pages/homepage-videos')
+  getHomepageVideos() {
+    return this.svc.getHomepageVideos();
+  }
+
+  // Products
   @Get('products')
   getProducts(
     @Query('categoryId') categoryId?: string,
@@ -48,6 +59,8 @@ export class StorefrontController {
 
   @Get('featured')
   getFeaturedProducts(@Query('take') take?: string) {
-    return this.svc.getFeaturedProducts(take ? parseInt(take, 10) : undefined);
+    return this.svc.getFeaturedProducts(
+      take ? parseInt(take, 10) : undefined,
+    );
   }
 }

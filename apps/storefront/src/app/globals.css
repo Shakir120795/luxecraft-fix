@@ -316,8 +316,18 @@
 }
 
 .luxecraft-shipping-text {
-  animation: luxecraftShippingPulse 2.8s ease-in-out infinite;
-  transition: color 300ms ease, text-shadow 300ms ease;
+  animation: shippingTextPulse 2s ease-in-out infinite;
+}
+
+@keyframes shippingTextPulse {
+  0%,
+  100% {
+    color: #ffffff;
+  }
+
+  50% {
+    color: #c8453d;
+  }
 }
 
 .luxecraft-shipping-promo:hover .luxecraft-shipping-text {

@@ -1,10 +1,27 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Category, Product, ProductStatus, CategoryStatus } from '@prisma/client';
+import { SettingsService } from '../settings/settings.service';
+import {
+  Category,
+  Product,
+  ProductStatus,
+  CategoryStatus,
+} from '@prisma/client';
 
 @Injectable()
 export class StorefrontService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
+
+  async getProductFilters() {
+    return this.settings.getProductFilters();
+  }
+
+  async getHomepageVideos() {
+    return this.settings.getHomepageVideos();
+  }
 
   async getHero() {
     const hero = await this.prisma.heroSection.findFirst({
@@ -28,11 +45,18 @@ export class StorefrontService {
 
   async getCategories(): Promise<Category[]> {
     return this.prisma.category.findMany({
-      where: { status: CategoryStatus.ACTIVE, deletedAt: null, parentId: null },
+      where: {
+        status: CategoryStatus.ACTIVE,
+        deletedAt: null,
+        parentId: null,
+      },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
         children: {
-          where: { status: CategoryStatus.ACTIVE, deletedAt: null },
+          where: {
+            status: CategoryStatus.ACTIVE,
+            deletedAt: null,
+          },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         },
       },
@@ -41,16 +65,26 @@ export class StorefrontService {
 
   async getCategoryBySlug(slug: string): Promise<Category> {
     const cat = await this.prisma.category.findFirst({
-      where: { slug, status: CategoryStatus.ACTIVE, deletedAt: null },
+      where: {
+        slug,
+        status: CategoryStatus.ACTIVE,
+        deletedAt: null,
+      },
       include: {
         children: {
-          where: { status: CategoryStatus.ACTIVE, deletedAt: null },
+          where: {
+            status: CategoryStatus.ACTIVE,
+            deletedAt: null,
+          },
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         },
       },
     });
 
-    if (!cat) throw new NotFoundException(`Category "${slug}" not found.`);
+    if (!cat) {
+      throw new NotFoundException(`Category "${slug}" not found.`);
+    }
+
     return cat;
   }
 
@@ -65,12 +99,29 @@ export class StorefrontService {
       status: ProductStatus.ACTIVE,
       deletedAt: null,
       ...(params.categoryId && { categoryId: params.categoryId }),
-      ...(params.isFeatured !== undefined && { isFeatured: params.isFeatured }),
+      ...(params.isFeatured !== undefined && {
+        isFeatured: params.isFeatured,
+      }),
       ...(params.search && {
         OR: [
-          { name: { contains: params.search, mode: 'insensitive' } },
-          { description: { contains: params.search, mode: 'insensitive' } },
-          { sku: { contains: params.search, mode: 'insensitive' } },
+          {
+            name: {
+              contains: params.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: params.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            sku: {
+              contains: params.search,
+              mode: 'insensitive',
+            },
+          },
         ],
       }),
     };
@@ -82,7 +133,13 @@ export class StorefrontService {
         take: params.take ?? 24,
         orderBy: { publishedAt: 'desc' },
         include: {
-          category: { select: { id: true, name: true, slug: true } },
+          category: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
           media: {
             where: { type: 'IMAGE' },
             orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
@@ -98,14 +155,23 @@ export class StorefrontService {
 
   async getProductBySlug(slug: string): Promise<Product> {
     const product = await this.prisma.product.findFirst({
-      where: { slug, status: ProductStatus.ACTIVE, deletedAt: null },
+      where: {
+        slug,
+        status: ProductStatus.ACTIVE,
+        deletedAt: null,
+      },
       include: {
         category: true,
         variants: {
-          where: { deletedAt: null, isAvailable: true },
+          where: {
+            deletedAt: null,
+            isAvailable: true,
+          },
           orderBy: { sortOrder: 'asc' },
         },
-        media: { orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }] },
+        media: {
+          orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+        },
         customizationOptions: {
           where: { isAvailable: true },
           orderBy: { sortOrder: 'asc' },
@@ -113,17 +179,30 @@ export class StorefrontService {
       },
     });
 
-    if (!product) throw new NotFoundException(`Product "${slug}" not found.`);
+    if (!product) {
+      throw new NotFoundException(`Product "${slug}" not found.`);
+    }
+
     return product;
   }
 
   async getFeaturedProducts(take = 8): Promise<Product[]> {
     return this.prisma.product.findMany({
-      where: { status: ProductStatus.ACTIVE, deletedAt: null, isFeatured: true },
+      where: {
+        status: ProductStatus.ACTIVE,
+        deletedAt: null,
+        isFeatured: true,
+      },
       take,
       orderBy: { publishedAt: 'desc' },
       include: {
-        category: { select: { id: true, name: true, slug: true } },
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         media: {
           where: { type: 'IMAGE' },
           orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
@@ -133,3 +212,4 @@ export class StorefrontService {
     });
   }
 }
+
