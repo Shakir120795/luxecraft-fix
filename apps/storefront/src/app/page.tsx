@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { getStorefrontCategories, getProducts, getHero, Product, Category, HeroSection } from '@/lib/api';
+import { getStorefrontCategories, getProducts, getHero, getHomepageVideos, Product, Category, HeroSection, HomepageVideo } from '@/lib/api';
 import { ProductCard } from '@/components/ProductCard';
 import { CategoryCard } from '@/components/CategoryCard';
 import { HomeCouponLabel } from '@/components/HomeCouponLabel';
@@ -16,6 +16,8 @@ export default function HomePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [hero, setHero] = useState<HeroSection | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [homepageVideos, setHomepageVideos] = useState<HomepageVideo[]>([]);
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
@@ -44,12 +46,14 @@ export default function HomePage() {
       try {
         setLoading(true);
 
-        const [cats, prods, heroData] = await Promise.all([
+        const [cats, prods, heroData, videoData] = await Promise.all([
           getStorefrontCategories(),
           getProducts(16),
           getHero(),
+          getHomepageVideos(),
         ]);
         setHero(heroData);
+        setHomepageVideos(videoData.filter((video) => video.isActive).sort((a, b) => a.sortOrder - b.sortOrder));
 
         setCategories(cats);
         setProducts(prods.slice(0, 16));
@@ -435,58 +439,113 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-      {/* WHY WOLHOMES */}
-      <section className="border-t border-black/10 bg-white">
-        <div className="mx-auto max-w-[1400px] px-6 py-14 sm:px-8 sm:py-16 lg:py-20">
-          <div className="mb-12 max-w-2xl">
-            <p className="text-[10px] uppercase tracking-[0.24em] text-luxury-olive">
-              The Wolhomes standard
-            </p>
-            <h2 className="mt-3 font-serif text-4xl font-light sm:text-5xl">
-              Craftsmanship without compromise.
-            </h2>
+      {/* HOMEPAGE VIDEOS */}
+      {homepageVideos.length > 0 && (
+        <section className="border-t border-black/10 bg-[#f4f0eb]">
+          <div className="mx-auto max-w-[1400px] px-6 py-14 sm:px-8 sm:py-16 lg:py-20">
+            <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.24em] text-luxury-olive">
+                  From Wolhomes
+                </p>
+                <h2 className="mt-3 font-serif text-4xl font-light sm:text-5xl">
+                  See the Wolhomes world.
+                </h2>
+              </div>
+
+              {homepageVideos.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveVideoIndex((current) =>
+                        current === 0 ? homepageVideos.length - 1 : current - 1
+                      )
+                    }
+                    className="flex h-10 w-10 items-center justify-center border border-black/15 bg-white text-lg transition hover:bg-black hover:text-white"
+                    aria-label="Previous video"
+                  >
+                    &#8592;
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveVideoIndex((current) =>
+                        (current + 1) % homepageVideos.length
+                      )
+                    }
+                    className="flex h-10 w-10 items-center justify-center border border-black/15 bg-white text-lg transition hover:bg-black hover:text-white"
+                    aria-label="Next video"
+                  >
+                    &#8594;
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="relative overflow-hidden bg-black">
+              {homepageVideos.map((video, index) => {
+                const youtubeMatch = video.url.match(
+                  /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([^?&/]+)/
+                );
+                const instagramMatch = video.url.match(
+                  /instagram\.com\/(?:reel|p|tv)\/([^/?#]+)/
+                );
+
+                const embedUrl =
+                  video.platform === 'youtube' && youtubeMatch
+                    ? `https://www.youtube.com/embed/${youtubeMatch[1]}?autoplay=${index === activeVideoIndex ? '1' : '0'}&mute=1&rel=0`
+                    : video.platform === 'instagram' && instagramMatch
+                      ? `https://www.instagram.com/${video.url.includes('/reel/') ? 'reel' : video.url.includes('/tv/') ? 'tv' : 'p'}/${instagramMatch[1]}/embed`
+                      : null;
+
+                if (index !== activeVideoIndex || !embedUrl) return null;
+
+                return (
+                  <div key={video.id} className="aspect-[9/16] w-full sm:aspect-video">
+                    <iframe
+                      src={embedUrl}
+                      title={video.title}
+                      className="h-full w-full border-0"
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm uppercase tracking-[0.14em] text-luxury-olive">
+                  {homepageVideos[activeVideoIndex]?.platform}
+                </p>
+                <h3 className="mt-1 font-serif text-2xl">
+                  {homepageVideos[activeVideoIndex]?.title}
+                </h3>
+              </div>
+
+              {homepageVideos.length > 1 && (
+                <div className="flex items-center gap-2">
+                  {homepageVideos.map((video, index) => (
+                    <button
+                      key={video.id}
+                      type="button"
+                      onClick={() => setActiveVideoIndex(index)}
+                      className={`h-1.5 rounded-full transition-all ${
+                        index === activeVideoIndex
+                          ? 'w-8 bg-luxury-olive'
+                          : 'w-2 bg-black/20'
+                      }`}
+                      aria-label={`Go to video ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-
-          <div className="grid grid-cols-1 divide-y border-y border-black/10 md:grid-cols-3 md:divide-x md:divide-y-0">
-            <div className="px-0 py-8 md:px-8 md:py-5 md:first:pl-0">
-              <span className="font-serif text-5xl text-luxury-gold">01</span>
-              <h3 className="mt-5 font-serif text-2xl">Authentic Craftsmanship</h3>
-              <p className="mt-3 text-sm leading-7 text-luxury-brown">
-                Every piece is handcrafted with care by experienced artisans.
-              </p>
-              <Link
-                href="/about"
-                className="mt-5 inline-block text-[10px] uppercase tracking-[0.16em] text-luxury-olive underline underline-offset-4"
-              >
-              Our story &rarr;
-              </Link>
-            </div>
-
-            <div className="px-0 py-8 md:px-8 md:py-5">
-              <span className="font-serif text-5xl text-luxury-gold">02</span>
-              <h3 className="mt-5 font-serif text-2xl">Worldwide Reach</h3>
-              <p className="mt-3 text-sm leading-7 text-luxury-brown">
-                Thoughtful shipping, customs support, and delivery worldwide.
-              </p>
-            </div>
-
-            <div className="px-0 py-8 md:px-8 md:py-5 md:last:pr-0">
-              <span className="font-serif text-5xl text-luxury-gold">03</span>
-              <h3 className="mt-5 font-serif text-2xl">Made to Last</h3>
-              <p className="mt-3 text-sm leading-7 text-luxury-brown">
-                Timeless materials and considered construction for enduring
-                beauty.
-              </p>
-              <Link
-                href="/faq"
-                className="mt-5 inline-block text-[10px] uppercase tracking-[0.16em] text-luxury-olive underline underline-offset-4"
-              >
-              Learn more &rarr;
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* LOADING */}
       {loading && (

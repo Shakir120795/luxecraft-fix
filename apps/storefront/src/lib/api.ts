@@ -172,6 +172,29 @@ export async function getFaqs(): Promise<FaqItem[]> {
     return [];
   }
 }
+export interface HomepageVideo {
+  id: string;
+  title: string;
+  url: string;
+  platform: 'youtube' | 'instagram';
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export async function getHomepageVideos(): Promise<HomepageVideo[]> {
+  try {
+    const res = await fetch(`${API_URL}/storefront/pages/homepage-videos`, {
+      cache: 'no-store',
+    });
+
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+    const data = await res.json();
+    return data.success && Array.isArray(data.data) ? data.data : [];
+  } catch (error) {
+    console.error('Failed to fetch homepage videos:', error);
+    return [];
+  }
+}
 export interface HomeCouponLabel {
   id: string;
   code: string;

@@ -301,11 +301,12 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-lg font-medium text-[var(--color-text)]">Homepage Videos</h2>
                 <p className="mt-1 text-sm text-[var(--color-muted)]">
-                  Add YouTube or Instagram videos for the homepage carousel. Minimum 3 videos.
+                  Add YouTube or Instagram videos for the homepage carousel. 1 to 3 videos.
                 </p>
               </div>
               <button
                 type="button"
+                disabled={homepageVideos.length >= 3}
                 onClick={() =>
                   setHomepageVideos((current) => [
                     ...current,
@@ -457,15 +458,15 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={saveHomepageVideos}
-                disabled={savingVideos || homepageVideos.length < 3}
+                disabled={savingVideos || homepageVideos.length < 1 || homepageVideos.length > 3}
                 className="border border-[var(--color-primary)] bg-[var(--color-primary)] px-6 py-3 text-xs uppercase tracking-[0.15em] text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {savingVideos ? 'Saving...' : 'Save Homepage Videos'}
               </button>
 
-              {homepageVideos.length < 3 && (
+              {homepageVideos.length === 0 && (
                 <p className="text-sm text-[var(--color-muted)]">
-                  Add at least 3 videos before saving.
+                  Add at least 1 video before saving.
                 </p>
               )}
 
