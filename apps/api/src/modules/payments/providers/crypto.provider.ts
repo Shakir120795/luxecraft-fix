@@ -11,6 +11,7 @@ export interface CryptoPaymentResult {
   amount: number;
   currency: string;
   instructions: string;
+  qrPayload: string;
 }
 
 @Injectable()
@@ -67,6 +68,26 @@ export class CryptoProvider {
       );
     }
 
+    const tokenKey =
+      normalizedNetwork === 'ethereum'
+        ? normalizedAsset === 'USDT'
+          ? 'ethereumUsdt'
+          : 'ethereumUsdc'
+        : normalizedNetwork === 'solana'
+          ? normalizedAsset === 'USDT'
+            ? 'solanaUsdt'
+            : 'solanaUsdc'
+          : 'tronUsdt';
+    const tokenContract = tokens[tokenKey];
+    const tokenUnits = BigInt(Math.round(amount * 1_000_000)).toString();
+
+    const qrPayload =
+      normalizedNetwork === 'ethereum'
+        ? 'ethereum:' + tokenContract + '/transfer?address=' + address + '&uint256=' + tokenUnits
+        : normalizedNetwork === 'solana'
+          ? 'solana:' + address + '?amount=' + amount.toFixed(6) + '&spl-token=' + tokenContract
+          : address;
+
     return {
       network: normalizedNetwork,
       asset: normalizedAsset,
@@ -74,6 +95,7 @@ export class CryptoProvider {
       amount,
       currency: 'USD',
       instructions: `Send exactly ${amount.toFixed(2)} ${normalizedAsset} on ${normalizedNetwork} network to the address shown above. Do not send through another network.`,
+      qrPayload,
     };
   }
 
