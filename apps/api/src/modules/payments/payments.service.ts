@@ -59,6 +59,7 @@ export class PaymentsService {
       amount: number;
       currency: string;
       instructions: string;
+      qrPayload: string;
     };
   }> {
     const provider = data.provider.toLowerCase().trim();
