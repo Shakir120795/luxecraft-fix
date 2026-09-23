@@ -594,7 +594,7 @@ export default function CheckoutPage() {
                   <div className="space-y-6">
                     <div className="grid gap-4 sm:grid-cols-3">
                       {[
-                        { id: 'razorpay', label: 'Razorpay', description: 'Cards, UPI & Indian payment methods' },
+                        { id: 'razorpay', label: 'Card Payment', description: 'Secure international card payment' },
                         { id: 'paypal', label: 'PayPal', description: 'Pay securely with your PayPal account' },
                         { id: 'crypto', label: 'Crypto', description: 'USDT / USDC stablecoin payment' },
                       ].map((method) => {
@@ -854,7 +854,7 @@ export default function CheckoutPage() {
                 </button>
               </div>
             )}
-undefined          </div>
+          </div>
         </div>
       </div>
     </main>
