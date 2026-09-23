@@ -33,7 +33,8 @@ export class PaymentProviderService {
     );
 
     const providers = configuredProviders.filter((candidate) =>
-      this.isConfigured(candidate),
+      this.isConfigured(candidate) &&
+      (candidate.toLowerCase() !== 'crypto' || currency.toUpperCase() === 'USD'),
     );
 
     let publicKey: string | undefined;
