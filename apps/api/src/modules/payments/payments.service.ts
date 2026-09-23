@@ -185,6 +185,16 @@ export class PaymentsService {
     return this.razorpayProvider.verifyPayment(orderId, paymentId, signature);
   }
 
+  async fetchRazorpayPayment(paymentId: string): Promise<{
+    id: string;
+    orderId?: string;
+    amount: number;
+    currency: string;
+    status: string;
+  }> {
+    return this.razorpayProvider.fetchPayment(paymentId);
+  }
+
   async updateStatus(
     paymentId: string,
     status: PaymentStatus,
