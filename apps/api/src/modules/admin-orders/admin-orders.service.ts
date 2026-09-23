@@ -10,8 +10,8 @@ export class AdminOrdersService {
 
   async findAll(params: { orderStatus?: string; paymentStatus?: string; search?: string; skip?: number; take?: number }): Promise<{ items: any[]; total: number }> {
     const where: Prisma.OrderWhereInput = {
+      paymentStatus: (params.paymentStatus as any) || PaymentStatus.PAID,
       ...(params.orderStatus && { orderStatus: params.orderStatus as any }),
-      ...(params.paymentStatus && { paymentStatus: params.paymentStatus as any }),
       ...(params.search && {
         OR: [
           { orderNumber: { contains: params.search, mode: 'insensitive' } },
