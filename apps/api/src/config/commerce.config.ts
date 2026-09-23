@@ -18,6 +18,7 @@ export default registerAs('commerce', () => ({
     razorpayWebhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET,
     paypalClientId: process.env.PAYPAL_CLIENT_ID,
     paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET,
+    paypalWebhookId: process.env.PAYPAL_WEBHOOK_ID,
     paypalBaseUrl: process.env.PAYPAL_BASE_URL ?? 'https://api-m.sandbox.paypal.com',
     cryptoEnabled: (process.env.CRYPTO_ENABLED ?? 'false').toLowerCase() === 'true',
     cryptoNetworks: csv(process.env.CRYPTO_NETWORKS),
