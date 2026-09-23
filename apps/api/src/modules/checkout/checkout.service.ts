@@ -174,7 +174,7 @@ export class CheckoutService {
     }
 
     // 3. Create order with reserved stock
-    let order, payment, clientSecret, approveUrl;
+    let order, payment, clientSecret, approveUrl, publicKey;
 
     try {
       order = await this.orders.create({
@@ -209,6 +209,7 @@ export class CheckoutService {
 
       payment = paymentResult.payment;
       approveUrl = paymentResult.approveUrl;
+      publicKey = paymentResult.publicKey;
 
       this.logger.log(`Payment created for ${order.orderNumber}: ${payment.provider}`);
 
@@ -231,13 +232,12 @@ export class CheckoutService {
       throw error;
     }
 
-    // 5. Clear cart
-    await this.cart.clearCart(input.userId, input.sessionId);
-
+    // Cart is cleared only after payment is successfully verified.
     return {
       order,
       payment,
       clientSecret,
+      publicKey,
       providerOrderId: payment?.providerPaymentId,
       approveUrl,
       paymentProvider: payment?.provider,
