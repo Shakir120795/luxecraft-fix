@@ -46,6 +46,10 @@ export class CryptoProvider {
       'commerce.payment.cryptoWallets',
       {},
     );
+    const tokens = this.config.get<Record<string, string>>(
+      'commerce.payment.cryptoTokens',
+      {},
+    ) || {};
 
     const walletKey =
       normalizedNetwork === 'ethereum'
