@@ -75,7 +75,7 @@ export function ProductFilterBar({
       ref={barRef}
       className="relative mb-10 border-y border-[#e5ddd3] bg-[#fbf9f6] py-4 sm:py-5"
     >
-      <div className="flex items-center gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex flex-wrap items-center gap-3 pb-1">
         <div className="mr-1 flex shrink-0 items-center gap-2 pr-2">
           <span className="h-2 w-2 rounded-full bg-[#b94740]" />
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#6f665f]">
