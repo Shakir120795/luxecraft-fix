@@ -125,6 +125,13 @@ export function SiteHeader() {
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  function categoryRugHref(category: Category) {
+    const categoryQuery = category.name.trim().toLowerCase() === 'rugs'
+      ? '/products'
+      : '/products?category=' + encodeURIComponent(category.id);
+    return categoryQuery;
+  }
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
 
@@ -394,7 +401,7 @@ export function SiteHeader() {
                                 {rugCategories.map((category) => (
                                   <Link
                                     key={category.id}
-                                    href={`/categories/${category.slug}`}
+                                    href={categoryRugHref(category)}
                                     onClick={() => setOpenFilter(null)}
                                     className="group flex items-center justify-between rounded-lg border border-transparent bg-white px-3.5 py-3 text-sm text-[#2b2118] transition-all duration-200 hover:border-[#d9c8a9] hover:bg-[#f4f0eb] hover:shadow-sm"
                                   >
