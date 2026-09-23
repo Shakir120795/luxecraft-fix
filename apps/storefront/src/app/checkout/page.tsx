@@ -352,6 +352,11 @@ export default function CheckoutPage() {
           currency: result.data.payment?.currency || cart.currency,
           name: 'Wolhomes',
           description: `Order ${result.data.order.orderNumber}`,
+          prefill: {
+            name: `${isGuest ? (guestShippingAddress?.firstName ?? guestFirstName) : (getCurrentUser()?.firstName ?? '')} ${isGuest ? (guestShippingAddress?.lastName ?? guestLastName) : (getCurrentUser()?.lastName ?? '')}`.trim(),
+            email: guestEmail || getCurrentUser()?.email || '',
+            contact: isGuest ? (guestShippingAddress?.phone || '') : (getCurrentUser()?.phone || ''),
+          },
           handler: async (response: {
             razorpay_order_id: string;
             razorpay_payment_id: string;
