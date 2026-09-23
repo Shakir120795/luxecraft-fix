@@ -234,10 +234,10 @@ export class WebhookService {
       throw new NotFoundException('Payment not found');
     }
 
-    await this.prisma.$transaction([
-      // Update payment status
-      this.prisma.payment.update({
-        where: { id: payment.id },
+    let processed = false;
+    await this.prisma.$transaction(async (tx) => {
+      const failedUpdate = await tx.payment.updateMany({
+        where: { id: payment.id, status: { not: PaymentStatus.PAID } },
         data: {
           status: PaymentStatus.FAILED,
           failedAt: new Date(),
@@ -246,17 +246,53 @@ export class WebhookService {
             failureReason: data.reason,
           },
         },
-      }),
+      });
 
-      // Update order status
-      this.prisma.order.update({
+      if (failedUpdate.count === 0) return;
+      processed = true;
+
+      await tx.order.update({
         where: { id: order.id },
         data: {
           orderStatus: OrderStatus.FAILED,
           paymentStatus: PaymentStatus.FAILED,
         },
-      }),
-    ]);
+      });
+
+      for (const item of order.items) {
+        if (!item.variantId) continue;
+
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+        });
+
+        if (!variant?.trackInventory) continue;
+
+        const released = await tx.productVariant.updateMany({
+          where: { id: item.variantId, reservedQty: { gte: item.quantity } },
+          data: { reservedQty: { decrement: item.quantity } },
+        });
+
+        if (released.count > 0) {
+          await tx.inventoryLog.create({
+            data: {
+              variantId: item.variantId,
+              changeType: 'ORDER_RELEASE',
+              delta: item.quantity,
+              qtyBefore: variant.stockQty,
+              qtyAfter: variant.stockQty,
+              reason: `Order ${order.orderNumber} - Payment failed`,
+              reference: order.id,
+            },
+          });
+        }
+      }
+    });
+
+    if (!processed) {
+      this.logger.log(`Payment ${payment.id} was already paid; ignoring failed callback`);
+      return;
+    }
 
     this.logger.log(`Payment failed for order ${order.orderNumber}: ${data.reason}`);
   }
