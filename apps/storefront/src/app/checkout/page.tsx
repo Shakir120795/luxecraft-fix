@@ -569,52 +569,7 @@ export default function CheckoutPage() {
               </div>
             )}
 
-            {/* Shipping Step */}
-            {currentStep === 'shipping' && (
-              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
-                <h2 className="mb-2 font-serif text-2xl font-normal text-luxury-charcoal">Shipping</h2>
-                <p className="mb-7 text-sm text-luxury-brown">
-                  Shipping is calculated automatically for your delivery country.
-                </p>
-
-                <form id="shipping-form" onSubmit={handleShippingSubmit} className="space-y-6">
-                  {shippingMethod ? (
-                    <div className="rounded-md border border-[#ded8d0] bg-[#faf9f7] p-5">
-                      <div className="flex items-start justify-between gap-6">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.14em] text-luxury-brown/70">
-                            Shipping to {shippingMethod.name.replace(' Shipping', '')}
-                          </p>
-                          <p className="mt-2 font-medium text-luxury-charcoal">
-                            {shippingMethod.description || 'Country-based shipping'}
-                          </p>
-                          {shippingMethod.estimatedDays && (
-                            <p className="mt-1 text-sm text-luxury-brown">
-                              Estimated delivery: {shippingMethod.estimatedDays} business days
-                            </p>
-                          )}
-                        </div>
-                        <p className="font-serif text-xl text-luxury-charcoal">
-                          {shippingMethod.currency === 'INR' ? '₹' :
-                           shippingMethod.currency === 'USD' ? '$' :
-                           shippingMethod.currency === 'CAD' ? 'C$' :
-                           shippingMethod.currency === 'GBP' ? '£' :
-                           shippingMethod.currency === 'EUR' ? '€' :
-                           shippingMethod.currency === 'AUD' ? 'A$' :
-                           `${shippingMethod.currency} `}
-                          {shippingMethod.rate.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-luxury-brown">
-                      No shipping available for your delivery country.
-                    </p>
-                  )}
-
-                </form>
-              </div>
-            )}            {/* Payment Step */}
+            {/* Payment Step */}
             {currentStep === 'payment' && (
               <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
                 <h2 className="mb-3 font-serif text-2xl font-normal text-luxury-charcoal">Shipping & Payment</h2>
