@@ -17,6 +17,9 @@ export function ProductCard({ product }: { product: Product }) {
             <img
               src={mainImage.url}
               alt={mainImage.altText || product.name}
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
               className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.04]"
             />
           ) : (
