@@ -69,6 +69,24 @@ export class PaymentsController {
       throw new BadRequestException('Invalid Razorpay payment signature');
     }
 
+    const providerPayment = await this.payments.fetchRazorpayPayment(
+      body.razorpayPaymentId,
+    );
+
+    if (
+      providerPayment.orderId !== body.razorpayOrderId ||
+      providerPayment.status !== 'captured'
+    ) {
+      throw new BadRequestException('Razorpay payment is not captured for this order');
+    }
+
+    if (
+      Math.abs(providerPayment.amount - Number(payment.amount)) > 0.01 ||
+      providerPayment.currency !== payment.currency.toUpperCase()
+    ) {
+      throw new BadRequestException('Razorpay payment amount or currency does not match the order');
+    }
+
     await this.webhooks.recordWebhookEvent({
       provider: 'razorpay',
       eventType: 'payment.verified',
@@ -90,9 +108,9 @@ export class PaymentsController {
 
       await this.webhooks.handlePaymentSuccess({
         orderId: order.id,
-        paymentIntentId: body.razorpayPaymentId,
-        amount: Number(payment.amount),
-        currency: order.currency,
+        paymentIntentId: body.razorpayOrderId,
+        amount: providerPayment.amount,
+        currency: providerPayment.currency,
       });
 
       await this.webhooks.markEventProcessed('razorpay', body.razorpayPaymentId);
