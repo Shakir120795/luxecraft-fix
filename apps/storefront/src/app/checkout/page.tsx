@@ -64,7 +64,7 @@ export default function CheckoutPage() {
   const [cryptoAssets, setCryptoAssets] = useState<string[]>([]);
   const [selectedCryptoNetwork, setSelectedCryptoNetwork] = useState('ethereum');
   const [selectedCryptoAsset, setSelectedCryptoAsset] = useState('USDT');
-  const [cryptoPayment, setCryptoPayment] = useState<{ network: string; asset: string; address: string; amount: number; currency: string; instructions: string } | null>(null);
+  const [cryptoPayment, setCryptoPayment] = useState<{ network: string; asset: string; address: string; amount: number; currency: string; instructions: string; qrPayload: string } | null>(null);
   const [cryptoTxHash, setCryptoTxHash] = useState('');
   const [cryptoQrCode, setCryptoQrCode] = useState<string | null>(null);
   const [paymentConfigured, setPaymentConfigured] = useState(false);
@@ -83,8 +83,7 @@ export default function CheckoutPage() {
       return;
     }
 
-    const qrPayload = `WOLHOMES|${cryptoPayment.network}|${cryptoPayment.asset}|${cryptoPayment.address}|${cryptoPayment.amount}`;
-    QRCode.toDataURL(qrPayload, { margin: 2, width: 240 })
+    QRCode.toDataURL(cryptoPayment.qrPayload, { margin: 2, width: 240 })
       .then(setCryptoQrCode)
       .catch(() => setCryptoQrCode(null));
   }, [cryptoPayment]);
