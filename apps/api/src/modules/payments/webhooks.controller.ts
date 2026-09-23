@@ -237,13 +237,11 @@ export class WebhooksController {
       const customId = String(
         resource.custom_id ||
           purchaseUnit.custom_id ||
-          resource.supplementary_data?.related_ids?.order_id ||
           '',
       );
       const captureId = String(resource.id || '');
       const paypalOrderId = String(
-        purchaseUnit.reference_id ||
-          resource.supplementary_data?.related_ids?.order_id ||
+        resource.supplementary_data?.related_ids?.order_id ||
           '',
       );
       const amount = Number(
