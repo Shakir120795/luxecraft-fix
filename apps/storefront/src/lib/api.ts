@@ -1199,6 +1199,7 @@ export async function createOrder(params: {
       amount: number;
       currency: string;
       instructions: string;
+      qrPayload: string;
     };
     guestAccessToken?: string 
   }; 
