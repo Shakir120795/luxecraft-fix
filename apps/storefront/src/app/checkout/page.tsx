@@ -8,6 +8,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { 
   getCart, 
+  clearCart,
   isAuthenticated, 
   getCurrentUser,
   getAddresses, 
@@ -241,6 +242,7 @@ export default function CheckoutPage() {
           return;
         }
 
+        await clearCart();
         const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
         if (accessToken) confirmationQuery.set('access', accessToken);
         router.push(`/order-confirmation?${confirmationQuery.toString()}`);
@@ -260,6 +262,7 @@ export default function CheckoutPage() {
           return;
         }
 
+        await clearCart();
         const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
         if (accessToken) confirmationQuery.set('access', accessToken);
         router.push(`/order-confirmation?${confirmationQuery.toString()}`);
@@ -370,6 +373,7 @@ export default function CheckoutPage() {
               return;
             }
 
+            await clearCart();
             const confirmationQuery = new URLSearchParams({ orderId: result.data!.order.id });
             if (result.data!.guestAccessToken) {
               confirmationQuery.set('access', result.data!.guestAccessToken);
@@ -609,6 +613,10 @@ export default function CheckoutPage() {
                             onClick={() => {
                               setError(null);
                               setPaymentProvider(method.id as 'razorpay' | 'paypal' | 'crypto');
+                              setPaymentOrderId(null);
+                              setPaymentProviderOrderId(null);
+                              setPaymentGuestAccessToken(null);
+                              setPaymentClientSecret(null);
                               setCryptoPayment(null);
                               setCryptoTxHash('');
                             }}
@@ -771,7 +779,7 @@ export default function CheckoutPage() {
                           : cryptoPayment
                             ? 'Payment details ready'
                             : paymentProvider === 'razorpay'
-                              ? 'Continue with Razorpay'
+                              ? 'Continue with Card Payment'
                               : paymentProvider === 'paypal'
                                 ? paymentProviderOrderId ? 'Capture PayPal Payment' : 'Continue with PayPal'
                                 : 'Continue with Crypto'}
