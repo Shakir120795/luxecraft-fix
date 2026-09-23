@@ -43,6 +43,10 @@ export class PaymentsController {
       ? await this.orders.findOneForUser(body.orderId, req.user.id)
       : await this.orders.findOneForGuest(body.orderId, body.accessToken || '');
 
+    if (order.paymentStatus !== PaymentStatus.PENDING) {
+      throw new BadRequestException('This order is no longer awaiting payment');
+    }
+
     const payment = order.payments.find(
       (item) => item.provider === 'razorpay' && item.status !== PaymentStatus.PAID,
     );
@@ -144,6 +148,10 @@ export class PaymentsController {
       ? await this.orders.findOneForUser(body.orderId, req.user.id)
       : await this.orders.findOneForGuest(body.orderId, body.accessToken || '');
 
+    if (order.paymentStatus !== PaymentStatus.PENDING) {
+      throw new BadRequestException('This order is no longer awaiting payment');
+    }
+
     const payment = order.payments.find(
       (item) => item.provider === 'paypal' && item.status !== PaymentStatus.PAID,
     );
@@ -239,6 +247,10 @@ export class PaymentsController {
   async verifyCryptoPayment(@Body() body: { orderId: string; txHash: string; network: string; asset: string; accessToken?: string }, @Req() req: Request & { user?: { id: string } }) {
     if (!body.orderId || !body.txHash || !body.network || !body.asset) throw new BadRequestException('orderId, txHash, network and asset are required');
     const order = req.user?.id ? await this.orders.findOneForUser(body.orderId, req.user.id) : await this.orders.findOneForGuest(body.orderId, body.accessToken || '');
+    if (order.paymentStatus !== PaymentStatus.PENDING) {
+      throw new BadRequestException('This order is no longer awaiting payment');
+    }
+
     const payment = order.payments.find((item) => item.provider === 'crypto' && item.status !== 'PAID');
     if (!payment) throw new BadRequestException('Crypto payment is not pending for this order');
     if (await this.webhooks.isEventProcessed('crypto', body.txHash)) throw new BadRequestException('This transaction has already been processed');
