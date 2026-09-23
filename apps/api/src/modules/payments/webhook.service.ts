@@ -219,7 +219,7 @@ export class WebhookService {
   }): Promise<void> {
     const order = await this.prisma.order.findUnique({
       where: { id: data.orderId },
-      include: { payments: true },
+      include: { payments: true, items: true },
     });
 
     if (!order) {
