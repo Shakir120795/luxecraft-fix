@@ -174,7 +174,7 @@ export class CryptoProvider {
           params: [
             data.txHash,
             {
-              commitment: 'confirmed',
+              commitment: 'finalized',
               encoding: 'jsonParsed',
               maxSupportedTransactionVersion: 0,
             },
