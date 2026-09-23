@@ -116,6 +116,15 @@ export function SiteHeader() {
     return '/products?filter_' + encodeURIComponent(slug) + '=' + encodeURIComponent(value);
   }
 
+  const rugCategories = categories
+    .filter((category) => {
+      const slug = category.slug.toLowerCase();
+      const name = category.name.trim().toLowerCase();
+      return !['crafts-statues', 'crafts', 'statues'].includes(slug) &&
+        !['crafts & statues', 'crafts', 'statues'].includes(name);
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
 
@@ -330,6 +339,7 @@ export function SiteHeader() {
                 { label: 'Material', slug: 'material' },
               ].map((item) => {
                 const filter = getHeaderFilter(item.slug);
+                const isRugs = item.slug === 'rugs';
                 const isOpen = openFilter === item.slug;
                 const values = filter?.values?.filter((value) => value.isActive !== false) ?? [];
 
@@ -337,45 +347,92 @@ export function SiteHeader() {
                   <div
                     key={item.slug}
                     className="relative shrink-0"
-                    onMouseEnter={() => filter && setOpenFilter(item.slug)}
-                    onMouseLeave={() => filter && setOpenFilter((current) => current === item.slug ? null : current)}
+                    onMouseEnter={() => setOpenFilter(item.slug)}
+                    onMouseLeave={() => setOpenFilter((current) => current === item.slug ? null : current)}
                   >
                     <button
                       type="button"
                       onClick={() => {
-                        if (!filter) {
+                        if (!filter && !isRugs) {
                           window.location.href = '/products';
                           return;
                         }
                         setOpenFilter((current) => current === item.slug ? null : item.slug);
                       }}
-                      className={`block whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15 ${isOpen ? 'bg-black/15' : ''}`}
-                      aria-haspopup={filter ? 'menu' : undefined}
-                      aria-expanded={filter ? isOpen : undefined}
+                      className={`block whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-all duration-200 hover:bg-black/15 ${isOpen ? 'bg-black/15' : ''}`}
+                      aria-haspopup="menu"
+                      aria-expanded={isOpen}
                     >
                       {item.label}
                     </button>
 
-                    {filter && isOpen && (
-                      <div className="absolute left-0 top-full z-[60] min-w-[220px] origin-top rounded-b-lg border border-black/10 bg-white py-2 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
-                        {values.length > 0 ? (
+                    {isOpen && (
+                      <div
+                        className={isRugs
+                          ? "absolute left-0 top-full z-[60] w-[500px] max-w-[calc(100vw-32px)] origin-top rounded-b-xl border border-black/10 bg-[#fffdf9] p-4 shadow-[0_18px_45px_rgba(48,43,53,0.20)]"
+                          : "absolute left-0 top-full z-[60] min-w-[250px] origin-top rounded-b-xl border border-black/10 bg-[#fffdf9] p-3 shadow-[0_18px_45px_rgba(48,43,53,0.18)]"
+                        }
+                      >
+                        {isRugs ? (
+                          <>
+                            <div className="mb-3 flex items-end justify-between border-b border-[#e7ded4] px-2 pb-3">
+                              <div>
+                                <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#2f6b36]">Wolhomes Rugs</p>
+                                <p className="mt-1 font-serif text-xl text-[#2b2118]">Explore Rug Categories</p>
+                              </div>
+                              <Link
+                                href="/products"
+                                onClick={() => setOpenFilter(null)}
+                                className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7a5a2c] transition-colors hover:text-[#2f6b36]"
+                              >
+                                View all
+                              </Link>
+                            </div>
+
+                            {rugCategories.length > 0 ? (
+                              <div className="grid grid-cols-2 gap-2">
+                                {rugCategories.map((category) => (
+                                  <Link
+                                    key={category.id}
+                                    href={`/categories/${category.slug}`}
+                                    onClick={() => setOpenFilter(null)}
+                                    className="group flex items-center justify-between rounded-lg border border-transparent bg-white px-3.5 py-3 text-sm text-[#2b2118] transition-all duration-200 hover:border-[#d9c8a9] hover:bg-[#f4f0eb] hover:shadow-sm"
+                                  >
+                                    <span className="min-w-0 truncate font-medium">{category.name}</span>
+                                    <span className="ml-3 text-[#7a5a2c] opacity-0 transition-all duration-200 group-hover:translate-x-0.5 group-hover:opacity-100">→</span>
+                                  </Link>
+                                ))}
+                              </div>
+                            ) : (
+                              <Link
+                                href="/products"
+                                onClick={() => setOpenFilter(null)}
+                                className="block rounded-lg bg-white px-4 py-3 text-sm font-medium text-[#2b2118] transition hover:bg-[#f4f0eb]"
+                              >
+                                View all rugs
+                              </Link>
+                            )}
+                          </>
+                        ) : values.length > 0 ? (
                           values.map((value) => (
                             <Link
                               key={value.slug}
                               href={filterHref(item.slug, value.slug)}
                               onClick={() => setOpenFilter(null)}
-                              className="block px-5 py-3 text-sm font-medium text-black transition-all duration-150 hover:bg-[#f4f0eb] hover:pl-6 hover:text-[#2f6b36]"
+                              className="group flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-[#2b2118] transition-all duration-150 hover:bg-[#f4f0eb] hover:pl-5 hover:text-[#2f6b36]"
                             >
-                              {value.label}
+                              <span>{value.label}</span>
+                              <span className="text-[#b94740] opacity-0 transition-opacity duration-150 group-hover:opacity-100">→</span>
                             </Link>
                           ))
                         ) : (
                           <Link
                             href="/products"
                             onClick={() => setOpenFilter(null)}
-                            className="block px-5 py-3 text-sm font-medium text-black transition-all duration-150 hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
+                            className="group flex items-center justify-between rounded-lg px-4 py-3 text-sm font-medium text-[#2b2118] transition-all duration-150 hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
                           >
-                            View all {item.label.toLowerCase()}
+                            <span>View all {item.label.toLowerCase()}</span>
+                            <span className="text-[#b94740] opacity-0 transition-opacity duration-150 group-hover:opacity-100">→</span>
                           </Link>
                         )}
                       </div>
