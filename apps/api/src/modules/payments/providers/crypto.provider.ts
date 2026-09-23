@@ -141,6 +141,28 @@ export class CryptoProvider {
         return { verified: false, amountReceived: 0, tokenContract };
       }
 
+      const blockResponse = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 2,
+          method: 'eth_blockNumber',
+          params: [],
+        }),
+      });
+      const blockPayload = await blockResponse.json();
+      const latestBlock = Number.parseInt(String(blockPayload.result || '0'), 16);
+      const receiptBlock = Number.parseInt(String(receipt.blockNumber || '0'), 16);
+
+      if (
+        !Number.isFinite(latestBlock) ||
+        !Number.isFinite(receiptBlock) ||
+        latestBlock - receiptBlock < 3
+      ) {
+        return { verified: false, amountReceived: 0, tokenContract };
+      }
+
       const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55aeb3e5f6a6';
       const recipient = data.receivingAddress.toLowerCase().replace(/^0x/, '');
 
