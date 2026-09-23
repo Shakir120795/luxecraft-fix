@@ -144,18 +144,21 @@ export class WebhookService {
       throw new BadRequestException('Payment currency does not match the order');
     }
 
-    // Use transaction to ensure atomicity
+    // Use a transaction and a conditional payment update so callbacks/webhooks
+    // cannot mark the same payment paid (or deduct stock) more than once.
+    let processed = false;
     await this.prisma.$transaction(async (tx) => {
-      // 1. Update payment status
-      await tx.payment.update({
-        where: { id: payment.id },
+      const paidUpdate = await tx.payment.updateMany({
+        where: { id: payment.id, status: { not: PaymentStatus.PAID } },
         data: {
           status: PaymentStatus.PAID,
           paidAt: new Date(),
         },
       });
 
-      // 2. Update order status
+      if (paidUpdate.count === 0) return;
+      processed = true;
+
       await tx.order.update({
         where: { id: order.id },
         data: {
@@ -164,61 +167,43 @@ export class WebhookService {
         },
       });
 
-      // 3. CRITICAL: Decrement inventory for each item
       for (const item of order.items) {
-        if (item.variantId) {
-          // Product has variants - decrement variant stock
-          const variant = await tx.productVariant.findUnique({
-            where: { id: item.variantId },
-          });
+        if (!item.variantId) continue;
 
-          if (variant && variant.trackInventory) {
-            this.logger.log(
-              `Decrementing stock for variant ${variant.id}: ${item.quantity} units`,
-            );
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+        });
 
-            await tx.productVariant.update({
-              where: { id: variant.id },
-              data: {
-                stockQty: {
-                  decrement: item.quantity,
-                },
-              },
-            });
+        if (!variant || !variant.trackInventory) continue;
 
-            // Log inventory change
-            await tx.inventoryLog.create({
-              data: {
-                variantId: variant.id,
-                changeType: 'ORDER_DEDUCT',
-                delta: -item.quantity,
-                qtyBefore: variant.stockQty,
-                qtyAfter: variant.stockQty - item.quantity,
-                reason: `Order ${order.orderNumber} - Payment confirmed`,
-                reference: order.id,
-              },
-            });
-          }
-        } else {
-          if (!item.productId) continue;
-          // Product without variants - check if product itself tracks inventory
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-          });
+        this.logger.log(`Decrementing stock for variant ${variant.id}: ${item.quantity} units`);
 
-          if (product && product.trackInventory) {
-            this.logger.log(
-              `Decrementing stock for product ${product.id}: ${item.quantity} units`,
-            );
+        await tx.productVariant.update({
+          where: { id: variant.id },
+          data: {
+            stockQty: { decrement: item.quantity },
+            reservedQty: { decrement: item.quantity },
+          },
+        });
 
-            // Update product stock (if your schema supports it)
-            // Note: Your current schema may not have stockQty on Product model
-            // If not, you may need to add it or handle differently
-          }
-        }
+        await tx.inventoryLog.create({
+          data: {
+            variantId: variant.id,
+            changeType: 'ORDER_DEDUCT',
+            delta: -item.quantity,
+            qtyBefore: variant.stockQty,
+            qtyAfter: variant.stockQty - item.quantity,
+            reason: `Order ${order.orderNumber} - Payment confirmed`,
+            reference: order.id,
+          },
+        });
       }
     });
 
+    if (!processed) {
+      this.logger.log(`Payment ${payment.id} was already processed; skipping duplicate success callback`);
+      return;
+    }
     this.logger.log(
       `Payment success processed for order ${order.orderNumber}: inventory decremented`,
     );
