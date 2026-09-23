@@ -17,7 +17,7 @@ export class AdminDashboardService {
 
     const [todayOrders, todayRevenue, totalCustomers, totalProducts, newCustomers, failedPayments, lowStockAlerts, pendingCustomRequests, pendingQuotes] = await Promise.all([
       this.prisma.order.count({
-        where: { createdAt: { gte: today, lt: tomorrow }, orderStatus: { not: OrderStatus.CANCELLED } },
+        where: { createdAt: { gte: today, lt: tomorrow }, paymentStatus: PaymentStatus.PAID, orderStatus: { not: OrderStatus.CANCELLED } },
       }),
       this.prisma.order.aggregate({
         where: { createdAt: { gte: today, lt: tomorrow }, paymentStatus: PaymentStatus.PAID },
