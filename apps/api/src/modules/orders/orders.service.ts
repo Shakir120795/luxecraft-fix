@@ -155,7 +155,7 @@ export class OrdersService {
 
   async findAllForUser(userId: string): Promise<Order[]> {
     return this.prisma.order.findMany({
-      where: { userId },
+      where: { userId, paymentStatus: PaymentStatus.PAID },
       orderBy: { createdAt: 'desc' },
       include: { items: true },
     });
