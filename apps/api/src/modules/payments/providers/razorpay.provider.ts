@@ -105,6 +105,28 @@ export class RazorpayProvider {
     }
   }
 
+  async fetchPayment(paymentId: string): Promise<{
+    id: string;
+    orderId?: string;
+    amount: number;
+    currency: string;
+    status: string;
+  }> {
+    try {
+      const payment = await this.getClient().payments.fetch(paymentId);
+      return {
+        id: String(payment.id),
+        orderId: payment.order_id ? String(payment.order_id) : undefined,
+        amount: Number(payment.amount || 0) / 100,
+        currency: String(payment.currency || '').toUpperCase(),
+        status: String(payment.status || '').toLowerCase(),
+      };
+    } catch (error) {
+      this.logger.error('Failed to fetch Razorpay payment: ' + error.message, error.stack);
+      throw new BadRequestException('Unable to verify Razorpay payment status');
+    }
+  }
+
   async refund(paymentId: string, amount?: number) {
     try {
       const result = await this.getClient().payments.refund(paymentId, {
