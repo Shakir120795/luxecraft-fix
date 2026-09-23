@@ -160,16 +160,35 @@ export class PaymentsController {
     const purchaseUnit = Array.isArray(capture.purchase_units)
       ? capture.purchase_units[0] as Record<string, unknown> | undefined
       : undefined;
+    const purchaseAmount = purchaseUnit?.amount as Record<string, unknown> | undefined;
     const payments = purchaseUnit?.payments as Record<string, unknown> | undefined;
     const captures = Array.isArray(payments?.captures)
       ? payments.captures as Array<Record<string, unknown>>
       : [];
     const firstCapture = captures[0];
+    const firstCaptureAmount = firstCapture?.amount as Record<string, unknown> | undefined;
     const captureStatus = String(firstCapture?.status || capture.status || '').toUpperCase();
     const captureId = String(firstCapture?.id || body.paypalOrderId);
+    const capturedAmount = Number(firstCaptureAmount?.value || purchaseAmount?.value || 0);
+    const capturedCurrency = String(
+      firstCaptureAmount?.currency_code || purchaseAmount?.currency_code || '',
+    ).toUpperCase();
+    const capturedCustomId = String(
+      firstCapture?.custom_id || purchaseUnit?.custom_id || '',
+    );
 
     if (captureStatus !== 'COMPLETED') {
-      throw new BadRequestException(`PayPal capture was not completed: ${captureStatus || 'UNKNOWN'}`);
+      throw new BadRequestException('PayPal capture was not completed: ' + (captureStatus || 'UNKNOWN'));
+    }
+    if (capturedCustomId && capturedCustomId !== order.id) {
+      throw new BadRequestException('PayPal capture does not match this order');
+    }
+    if (
+      !Number.isFinite(capturedAmount) ||
+      Math.abs(capturedAmount - Number(payment.amount)) > 0.01 ||
+      capturedCurrency !== payment.currency.toUpperCase()
+    ) {
+      throw new BadRequestException('PayPal captured amount or currency does not match the order');
     }
 
     if (await this.webhooks.isEventProcessed('paypal', captureId)) {
@@ -193,8 +212,8 @@ export class PaymentsController {
       await this.webhooks.handlePaymentSuccess({
         orderId: order.id,
         paymentIntentId: body.paypalOrderId,
-        amount: Number(payment.amount),
-        currency: order.currency,
+        amount: capturedAmount,
+        currency: capturedCurrency,
       });
 
       await this.webhooks.markEventProcessed('paypal', captureId);
