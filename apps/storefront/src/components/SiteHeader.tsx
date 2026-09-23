@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { getCartTotals, getStorefrontCategories, Category, isAuthenticated } from '@/lib/api';
+import { getCartTotals, getStorefrontCategories, getProductFilters, Category, ProductFilterSetting, isAuthenticated } from '@/lib/api';
 
 const navigation = [
   { href: '/products', label: 'Shop' },
@@ -66,12 +66,15 @@ export function SiteHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [productFilters, setProductFilters] = useState<ProductFilterSetting[]>([]);
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
   const [isAuth, setIsAuth] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
   useEffect(() => {
     loadCartCount();
     loadCategories();
+    loadProductFilters();
     setIsAuth(isAuthenticated());
 
     const interval = setInterval(loadCartCount, 5000);
@@ -94,6 +97,23 @@ export function SiteHeader() {
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
+  }
+
+  async function loadProductFilters() {
+    try {
+      const filters = await getProductFilters();
+      setProductFilters(filters.filter((filter) => filter.isActive));
+    } catch (error) {
+      console.error('Failed to load product filters:', error);
+    }
+  }
+
+  function getHeaderFilter(slug: string) {
+    return productFilters.find((filter) => filter.slug === slug);
+  }
+
+  function filterHref(slug: string, value: string) {
+    return '/products?filter_' + encodeURIComponent(slug) + '=' + encodeURIComponent(value);
   }
 
   function handleSearch(e: React.FormEvent) {
@@ -303,22 +323,74 @@ export function SiteHeader() {
               aria-label="Product navigation"
             >
               {[
-                'Rugs',
-                'Colour',
-                'Size',
-                'Style',
-                'Material',
-                'Pattern',
-                'Collection',
-              ].map((label) => (
-                <Link
-                  key={label}
-                  href="/products"
-                  className="block shrink-0 whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15"
-                >
-                  {label}
-                </Link>
-              ))}
+                { label: 'Rugs', slug: 'rugs' },
+                { label: 'Colour', slug: 'color' },
+                { label: 'Size', slug: 'size' },
+                { label: 'Style', slug: 'style' },
+                { label: 'Material', slug: 'material' },
+              ].map((item) => {
+                const filter = getHeaderFilter(item.slug);
+                const isOpen = openFilter === item.slug;
+                const values = filter?.values?.filter((value) => value.isActive !== false) ?? [];
+
+                return (
+                  <div
+                    key={item.slug}
+                    className="relative shrink-0"
+                    onMouseEnter={() => filter && setOpenFilter(item.slug)}
+                    onMouseLeave={() => filter && setOpenFilter((current) => current === item.slug ? null : current)}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!filter) {
+                          window.location.href = '/products';
+                          return;
+                        }
+                        setOpenFilter((current) => current === item.slug ? null : item.slug);
+                      }}
+                      className={`block whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15 ${isOpen ? 'bg-black/15' : ''}`}
+                      aria-haspopup={filter ? 'menu' : undefined}
+                      aria-expanded={filter ? isOpen : undefined}
+                    >
+                      {item.label}
+                    </button>
+
+                    {filter && isOpen && (
+                      <div className="absolute left-0 top-full z-[60] min-w-[220px] origin-top rounded-b-lg border border-black/10 bg-white py-2 shadow-[0_14px_30px_rgba(0,0,0,0.18)]">
+                        {values.length > 0 ? (
+                          values.map((value) => (
+                            <Link
+                              key={value.slug}
+                              href={filterHref(item.slug, value.slug)}
+                              onClick={() => setOpenFilter(null)}
+                              className="block px-5 py-3 text-sm font-medium text-black transition-all duration-150 hover:bg-[#f4f0eb] hover:pl-6 hover:text-[#2f6b36]"
+                            >
+                              {value.label}
+                            </Link>
+                          ))
+                        ) : (
+                          <Link
+                            href="/products"
+                            onClick={() => setOpenFilter(null)}
+                            className="block px-5 py-3 text-sm font-medium text-black transition-all duration-150 hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
+                          >
+                            View all {item.label.toLowerCase()}
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              <Link
+                href="/categories/crafts-statues"
+                className="block shrink-0 whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15"
+                onClick={() => setOpenFilter(null)}
+              >
+                Crafts &amp; Statues
+              </Link>
             </nav>
 
             <Link
