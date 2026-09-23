@@ -70,6 +70,12 @@ export class PaymentsService {
       );
     }
 
+    if (provider === 'crypto' && data.currency.toUpperCase() !== 'USD') {
+      throw new BadRequestException(
+        'Crypto payments are currently available only for USD orders.',
+      );
+    }
+
     if (provider === 'razorpay') {
       const result = await this.razorpayProvider.createOrder(
         data.orderId,
