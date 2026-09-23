@@ -348,8 +348,65 @@ export interface CartTotals {
   currency: string;
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
+function isTokenExpiringSoon(token: string, withinSeconds = 60): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] || ''));
+    const exp = Number(payload?.exp || 0);
+    return !exp || exp <= Math.floor(Date.now() / 1000) + withinSeconds;
+  } catch {
+    return true;
+  }
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) return null;
+
+  if (!refreshPromise) {
+    refreshPromise = (async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+          cache: 'no-store',
+        });
+
+        const data = await res.json().catch(() => null);
+        const auth = data?.data ?? data;
+
+        if (!res.ok || !auth?.accessToken || !auth?.refreshToken) {
+          return null;
+        }
+
+        localStorage.setItem('accessToken', auth.accessToken);
+        localStorage.setItem('refreshToken', auth.refreshToken);
+        if (auth.user) {
+          localStorage.setItem('user', JSON.stringify(auth.user));
+        }
+
+        return auth.accessToken as string;
+      } catch (error) {
+        console.error('Failed to refresh access token:', error);
+        return null;
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+  }
+
+  return refreshPromise;
+}
+
 async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = localStorage.getItem('accessToken');
+  let token = localStorage.getItem('accessToken');
+
+  if (token && isTokenExpiringSoon(token)) {
+    token = await refreshAccessToken();
+  }
+
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
