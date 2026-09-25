@@ -114,7 +114,7 @@ export function SiteHeader() {
       if (interval !== null) window.clearInterval(interval);
       mediaQuery.removeEventListener('change', startAutoScroll);
     };
-  }, []);
+  }, [openFilter]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -400,16 +400,30 @@ export function SiteHeader() {
                   <div
                     key={item.slug}
                     className="relative shrink-0"
-                    onMouseEnter={() => setOpenFilter(item.slug)}
-                    onMouseLeave={() => setOpenFilter((current) => current === item.slug ? null : current)}
+                    onMouseEnter={() => {
+                      if (window.matchMedia('(min-width: 1024px)').matches) {
+                        setOpenFilter(item.slug);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (window.matchMedia('(min-width: 1024px)').matches) {
+                        setOpenFilter((current) => current === item.slug ? null : current);
+                      }
+                    }}
                   >
                     <button
                       type="button"
                       onClick={() => {
-                        if (!filter && !isRugs) {
+                        if (isRugs) {
                           window.location.href = '/products';
                           return;
                         }
+
+                        if (!filter) {
+                          window.location.href = '/products';
+                          return;
+                        }
+
                         setOpenFilter((current) => current === item.slug ? null : item.slug);
                       }}
                       className={`block whitespace-nowrap px-4 py-3 text-[13px] font-semibold uppercase tracking-[0.13em] text-white transition-all duration-200 hover:bg-black/15 sm:px-5 sm:py-2 sm:text-[16px] ${isOpen ? 'bg-black/15' : ''}`}
@@ -511,9 +525,9 @@ export function SiteHeader() {
             </Link>
           </div>
 
-          <div className="pointer-events-none absolute left-0 right-0 top-full z-[70] px-2 lg:hidden">
+          <div className="pointer-events-none absolute left-0 right-0 top-full z-[100] px-2 lg:hidden">
             {openFilter && (
-              <div className="pointer-events-auto mt-1 max-h-[65vh] overflow-y-auto rounded-xl border border-black/10 bg-[#fffdf9] p-3 shadow-[0_18px_45px_rgba(48,43,53,0.20)]">
+              <div className="pointer-events-auto relative mt-1 max-h-[65vh] overflow-y-auto rounded-xl border border-black/10 bg-[#fffdf9] p-3 shadow-[0_18px_45px_rgba(48,43,53,0.20)]">
                 {openFilter === 'rugs' ? (
                   <>
                     <div className="mb-2 flex items-center justify-between border-b border-[#e7ded4] px-2 pb-2">
