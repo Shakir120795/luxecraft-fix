@@ -97,13 +97,13 @@ export function SiteHeader() {
         const maxScroll = container.scrollWidth - container.clientWidth;
         if (maxScroll <= 8) return;
 
-        const step = Math.max(120, Math.round(container.clientWidth * 0.55));
-        if (container.scrollLeft + step >= maxScroll - 8) {
-          container.scrollTo({ left: 0, behavior: 'smooth' });
-        } else {
-          container.scrollBy({ left: step, behavior: 'smooth' });
+        if (container.scrollLeft >= maxScroll - 2) {
+          container.scrollLeft = 0;
+          return;
         }
-      }, 2800);
+
+        container.scrollLeft += 1;
+      }, 28);
     };
 
     startAutoScroll();
@@ -422,8 +422,8 @@ export function SiteHeader() {
                     {isOpen && (
                       <div
                         className={isRugs
-                          ? "absolute left-0 top-full z-[60] w-[500px] max-w-[calc(100vw-32px)] origin-top rounded-b-xl border border-black/10 bg-[#fffdf9] p-4 shadow-[0_18px_45px_rgba(48,43,53,0.20)]"
-                          : "absolute left-0 top-full z-[60] min-w-[250px] origin-top rounded-b-xl border border-black/10 bg-[#fffdf9] p-3 shadow-[0_18px_45px_rgba(48,43,53,0.18)]"
+                          ? "absolute left-0 top-full z-[60] hidden w-[500px] max-w-[calc(100vw-32px)] origin-top rounded-b-xl border border-black/10 bg-[#fffdf9] p-4 shadow-[0_18px_45px_rgba(48,43,53,0.20)] lg:block"
+                          : "absolute left-0 top-full z-[60] hidden min-w-[250px] origin-top rounded-b-xl border border-black/10 bg-[#fffdf9] p-3 shadow-[0_18px_45px_rgba(48,43,53,0.18)] lg:block"
                         }
                       >
                         {isRugs ? (
@@ -509,6 +509,97 @@ export function SiteHeader() {
             >
               Custom Design
             </Link>
+          </div>
+
+          <div className="pointer-events-none absolute left-0 right-0 top-full z-[70] px-2 lg:hidden">
+            {openFilter && (
+              <div className="pointer-events-auto mt-1 max-h-[65vh] overflow-y-auto rounded-xl border border-black/10 bg-[#fffdf9] p-3 shadow-[0_18px_45px_rgba(48,43,53,0.20)]">
+                {openFilter === 'rugs' ? (
+                  <>
+                    <div className="mb-2 flex items-center justify-between border-b border-[#e7ded4] px-2 pb-2">
+                      <div>
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#2f6b36]">Wolhomes Rugs</p>
+                        <p className="mt-1 font-serif text-lg text-[#2b2118]">Explore Rug Categories</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setOpenFilter(null)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f4f0eb] text-lg text-[#2b2118]"
+                        aria-label="Close menu"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {rugCategories.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {rugCategories.map((category) => (
+                          <Link
+                            key={category.id}
+                            href={categoryRugHref(category)}
+                            onClick={() => setOpenFilter(null)}
+                            className="rounded-lg bg-white px-3 py-3 text-sm font-medium text-[#2b2118] shadow-sm"
+                          >
+                            {category.name}
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <Link
+                        href="/products"
+                        onClick={() => setOpenFilter(null)}
+                        className="block rounded-lg bg-white px-4 py-3 text-sm font-medium text-[#2b2118]"
+                      >
+                        View all rugs
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-2 flex items-center justify-between border-b border-[#e7ded4] px-2 pb-2">
+                      <p className="font-serif text-lg capitalize text-[#2b2118]">
+                        {openFilter}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setOpenFilter(null)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f4f0eb] text-lg text-[#2b2118]"
+                        aria-label="Close menu"
+                      >
+                        ×
+                      </button>
+                    </div>
+
+                    {getHeaderFilter(openFilter)?.values?.length ? (
+                      <div className="divide-y divide-[#eee6dc]">
+                        {getHeaderFilter(openFilter)?.values
+                          .filter((value) => value.isActive !== false)
+                          .map((value) => (
+                            <Link
+                              key={value.slug}
+                              href={filterHref(openFilter, value.slug)}
+                              onClick={() => setOpenFilter(null)}
+                              className="flex items-center justify-between px-3 py-3 text-sm font-medium text-[#2b2118]"
+                            >
+                              <span>{value.label}</span>
+                              <span className="text-[#b94740]">→</span>
+                            </Link>
+                          ))}
+                      </div>
+                    ) : (
+                      <Link
+                        href="/products"
+                        onClick={() => setOpenFilter(null)}
+                        className="flex items-center justify-between rounded-lg bg-white px-4 py-3 text-sm font-medium text-[#2b2118]"
+                      >
+                        <span>View all {openFilter}</span>
+                        <span>→</span>
+                      </Link>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
