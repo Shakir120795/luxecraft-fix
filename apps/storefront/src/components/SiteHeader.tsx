@@ -71,7 +71,7 @@ export function SiteHeader() {
   const [isAuth, setIsAuth] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [shippingIndex, setShippingIndex] = useState(0);
-  const categoryScrollRef = useRef<HTMLElement | null>(null);
+  const categoryScrollRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadCartCount();
