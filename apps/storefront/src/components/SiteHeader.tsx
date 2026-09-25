@@ -685,22 +685,17 @@ export function SiteHeader() {
         <Link
           href="/products"
           aria-label="Shop products with free worldwide shipping"
-          className="luxecraft-shipping-promo block border-t border-black/10 bg-black px-3 py-2 transition-all duration-300 sm:px-6 sm:py-2.5"
+          className="luxecraft-shipping-promo block overflow-hidden border-t border-black/10 bg-black px-0 py-2 transition-all duration-300 sm:py-2.5"
         >
-          <div className="flex min-h-5 w-full items-center justify-center sm:justify-start">
-            <span className="luxecraft-shipping-text text-center text-[11px] font-extrabold uppercase tracking-[0.14em] text-white sm:hidden">
-              {['✅ Fast delivery', '✅ 14 days return policy', '✅ FREE SHIPPING • WORLDWIDE'][shippingIndex]}
-            </span>
-            <div className="hidden items-center gap-12 sm:flex">
-              <span className="luxecraft-shipping-text text-white text-[14px] font-extrabold uppercase tracking-[0.18em]">
-                ✅ Fast delivery
-              </span>
-              <span className="luxecraft-shipping-text text-white text-[14px] font-extrabold uppercase tracking-[0.18em]">
-                ✅ 14 days return policy
-              </span>
-              <span className="luxecraft-shipping-text text-white text-[14px] font-extrabold uppercase tracking-[0.18em]">
-                ✅ FREE SHIPPING • WORLDWIDE
-              </span>
+          <div className="overflow-hidden whitespace-nowrap">
+            <div className="luxecraft-shipping-track">
+              {[0, 1].map((copy) => (
+                <div key={copy} aria-hidden={copy === 1} className="flex shrink-0 items-center gap-10 pr-10 sm:gap-16 sm:pr-16">
+                  <span className="luxecraft-shipping-text text-[11px] font-extrabold uppercase tracking-[0.14em] text-white sm:text-[14px] sm:tracking-[0.18em]">✅ Fast delivery</span>
+                  <span className="luxecraft-shipping-text text-[11px] font-extrabold uppercase tracking-[0.14em] text-white sm:text-[14px] sm:tracking-[0.18em]">✅ 14 days return policy</span>
+                  <span className="luxecraft-shipping-text text-[11px] font-extrabold uppercase tracking-[0.14em] text-white sm:text-[14px] sm:tracking-[0.18em]">✅ FREE SHIPPING • WORLDWIDE</span>
+                </div>
+              ))}
             </div>
           </div>
         </Link>
