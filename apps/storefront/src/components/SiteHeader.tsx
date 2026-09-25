@@ -361,7 +361,14 @@ export function SiteHeader() {
       </div>
 
       {showCategoryBar && (
-        <div className="relative z-50 border-t border-black/10 bg-[#B94740]">
+        <div
+          className="relative z-50 border-t border-black/10 bg-[#B94740]"
+          onMouseLeave={() => {
+            if (window.matchMedia('(min-width: 1024px)').matches) {
+              setOpenFilter(null);
+            }
+          }}
+        >
           <div
             ref={categoryScrollRef}
             className="luxecraft-category-scroll mx-auto flex max-w-[1400px] items-stretch overflow-x-auto scroll-smooth px-4 sm:px-6 lg:px-8"
@@ -389,18 +396,18 @@ export function SiteHeader() {
                   >
                     <button
                       type="button"
+                      onMouseEnter={() => {
+                        if (window.matchMedia('(min-width: 1024px)').matches && (filter || isRugs)) {
+                          setOpenFilter(item.slug);
+                        }
+                      }}
                       onClick={() => {
-                        if (isRugs) {
-                          window.location.href = '/products';
+                        if (isRugs || filter) {
+                          setOpenFilter((current) => current === item.slug ? null : item.slug);
                           return;
                         }
 
-                        if (!filter) {
-                          window.location.href = '/products';
-                          return;
-                        }
-
-                        setOpenFilter((current) => current === item.slug ? null : item.slug);
+                        window.location.href = '/products';
                       }}
                       className={`block whitespace-nowrap px-4 py-3 text-[13px] font-semibold uppercase tracking-[0.13em] text-white transition-all duration-200 hover:bg-black/15 sm:px-5 sm:py-2 sm:text-[16px] ${isOpen ? 'bg-black/15' : ''}`}
                       aria-haspopup="menu"
@@ -433,7 +440,7 @@ export function SiteHeader() {
                             </div>
 
                             {rugCategories.length > 0 ? (
-                              <div className="grid grid-cols-2 gap-2">
+                              <div className="grid grid-cols-1 gap-2 lg:grid-cols-4">
                                 {rugCategories.map((category) => (
                                   <Link
                                     key={category.id}
@@ -485,7 +492,7 @@ export function SiteHeader() {
               })}
 
               <Link
-                href="/categories/crafts-statues"
+                href="/products"
                 className="block shrink-0 whitespace-nowrap px-4 py-3 text-[13px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15 sm:px-5 sm:py-2 sm:text-[16px]"
                 onClick={() => setOpenFilter(null)}
               >
@@ -521,7 +528,7 @@ export function SiteHeader() {
                       </button>
                     </div>
                     {rugCategories.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-1 gap-2">
                         {rugCategories.map((category) => (
                           <Link
                             key={category.id}
@@ -558,7 +565,7 @@ export function SiteHeader() {
                       </button>
                     </div>
                     {getHeaderFilter(openFilter)?.values?.length ? (
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                         {getHeaderFilter(openFilter)?.values
                           .filter((value) => value.isActive !== false)
                           .map((value) => (
