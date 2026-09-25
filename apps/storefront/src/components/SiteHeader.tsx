@@ -85,35 +85,21 @@ export function SiteHeader() {
 
   useEffect(() => {
     const container = categoryScrollRef.current;
-    if (!container) return;
+    if (!container || openFilter) return;
 
-    let interval: number | null = null;
+    const interval = window.setInterval(() => {
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll <= 8) return;
 
-    const startAutoScroll = () => {
-      if (interval !== null) window.clearInterval(interval);
-      if (!window.matchMedia('(max-width: 1023px)').matches) return;
+      if (container.scrollLeft >= maxScroll - 2) {
+        container.scrollLeft = 0;
+        return;
+      }
 
-      interval = window.setInterval(() => {
-        const maxScroll = container.scrollWidth - container.clientWidth;
-        if (maxScroll <= 8) return;
+      container.scrollLeft += 1;
+    }, 28);
 
-        if (container.scrollLeft >= maxScroll - 2) {
-          container.scrollLeft = 0;
-          return;
-        }
-
-        container.scrollLeft += 1;
-      }, 28);
-    };
-
-    startAutoScroll();
-    const mediaQuery = window.matchMedia('(max-width: 1023px)');
-    mediaQuery.addEventListener('change', startAutoScroll);
-
-    return () => {
-      if (interval !== null) window.clearInterval(interval);
-      mediaQuery.removeEventListener('change', startAutoScroll);
-    };
+    return () => window.clearInterval(interval);
   }, [openFilter]);
 
   useEffect(() => {
@@ -400,16 +386,6 @@ export function SiteHeader() {
                   <div
                     key={item.slug}
                     className="relative shrink-0"
-                    onMouseEnter={() => {
-                      if (window.matchMedia('(min-width: 1024px)').matches) {
-                        setOpenFilter(item.slug);
-                      }
-                    }}
-                    onMouseLeave={() => {
-                      if (window.matchMedia('(min-width: 1024px)').matches) {
-                        setOpenFilter((current) => current === item.slug ? null : current);
-                      }
-                    }}
                   >
                     <button
                       type="button"
@@ -523,6 +499,93 @@ export function SiteHeader() {
             >
               Custom Design
             </Link>
+          </div>
+
+          <div className="pointer-events-none absolute left-0 right-0 top-full z-[110] px-4 hidden lg:block">
+            {openFilter && (
+              <div className="pointer-events-auto max-h-[70vh] overflow-y-auto rounded-xl border border-black/10 bg-[#fffdf9] p-4 shadow-[0_18px_45px_rgba(48,43,53,0.22)]">
+                {openFilter === 'rugs' ? (
+                  <>
+                    <div className="mb-3 flex items-end justify-between border-b border-[#e7ded4] px-2 pb-3">
+                      <div>
+                        <p className="text-[9px] font-semibold uppercase tracking-[0.22em] text-[#2f6b36]">Wolhomes Rugs</p>
+                        <p className="mt-1 font-serif text-xl text-[#2b2118]">Explore Rug Categories</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setOpenFilter(null)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f4f0eb] text-lg text-[#2b2118]"
+                        aria-label="Close menu"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    {rugCategories.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        {rugCategories.map((category) => (
+                          <Link
+                            key={category.id}
+                            href={categoryRugHref(category)}
+                            onClick={() => setOpenFilter(null)}
+                            className="group flex items-center justify-between rounded-lg border border-transparent bg-white px-3.5 py-3 text-sm text-[#2b2118] transition-all duration-200 hover:border-[#d9c8a9] hover:bg-[#f4f0eb]"
+                          >
+                            <span className="font-medium">{category.name}</span>
+                            <span className="ml-3 text-[#7a5a2c]">→</span>
+                          </Link>
+                        ))}
+                      </div>
+                    ) : (
+                      <Link
+                        href="/products"
+                        onClick={() => setOpenFilter(null)}
+                        className="block rounded-lg bg-white px-4 py-3 text-sm font-medium text-[#2b2118]"
+                      >
+                        View all rugs
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-3 flex items-center justify-between border-b border-[#e7ded4] px-2 pb-2">
+                      <p className="font-serif text-xl capitalize text-[#2b2118]">{openFilter}</p>
+                      <button
+                        type="button"
+                        onClick={() => setOpenFilter(null)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f4f0eb] text-lg text-[#2b2118]"
+                        aria-label="Close menu"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    {getHeaderFilter(openFilter)?.values?.length ? (
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                        {getHeaderFilter(openFilter)?.values
+                          .filter((value) => value.isActive !== false)
+                          .map((value) => (
+                            <Link
+                              key={value.slug}
+                              href={filterHref(openFilter, value.slug)}
+                              onClick={() => setOpenFilter(null)}
+                              className="rounded-lg bg-white px-4 py-3 text-sm font-medium text-[#2b2118] transition hover:bg-[#f4f0eb] hover:text-[#2f6b36]"
+                            >
+                              {value.label}
+                            </Link>
+                          ))}
+                      </div>
+                    ) : (
+                      <Link
+                        href="/products"
+                        onClick={() => setOpenFilter(null)}
+                        className="flex items-center justify-between rounded-lg bg-white px-4 py-3 text-sm font-medium text-[#2b2118]"
+                      >
+                        <span>View all {openFilter}</span>
+                        <span>→</span>
+                      </Link>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="pointer-events-none absolute left-0 right-0 top-full z-[100] px-2 lg:hidden">
