@@ -330,6 +330,28 @@
   }
 }
 
+@keyframes luxecraftShippingMarquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.luxecraft-shipping-track {
+  width: max-content;
+  display: flex;
+  align-items: center;
+  animation: luxecraftShippingMarquee 18s linear infinite;
+  will-change: transform;
+}
+
+.luxecraft-shipping-track:hover {
+  animation-play-state: paused;
+}
+
 .luxecraft-shipping-promo:hover .luxecraft-shipping-text {
   color: #ffffff;
   text-shadow: 0 0 12px rgba(255,255,255,0.2);
