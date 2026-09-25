@@ -290,10 +290,10 @@ export default function ProductDetailPage() {
 
       {/* Product Detail */}
       <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
-        <div className="grid grid-cols-2 items-start gap-10">
+        <div className="grid grid-cols-1 items-start gap-8 sm:gap-10 lg:grid-cols-2">
           {/* Images */}
           <div>
-            <div className="relative mb-4 aspect-[3/4] overflow-hidden border border-luxury-sand bg-luxury-beige">
+            <div className="relative mb-4 aspect-[4/5] overflow-hidden border border-luxury-sand bg-luxury-beige sm:aspect-[3/4]">
               {selectedImage?.url ? (
                 <button
                   type="button"
@@ -304,6 +304,10 @@ export default function ProductDetailPage() {
                   <img
                     src={selectedImage.url}
                     alt={selectedImage.altText || product.name}
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                   />
                   <span className="pointer-events-none absolute bottom-4 right-4 bg-black/55 px-3 py-2 text-xs uppercase tracking-wider text-white opacity-0 transition-opacity group-hover:opacity-100">
@@ -399,6 +403,9 @@ export default function ProductDetailPage() {
                           image.altText ||
                           `${product.name} image ${index + 1}`
                         }
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
                         className="h-full w-full object-cover"
                       />
                     </button>
