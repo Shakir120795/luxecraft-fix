@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { getCartTotals, getStorefrontCategories, getProductFilters, Category, ProductFilterSetting, isAuthenticated } from '@/lib/api';
 
@@ -70,6 +70,8 @@ export function SiteHeader() {
   const [openFilter, setOpenFilter] = useState<string | null>(null);
   const [isAuth, setIsAuth] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [shippingIndex, setShippingIndex] = useState(0);
+  const categoryScrollRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     loadCartCount();
@@ -79,6 +81,47 @@ export function SiteHeader() {
 
     const interval = setInterval(loadCartCount, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const container = categoryScrollRef.current;
+    if (!container) return;
+
+    let interval: number | null = null;
+
+    const startAutoScroll = () => {
+      if (interval !== null) window.clearInterval(interval);
+      if (!window.matchMedia('(max-width: 1023px)').matches) return;
+
+      interval = window.setInterval(() => {
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        if (maxScroll <= 8) return;
+
+        const step = Math.max(120, Math.round(container.clientWidth * 0.55));
+        if (container.scrollLeft + step >= maxScroll - 8) {
+          container.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          container.scrollBy({ left: step, behavior: 'smooth' });
+        }
+      }, 2800);
+    };
+
+    startAutoScroll();
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
+    mediaQuery.addEventListener('change', startAutoScroll);
+
+    return () => {
+      if (interval !== null) window.clearInterval(interval);
+      mediaQuery.removeEventListener('change', startAutoScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setShippingIndex((current) => (current + 1) % 3);
+    }, 2600);
+
+    return () => window.clearInterval(interval);
   }, []);
 
   async function loadCartCount() {
@@ -333,9 +376,12 @@ export function SiteHeader() {
 
       {showCategoryBar && (
         <div className="relative z-50 border-t border-black/10 bg-[#B94740]">
-          <div className="mx-auto flex max-w-[1400px] items-stretch justify-between px-4 sm:px-6 lg:px-8">
+          <div
+            ref={categoryScrollRef}
+            className="luxecraft-category-scroll mx-auto flex max-w-[1400px] items-stretch overflow-x-auto scroll-smooth px-4 sm:px-6 lg:px-8"
+          >
             <nav
-              className="flex min-w-0 items-stretch overflow-visible whitespace-nowrap"
+              className="flex shrink-0 items-stretch whitespace-nowrap"
               aria-label="Product navigation"
             >
               {[
@@ -366,7 +412,7 @@ export function SiteHeader() {
                         }
                         setOpenFilter((current) => current === item.slug ? null : item.slug);
                       }}
-                      className={`block whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-all duration-200 hover:bg-black/15 ${isOpen ? 'bg-black/15' : ''}`}
+                      className={`block whitespace-nowrap px-4 py-3 text-[13px] font-semibold uppercase tracking-[0.13em] text-white transition-all duration-200 hover:bg-black/15 sm:px-5 sm:py-2 sm:text-[16px] ${isOpen ? 'bg-black/15' : ''}`}
                       aria-haspopup="menu"
                       aria-expanded={isOpen}
                     >
@@ -450,7 +496,7 @@ export function SiteHeader() {
 
               <Link
                 href="/categories/crafts-statues"
-                className="block shrink-0 whitespace-nowrap px-5 py-2 text-[16px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15"
+                className="block shrink-0 whitespace-nowrap px-4 py-3 text-[13px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15 sm:px-5 sm:py-2 sm:text-[16px]"
                 onClick={() => setOpenFilter(null)}
               >
                 Crafts &amp; Statues
@@ -459,7 +505,7 @@ export function SiteHeader() {
 
             <Link
               href="/custom-design"
-              className="my-1.5 shrink-0 rounded-lg border border-[#E8C98A] bg-[#E8C98A] px-2 py-1 text-[16px] font-semibold uppercase tracking-[0.12em] text-[#2b2118] transition-all duration-200 hover:border-black hover:bg-black hover:text-white"
+              className="my-1.5 ml-1 shrink-0 rounded-lg border border-[#E8C98A] bg-[#E8C98A] px-3 py-2 text-[12px] font-semibold uppercase tracking-[0.12em] text-[#2b2118] transition-all duration-200 hover:border-black hover:bg-black hover:text-white sm:px-2 sm:py-1 sm:text-[16px]"
             >
               Custom Design
             </Link>
@@ -473,25 +519,21 @@ export function SiteHeader() {
           aria-label="Shop products with free worldwide shipping"
           className="luxecraft-shipping-promo block border-t border-black/10 bg-black px-3 py-2 transition-all duration-300 sm:px-6 sm:py-2.5"
         >
-          <div className="flex w-full items-center justify-start gap-12">
-            <span
-              data-shipping-label="fast-delivery"
-              className="luxecraft-shipping-text text-white text-[11px] font-extrabold uppercase tracking-[0.14em] sm:text-[14px] sm:tracking-[0.18em]"
-            >
-              ✅Fast delivery
+          <div className="flex min-h-5 w-full items-center justify-center sm:justify-start">
+            <span className="luxecraft-shipping-text text-center text-[11px] font-extrabold uppercase tracking-[0.14em] text-white sm:hidden">
+              {['✅ Fast delivery', '✅ 14 days return policy', '✅ FREE SHIPPING • WORLDWIDE'][shippingIndex]}
             </span>
-            <span
-              data-shipping-label="returns"
-              className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block"
-            >
-              ✅14 days return policy
-            </span>
-            <span
-              data-shipping-label="free-shipping"
-              className="luxecraft-shipping-text hidden text-white text-[14px] font-extrabold uppercase tracking-[0.18em] sm:block"
-            >
-              ✅FREE SHIPPING • WORLDWIDE
-            </span>
+            <div className="hidden items-center gap-12 sm:flex">
+              <span className="luxecraft-shipping-text text-white text-[14px] font-extrabold uppercase tracking-[0.18em]">
+                ✅ Fast delivery
+              </span>
+              <span className="luxecraft-shipping-text text-white text-[14px] font-extrabold uppercase tracking-[0.18em]">
+                ✅ 14 days return policy
+              </span>
+              <span className="luxecraft-shipping-text text-white text-[14px] font-extrabold uppercase tracking-[0.18em]">
+                ✅ FREE SHIPPING • WORLDWIDE
+              </span>
+            </div>
           </div>
         </Link>
       )}
