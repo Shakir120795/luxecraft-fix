@@ -21,9 +21,7 @@ export default function AdminLoginPage() {
     try {
       const response = await adminLogin(formData);
       
-      // Store tokens
-      localStorage.setItem('adminToken', response.accessToken);
-      localStorage.setItem('adminRefreshToken', response.refreshToken);
+      // Access token stays in memory; refresh token is stored as an HttpOnly cookie.
       
       // Redirect to dashboard
       router.push('/dashboard');
