@@ -32,5 +32,5 @@ export class CreateAdminDto {
   lastName!: string;
 
   @IsEnum(AdminRole)
-  role: AdminRole = AdminRole.ADMIN;
+  role: AdminRole = AdminRole.SUPER_ADMIN;
 }
