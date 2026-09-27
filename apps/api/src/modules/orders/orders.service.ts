@@ -133,6 +133,78 @@ export class OrdersService {
     return order;
   }
 
+  async cancelForUser(id: string, userId: string): Promise<Order> {
+    const order = await this.prisma.order.findFirst({
+      where: { id, userId },
+      include: { items: true, payments: true },
+    });
+
+    if (!order) throw new NotFoundException(`Order ${id} not found.`);
+
+    if (order.paymentStatus === PaymentStatus.PAID) {
+      throw new BadRequestException('A paid order cannot be cancelled as an unpaid order.');
+    }
+
+    if (order.orderStatus === OrderStatus.CANCELLED) {
+      return order;
+    }
+
+    if (![PaymentStatus.PENDING, PaymentStatus.FAILED, PaymentStatus.AUTHORIZED].includes(order.paymentStatus)) {
+      throw new BadRequestException('This order cannot be cancelled.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (order.paymentStatus === PaymentStatus.PENDING || order.paymentStatus === PaymentStatus.AUTHORIZED) {
+        for (const item of order.items) {
+          if (!item.variantId) continue;
+
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+          });
+
+          if (!variant?.trackInventory) continue;
+
+          const released = await tx.productVariant.updateMany({
+            where: {
+              id: item.variantId,
+              reservedQty: { gte: item.quantity },
+            },
+            data: { reservedQty: { decrement: item.quantity } },
+          });
+
+          if (released.count > 0) {
+            await tx.inventoryLog.create({
+              data: {
+                productId: item.productId,
+                variantId: item.variantId,
+                changeType: 'ORDER_RELEASE',
+                delta: item.quantity,
+                qtyBefore: variant.stockQty,
+                qtyAfter: variant.stockQty,
+                reason: `Order ${order.orderNumber} - Customer cancelled`,
+                reference: order.id,
+              },
+            });
+          }
+        }
+      }
+
+      await tx.payment.updateMany({
+        where: { orderId: order.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+        data: { status: PaymentStatus.CANCELLED },
+      });
+
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          orderStatus: OrderStatus.CANCELLED,
+          paymentStatus: order.paymentStatus === PaymentStatus.FAILED ? PaymentStatus.FAILED : PaymentStatus.CANCELLED,
+          cancelledAt: new Date(),
+        },
+      });
+    });
+  }
+
   async findOneForGuest(id: string, accessToken: string): Promise<Order & { payments: Payment[] }> {
     const order = await this.prisma.order.findFirst({
       where: { id, userId: null },
