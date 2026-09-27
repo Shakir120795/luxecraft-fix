@@ -135,9 +135,11 @@ export default function CartPage() {
       const result = await validateCoupon(code, cartSubtotal, productIds);
       setCouponDiscount(result.discountAmount);
       setCouponCode(result.code);
-      setCouponMessage(`Coupon applied. You save $${result.discountAmount.toFixed(2)}.`);
+      localStorage.setItem('appliedCouponCode', result.code);
+      setCouponMessage(`Coupon applied. You save ${result.discountAmount.toFixed(2)}.`);
     } catch (err) {
       setCouponDiscount(0);
+      localStorage.removeItem('appliedCouponCode');
       setCouponMessage(err instanceof Error ? err.message : 'Unable to apply coupon.');
     }
   }
