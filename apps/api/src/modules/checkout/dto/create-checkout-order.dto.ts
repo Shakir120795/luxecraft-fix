@@ -23,6 +23,7 @@ export class GuestCheckoutAddressDto {
 export class CreateCheckoutOrderDto {
   @IsOptional() @IsString() shippingMethodId?: string;
   @IsOptional() @IsString() shippingAddressId?: string;
+  @IsOptional() @IsString() billingAddressId?: string;
   @IsOptional() @IsEmail() guestEmail?: string;
   @IsOptional() @IsString() paymentProvider?: string;
   @IsOptional() @IsString() paymentMethod?: string;
