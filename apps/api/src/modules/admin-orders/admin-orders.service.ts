@@ -28,8 +28,8 @@ export class AdminOrdersService {
     const [items, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
-        skip: params.skip ?? 0,
-        take: params.take ?? 50,
+        skip: params.skip || 0,
+        take: params.take || 50,
         orderBy: { createdAt: 'desc' },
         include: { user: { select: { email: true, firstName: true, lastName: true } }, payments: true, items: true },
       }),
