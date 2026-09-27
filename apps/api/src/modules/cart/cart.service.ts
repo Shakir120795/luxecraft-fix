@@ -440,12 +440,13 @@ export class CartService {
 
   //  Calculate cart totals 
 
-  async validateCoupon(code: string, subtotal: number, productIds: string[]): Promise<{
+  async validateCoupon(code: string, subtotal: number, productIds: string[], currency?: string): Promise<{
     code: string;
     discountType: string;
     discountValue: number;
     discountAmount: number;
     subtotal: number;
+    currency: string;
   }> {
     const normalizedCode = code.trim().toUpperCase();
     if (!normalizedCode) throw new BadRequestException('Coupon code is required.');
@@ -463,6 +464,10 @@ export class CartService {
     }
 
     const orderSubtotal = Math.max(0, Number(subtotal) || 0);
+    const normalizedCurrency = currency?.trim().toUpperCase();
+    if (normalizedCurrency && String(coupon.currency).toUpperCase() !== normalizedCurrency && String(coupon.discountType).toUpperCase() === 'FIXED') {
+      throw new BadRequestException('This coupon is not valid for the selected currency.');
+    }
     if (coupon.minOrderAmount != null && orderSubtotal < Number(coupon.minOrderAmount)) {
       throw new BadRequestException(`Minimum order amount for this coupon is $${Number(coupon.minOrderAmount).toFixed(2)}.`);
     }
@@ -496,6 +501,7 @@ export class CartService {
       discountValue: Number(coupon.discountValue),
       discountAmount: Number(discountAmount.toFixed(2)),
       subtotal: orderSubtotal,
+      currency: String(coupon.currency).toUpperCase(),
     };
   }
   async calculateCartTotals(
