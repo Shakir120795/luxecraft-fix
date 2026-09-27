@@ -1,5 +1,17 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
 
+let accessToken: string | null = null;
+
+export async function apiFetch(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  return fetch(input, {
+    ...init,
+    credentials: init.credentials ?? 'include',
+  });
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -159,7 +171,7 @@ export interface FaqItem {
 
 export async function getFaqs(): Promise<FaqItem[]> {
   try {
-    const res = await fetch(`${API_URL}/storefront/faq`, {
+    const res = await apiFetch(`${API_URL}/storefront/faq`, {
       cache: 'no-store',
     });
 
@@ -183,7 +195,7 @@ export interface HomepageVideo {
 
 export async function getHomepageVideos(): Promise<HomepageVideo[]> {
   try {
-    const res = await fetch(`${API_URL}/storefront/pages/homepage-videos`, {
+    const res = await apiFetch(`${API_URL}/storefront/pages/homepage-videos`, {
       cache: 'no-store',
     });
 
@@ -205,7 +217,7 @@ export interface HomeCouponLabel {
 
 export async function getHomeCouponLabel(): Promise<HomeCouponLabel | null> {
   try {
-    const res = await fetch(`${API_URL}/storefront/coupon-label`, {
+    const res = await apiFetch(`${API_URL}/storefront/coupon-label`, {
       cache: 'no-store',
     });
 
@@ -235,7 +247,7 @@ export interface ProductFilterSetting {
 
 export async function getProductFilters(): Promise<ProductFilterSetting[]> {
   try {
-    const res = await fetch(`${API_URL}/storefront/pages/product-filters`, {
+    const res = await apiFetch(`${API_URL}/storefront/pages/product-filters`, {
       cache: 'no-store',
     });
 
@@ -250,7 +262,7 @@ export async function getProductFilters(): Promise<ProductFilterSetting[]> {
 
 export async function getHero(): Promise<HeroSection | null> {
   try {
-    const res = await fetch(`${API_URL}/storefront/hero`, {
+    const res = await apiFetch(`${API_URL}/storefront/hero`, {
       cache: 'no-store',
     });
 
@@ -301,7 +313,7 @@ export async function getProductsPage(params: ProductPageParams = {}): Promise<P
       if (value) url.searchParams.set(`filter_${slug}`, value);
     });
 
-    const res = await fetch(url.toString(), { cache: 'no-store' });
+    const res = await apiFetch(url.toString(), { cache: 'no-store' });
     if (!res.ok) throw new Error(`API error: ${res.status}`);
 
     const data = await res.json();
@@ -337,7 +349,7 @@ export async function getProducts(limit?: number, categoryId?: string): Promise<
     if (limit) url.searchParams.append('take', limit.toString());
     if (categoryId) url.searchParams.append('categoryId', categoryId);
 
-    const res = await fetch(url.toString(), {
+    const res = await apiFetch(url.toString(), {
       cache: 'no-store',
     });
 
@@ -358,7 +370,7 @@ export async function getProducts(limit?: number, categoryId?: string): Promise<
 
 export async function getCategories(): Promise<Category[]> {
   try {
-    const res = await fetch(`${API_URL}/storefront/categories`, {
+    const res = await apiFetch(`${API_URL}/storefront/categories`, {
       cache: 'no-store',
     });
 
@@ -429,35 +441,30 @@ function isTokenExpiringSoon(token: string, withinSeconds = 60): boolean {
 }
 
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refreshToken');
-  if (!refreshToken) return null;
-
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const res = await fetch(`${API_URL}/auth/refresh`, {
+        const res = await apiFetch(`${API_URL}/auth/refresh`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ refreshToken }),
+          body: JSON.stringify({}),
           cache: 'no-store',
         });
 
         const data = await res.json().catch(() => null);
         const auth = data?.data ?? data;
 
-        if (!res.ok || !auth?.accessToken || !auth?.refreshToken) {
+        if (!res.ok || !auth?.accessToken) {
+          accessToken = null;
           return null;
         }
 
-        localStorage.setItem('accessToken', auth.accessToken);
-        localStorage.setItem('refreshToken', auth.refreshToken);
-        if (auth.user) {
-          localStorage.setItem('user', JSON.stringify(auth.user));
-        }
-
-        return auth.accessToken as string;
+        accessToken = auth.accessToken as string;
+        if (auth.user) localStorage.setItem('user', JSON.stringify(auth.user));
+        return accessToken;
       } catch (error) {
         console.error('Failed to refresh access token:', error);
+        accessToken = null;
         return null;
       } finally {
         refreshPromise = null;
@@ -468,10 +475,10 @@ async function refreshAccessToken(): Promise<string | null> {
   return refreshPromise;
 }
 
-async function getAuthHeaders(): Promise<HeadersInit> {
-  let token = localStorage.getItem('accessToken');
+export async function getAuthHeaders(): Promise<HeadersInit> {
+  let token = accessToken;
 
-  if (token && isTokenExpiringSoon(token)) {
+  if (!token || isTokenExpiringSoon(token)) {
     token = await refreshAccessToken();
   }
 
@@ -492,7 +499,7 @@ export async function getCart(): Promise<Cart | null> {
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
     
-    const res = await fetch(`${API_URL}/cart`, {
+    const res = await apiFetch(`${API_URL}/cart`, {
       headers: {
         ...headers,
         'X-Session-Id': sessionId,
@@ -520,7 +527,7 @@ export async function getCartTotals(country?: string): Promise<CartTotals> {
     const url = new URL(`${API_URL}/cart/totals`);
     if (country) url.searchParams.append('country', country.toUpperCase());
 
-    const res = await fetch(url.toString(), {
+    const res = await apiFetch(url.toString(), {
       headers: {
         ...headers,
         'X-Session-Id': sessionId,
@@ -548,7 +555,7 @@ export async function validateCoupon(code: string, subtotal: number, productIds:
   const headers = await getAuthHeaders();
   const sessionId = getSessionId();
 
-  const res = await fetch(`${API_URL}/cart/coupon/validate`, {
+  const res = await apiFetch(`${API_URL}/cart/coupon/validate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -577,7 +584,7 @@ export async function addToCart(params: {
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
     
-    const res = await fetch(`${API_URL}/cart/items`, {
+    const res = await apiFetch(`${API_URL}/cart/items`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -608,7 +615,7 @@ export async function updateCartItem(itemId: string, params: {
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
     
-    const res = await fetch(`${API_URL}/cart/items/${itemId}`, {
+    const res = await apiFetch(`${API_URL}/cart/items/${itemId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -636,7 +643,7 @@ export async function removeCartItem(itemId: string): Promise<{ success: boolean
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
     
-    const res = await fetch(`${API_URL}/cart/items/${itemId}`, {
+    const res = await apiFetch(`${API_URL}/cart/items/${itemId}`, {
       method: 'DELETE',
       headers: {
         ...headers,
@@ -658,7 +665,7 @@ export async function clearCart(): Promise<{ success: boolean; message?: string 
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
     
-    const res = await fetch(`${API_URL}/cart/clear`, {
+    const res = await apiFetch(`${API_URL}/cart/clear`, {
       method: 'DELETE',
       headers: {
         ...headers,
@@ -695,7 +702,6 @@ export interface AuthResponse {
   data?: {
     user: User;
     accessToken: string;
-    refreshToken: string;
   };
   message?: string;
 }
@@ -708,7 +714,7 @@ export async function register(params: {
   phone?: string;
 }): Promise<AuthResponse> {
   try {
-    const res = await fetch(`${API_URL}/auth/register`, {
+    const res = await apiFetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -717,9 +723,7 @@ export async function register(params: {
     const data = await res.json();
     
     if (res.ok && data.success && data.data) {
-      // Store tokens
-      localStorage.setItem('accessToken', data.data.accessToken);
-      localStorage.setItem('refreshToken', data.data.refreshToken);
+      accessToken = data.data.accessToken;
       localStorage.setItem('user', JSON.stringify(data.data.user));
       return { success: true, data: data.data };
     }
@@ -736,7 +740,7 @@ export async function login(params: {
   password: string;
 }): Promise<AuthResponse> {
   try {
-    const res = await fetch(`${API_URL}/auth/login`, {
+    const res = await apiFetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -746,19 +750,18 @@ export async function login(params: {
     
     if (res.ok && data.success && data.data) {
       // Store tokens
-      localStorage.setItem('accessToken', data.data.accessToken);
-      localStorage.setItem('refreshToken', data.data.refreshToken);
+      accessToken = data.data.accessToken;
       localStorage.setItem('user', JSON.stringify(data.data.user));
       
       // Merge guest cart if exists
       const guestSessionId = localStorage.getItem('guestSessionId');
       if (guestSessionId) {
         try {
-          await fetch(`${API_URL}/cart/merge`, {
+          await apiFetch(`${API_URL}/cart/merge`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${data.data.accessToken}`,
+              ...(await getAuthHeaders()),
             },
             body: JSON.stringify({ guestSessionId }),
           });
@@ -779,29 +782,18 @@ export async function login(params: {
 
 export async function logout(): Promise<{ success: boolean }> {
   try {
-    const token = localStorage.getItem('accessToken');
-    
-    if (token) {
-      await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-    }
-
-    // Clear local storage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-
-    return { success: true };
+    await apiFetch(`${API_URL}/auth/logout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
   } catch (error) {
     console.error('Logout error:', error);
-    // Still clear local data even if API call fails
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
-    return { success: true };
   }
+
+  accessToken = null;
+  if (typeof window !== 'undefined') localStorage.removeItem('user');
+  return { success: true };
 }
 
 export async function verifyEmail(params: {
@@ -809,7 +801,7 @@ export async function verifyEmail(params: {
   code: string;
 }): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/auth/verify-email`, {
+    const res = await apiFetch(`${API_URL}/auth/verify-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -830,7 +822,7 @@ export async function verifyEmail(params: {
 
 export async function resendVerificationCode(email: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/auth/resend-verification`, {
+    const res = await apiFetch(`${API_URL}/auth/resend-verification`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -851,7 +843,7 @@ export async function resendVerificationCode(email: string): Promise<{ success: 
 
 export async function forgotPassword(email: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/auth/forgot-password`, {
+    const res = await apiFetch(`${API_URL}/auth/forgot-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email }),
@@ -875,7 +867,7 @@ export async function resetPassword(params: {
   password: string;
 }): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/auth/reset-password`, {
+    const res = await apiFetch(`${API_URL}/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -906,7 +898,7 @@ export function getCurrentUser(): User | null {
 
 export async function getFreshCurrentUser(): Promise<User | null> {
   try {
-    const res = await fetch(`${API_URL}/auth/me`, {
+    const res = await apiFetch(`${API_URL}/auth/me`, {
       headers: await getAuthHeaders(),
       cache: 'no-store',
     });
@@ -923,12 +915,12 @@ export async function getFreshCurrentUser(): Promise<User | null> {
   }
 }
 export function isAuthenticated(): boolean {
-  return !!localStorage.getItem('accessToken');
+  return !!accessToken || !!localStorage.getItem('user');
 }
 
 export async function updateProfile(params: Pick<User, 'firstName' | 'lastName' | 'phone'>): Promise<{ success: boolean; user?: User; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/auth/me`, {
+    const res = await apiFetch(`${API_URL}/auth/me`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify(params),
@@ -944,7 +936,7 @@ export async function updateProfile(params: Pick<User, 'firstName' | 'lastName' 
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/auth/change-password`, {
+    const res = await apiFetch(`${API_URL}/auth/change-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
       body: JSON.stringify({ currentPassword, newPassword }),
@@ -983,7 +975,7 @@ export interface Address {
 export async function getAddresses(): Promise<Address[]> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/addresses`, {
+    const res = await apiFetch(`${API_URL}/addresses`, {
       headers,
       cache: 'no-store',
     });
@@ -1002,7 +994,7 @@ export async function getAddresses(): Promise<Address[]> {
 export async function createAddress(params: Omit<Address, 'id' | 'userId' | 'createdAt'>): Promise<{ success: boolean; data?: Address; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/addresses`, {
+    const res = await apiFetch(`${API_URL}/addresses`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1028,7 +1020,7 @@ export async function createAddress(params: Omit<Address, 'id' | 'userId' | 'cre
 export async function updateAddress(id: string, params: Partial<Omit<Address, 'id' | 'userId' | 'createdAt'>>): Promise<{ success: boolean; data?: Address; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/addresses/${id}`, {
+    const res = await apiFetch(`${API_URL}/addresses/${id}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
@@ -1053,7 +1045,7 @@ export async function updateAddress(id: string, params: Partial<Omit<Address, 'i
 export async function deleteAddress(id: string): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/addresses/${id}`, {
+    const res = await apiFetch(`${API_URL}/addresses/${id}`, {
       method: 'DELETE',
       headers,
     });
@@ -1098,7 +1090,7 @@ export async function getShippingMethods(params: {
     if (params.weight) url.searchParams.append('weight', params.weight.toString());
     if (params.orderValue) url.searchParams.append('orderValue', params.orderValue.toString());
 
-    const res = await fetch(url.toString(), { cache: 'no-store' });
+    const res = await apiFetch(url.toString(), { cache: 'no-store' });
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
@@ -1116,7 +1108,7 @@ export async function calculateShipping(params: {
   orderValue?: number;
 }): Promise<{ rate: number; currency: string } | null> {
   try {
-    const res = await fetch(`${API_URL}/shipping/calculate`, {
+    const res = await apiFetch(`${API_URL}/shipping/calculate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -1168,7 +1160,7 @@ export async function verifyRazorpayPayment(params: {
   accessToken?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/payments/razorpay/verify`, {
+    const res = await apiFetch(`${API_URL}/payments/razorpay/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
       body: JSON.stringify(params),
@@ -1187,7 +1179,7 @@ export async function capturePayPalPayment(params: {
   accessToken?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/payments/paypal/capture`, {
+    const res = await apiFetch(`${API_URL}/payments/paypal/capture`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
       body: JSON.stringify(params),
@@ -1208,7 +1200,7 @@ export async function verifyCryptoPayment(params: {
   accessToken?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/payments/crypto/verify`, {
+    const res = await apiFetch(`${API_URL}/payments/crypto/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
       body: JSON.stringify(params),
@@ -1230,7 +1222,7 @@ export async function getPaymentConfiguration(currency: string = 'USD'): Promise
   cryptoSupportedAssets?: string[];
 }> {
   try {
-    const res = await fetch(`${API_URL}/payments/configuration?currency=${currency}`, {
+    const res = await apiFetch(`${API_URL}/payments/configuration?currency=${currency}`, {
       cache: 'no-store',
     });
 
@@ -1280,7 +1272,7 @@ export async function createOrder(params: {
     const headers = await getAuthHeaders();
     const sessionId = getSessionId();
     
-    const res = await fetch(`${API_URL}/checkout/create-order`, {
+    const res = await apiFetch(`${API_URL}/checkout/create-order`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1328,7 +1320,7 @@ function normalizeOrder(order: any): Order {
 export async function getOrders(): Promise<Order[]> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/orders`, {
+    const res = await apiFetch(`${API_URL}/orders`, {
       headers,
       cache: 'no-store',
     });
@@ -1365,7 +1357,7 @@ export async function resumePayment(orderId: string): Promise<{
 }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/payments/resume`, {
+    const res = await apiFetch(`${API_URL}/payments/resume`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1387,7 +1379,7 @@ export async function resumePayment(orderId: string): Promise<{
 export async function cancelOrder(orderId: string): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+    const res = await apiFetch(`${API_URL}/orders/${orderId}/cancel`, {
       method: 'POST',
       headers,
     });
@@ -1407,7 +1399,7 @@ export async function getOrder(orderId: string, guestAccessToken?: string): Prom
     const headers = await getAuthHeaders();
     const url = new URL(`${API_URL}/orders/${orderId}`);
     if (guestAccessToken) url.searchParams.set('access', guestAccessToken);
-    const res = await fetch(url.toString(), {
+    const res = await apiFetch(url.toString(), {
       headers,
       cache: 'no-store',
     });
@@ -1491,7 +1483,7 @@ export async function submitContactMessage(params: {
   subject: string;
   message: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
-  const res = await fetch(`${API_URL}/contact`, {
+  const res = await apiFetch(`${API_URL}/contact`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -1523,7 +1515,7 @@ export async function createCustomRequest(params: {
 }): Promise<{ success: boolean; data?: CustomRequest; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/custom-requests`, {
+    const res = await apiFetch(`${API_URL}/custom-requests`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1557,7 +1549,7 @@ export async function createCustomRequest(params: {
 export async function getCustomRequests(): Promise<CustomRequest[]> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/custom-requests`, {
+    const res = await apiFetch(`${API_URL}/custom-requests`, {
       headers,
       cache: 'no-store',
     });
@@ -1578,7 +1570,7 @@ export async function getCustomRequest(requestId: string): Promise<{
 } | null> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/custom-requests/${requestId}`, {
+    const res = await apiFetch(`${API_URL}/custom-requests/${requestId}`, {
       headers,
       cache: 'no-store',
     });
@@ -1601,7 +1593,7 @@ export async function getCustomRequest(requestId: string): Promise<{
 export async function sendCustomMessage(requestId: string, message: string): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/custom-requests/${requestId}/messages`, {
+    const res = await apiFetch(`${API_URL}/custom-requests/${requestId}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1626,7 +1618,7 @@ export async function sendCustomMessage(requestId: string, message: string): Pro
 export async function acceptQuote(quoteId: string): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/custom-quotes/${quoteId}/accept`, {
+    const res = await apiFetch(`${API_URL}/custom-quotes/${quoteId}/accept`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1671,7 +1663,7 @@ export interface Wishlist {
 export async function getWishlist(): Promise<Wishlist | null> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/wishlist`, {
+    const res = await apiFetch(`${API_URL}/wishlist`, {
       headers,
       cache: 'no-store',
     });
@@ -1695,7 +1687,7 @@ export async function addToWishlist(params: {
 }): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/wishlist/items`, {
+    const res = await apiFetch(`${API_URL}/wishlist/items`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1720,7 +1712,7 @@ export async function addToWishlist(params: {
 export async function removeFromWishlist(itemId: string): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/wishlist/items/${itemId}`, {
+    const res = await apiFetch(`${API_URL}/wishlist/items/${itemId}`, {
       method: 'DELETE',
       headers: {
         ...headers,
@@ -1742,7 +1734,7 @@ export async function toggleWishlist(params: {
 }): Promise<{ success: boolean; added: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/wishlist/toggle`, {
+    const res = await apiFetch(`${API_URL}/wishlist/toggle`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1767,7 +1759,7 @@ export async function toggleWishlist(params: {
 export async function moveWishlistToCart(itemId: string, quantity: number = 1): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/wishlist/move-to-cart`, {
+    const res = await apiFetch(`${API_URL}/wishlist/move-to-cart`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1792,7 +1784,7 @@ export async function moveWishlistToCart(itemId: string, quantity: number = 1): 
 export async function clearWishlist(): Promise<{ success: boolean; message?: string }> {
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/wishlist/clear`, {
+    const res = await apiFetch(`${API_URL}/wishlist/clear`, {
       method: 'DELETE',
       headers: {
         ...headers,
