@@ -93,20 +93,40 @@ export class InventoryService {
       );
     }
 
-    // Increase reserved quantity
-    await this.prisma.productVariant.update({
-      where: { id: variantId },
-      data: { reservedQty: { increment: qty } },
-    });
+    // The pre-check above is only informational. The actual reservation is
+    // atomic so concurrent checkouts cannot oversell the same variant.
+    const reserved = await this.prisma.$queryRaw<
+      Array<{ id: string; productId: string; stockQty: number; reservedQty: number }>
+    >`
+      UPDATE "product_variants"
+      SET "reservedQty" = "reservedQty" + ${qty},
+          "updatedAt" = CURRENT_TIMESTAMP
+      WHERE "id" = ${variantId}
+        AND "deletedAt" IS NULL
+        AND "trackInventory" = TRUE
+        AND (
+          "allowBackorder" = TRUE
+          OR "stockQty" - "reservedQty" >= ${qty}
+        )
+      RETURNING "id", "productId", "stockQty", "reservedQty"
+    `;
+
+    if (reserved.length === 0) {
+      throw new BadRequestException(
+        'Insufficient stock. Another checkout may have reserved the remaining inventory. Please try again.',
+      );
+    }
+
+    const updated = reserved[0];
 
     const log = await this.prisma.inventoryLog.create({
       data: {
-        productId: variant.productId,
+        productId: updated.productId,
         variantId,
         changeType: InventoryChange.ORDER_RESERVE,
         delta: -qty,
-        qtyBefore: variant.stockQty,
-        qtyAfter: variant.stockQty,
+        qtyBefore: updated.stockQty,
+        qtyAfter: updated.stockQty,
         reason: 'Order reservation',
         reference,
       },
