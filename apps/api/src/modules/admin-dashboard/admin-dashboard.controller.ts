@@ -1,9 +1,10 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 
 @Controller('admin/dashboard')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class AdminDashboardController {
   constructor(private readonly svc: AdminDashboardService) {}
 
