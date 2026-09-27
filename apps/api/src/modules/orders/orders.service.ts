@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
@@ -26,6 +26,7 @@ export class OrdersService {
     shippingCost: number;
     taxAmount: number;
     subtotal: number;
+    discountAmount?: number;
     total: number;
     currency: string;
   }): Promise<Order> {
@@ -46,6 +47,7 @@ export class OrdersService {
         shippingMethodName: data.shippingMethodName,
         currency: data.currency,
         subtotal: data.subtotal,
+        discountAmount: data.discountAmount ?? 0,
         shippingCost: data.shippingCost,
         taxAmount: data.taxAmount,
         total: data.total,
@@ -149,7 +151,12 @@ export class OrdersService {
       return order;
     }
 
-    if (![PaymentStatus.PENDING, PaymentStatus.FAILED, PaymentStatus.AUTHORIZED].includes(order.paymentStatus)) {
+    const cancellablePaymentStatuses: PaymentStatus[] = [
+      PaymentStatus.PENDING,
+      PaymentStatus.FAILED,
+      PaymentStatus.AUTHORIZED,
+    ];
+    if (!cancellablePaymentStatuses.includes(order.paymentStatus)) {
       throw new BadRequestException('This order cannot be cancelled.');
     }
 
