@@ -103,6 +103,7 @@ export class CheckoutService {
     }
 
     const shippingAddress = await this.resolveShippingAddress(input.userId, input.dto);
+    const billingAddress = await this.resolveBillingAddress(input.userId, input.dto, shippingAddress);
     const country = shippingAddress.country.toUpperCase();
     const cartItems = persistedItems.map((item) => {
       const unitPrice = Number(
@@ -219,7 +220,7 @@ export class CheckoutService {
         orderType: 'STANDARD',
         cart: { items: cartItems },
         shippingAddress,
-        billingAddress: shippingAddress,
+        billingAddress,
         shippingMethodId: shippingMethod.id,
         shippingMethodName: shippingMethod.name,
         shippingCost: shippingMethod.calculatedRate,
@@ -282,6 +283,28 @@ export class CheckoutService {
       ...(payment?.provider === 'crypto' && payment.metadata && typeof payment.metadata === 'object' && !Array.isArray(payment.metadata) ? { crypto: { network: (payment.metadata as Record<string, unknown>).network, asset: (payment.metadata as Record<string, unknown>).asset, address: (payment.metadata as Record<string, unknown>).receivingAddress, amount: (payment.metadata as Record<string, unknown>).expectedAmount, currency: (payment.metadata as Record<string, unknown>).settlementCurrency } } : {}),
       ...(!input.userId ? { guestAccessToken: this.orders.createGuestAccessToken(order) } : {}),
     };
+  }
+
+  private async resolveBillingAddress(
+    userId: string | undefined,
+    dto: CreateCheckoutOrderDto,
+    shippingAddress: GuestCheckoutAddressDto | Awaited<ReturnType<AddressesService['findOne']>>,
+  ): Promise<GuestCheckoutAddressDto | Awaited<ReturnType<AddressesService['findOne']>>> {
+    if (userId) {
+      if (dto.shippingAddressId && dto.guestBillingAddress) {
+        throw new BadRequestException('Invalid billing address selection.');
+      }
+
+      if (dto.shippingAddressId && dto.guestBillingAddress === undefined) {
+        if (dto.billingAddressId) {
+          return this.addresses.findOne(dto.billingAddressId, userId);
+        }
+      }
+
+      return shippingAddress;
+    }
+
+    return dto.guestBillingAddress ?? shippingAddress;
   }
 
   private async resolveShippingAddress(
