@@ -32,9 +32,13 @@ export default function OrdersPage() {
     }
   }
 
-  const filteredOrders = filter === 'all' 
-    ? orders 
-    : orders.filter(o => o.status.toLowerCase() === filter.toLowerCase());
+  const filteredOrders = filter === 'all'
+    ? orders
+    : orders.filter(o =>
+        filter === 'failed'
+          ? o.paymentStatus.toUpperCase() === 'FAILED' || o.status.toLowerCase() === 'failed'
+          : o.status.toLowerCase() === filter.toLowerCase(),
+      );
 
   if (loading) {
     return (
