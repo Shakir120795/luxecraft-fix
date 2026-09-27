@@ -9,7 +9,7 @@ import {
   Get,
   Patch,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -22,6 +22,16 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '@prisma/client';
+
+const REFRESH_COOKIE = 'wolhomes_refresh_token';
+const REFRESH_COOKIE_PATH = '/api/v1/auth';
+const REFRESH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  path: REFRESH_COOKIE_PATH,
+  maxAge: 30 * 24 * 60 * 60 * 1000,
+};
 
 @Controller('auth')
 export class AuthController {
@@ -39,28 +49,51 @@ export class AuthController {
   /** POST /api/v1/auth/login */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: Request) {
-    return this.auth.login(dto.email, dto.password, {
+  async login(
+    @Body() dto: LoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const tokens = await this.auth.login(dto.email, dto.password, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    res.cookie(REFRESH_COOKIE, tokens.refreshToken, REFRESH_COOKIE_OPTIONS);
+    const { refreshToken: _refreshToken, ...safeResponse } = tokens;
+    return safeResponse;
   }
 
   /** POST /api/v1/auth/refresh */
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(@Body() dto: RefreshTokenDto, @Req() req: Request) {
-    return this.auth.refresh(dto.refreshToken, {
+  async refresh(
+    @Body() dto: RefreshTokenDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE] ?? dto?.refreshToken ?? '';
+    const tokens = await this.auth.refresh(refreshToken, {
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
     });
+
+    res.cookie(REFRESH_COOKIE, tokens.refreshToken, REFRESH_COOKIE_OPTIONS);
+    const { refreshToken: _refreshToken, ...safeResponse } = tokens;
+    return safeResponse;
   }
 
   /** POST /api/v1/auth/logout */
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Body() dto: RefreshTokenDto) {
-    await this.auth.logout(dto.refreshToken);
+  async logout(
+    @Body() dto: RefreshTokenDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.[REFRESH_COOKIE] ?? dto?.refreshToken ?? '';
+    await this.auth.logout(refreshToken);
+    res.clearCookie(REFRESH_COOKIE, REFRESH_COOKIE_OPTIONS);
     return { message: 'Logged out successfully.' };
   }
 
