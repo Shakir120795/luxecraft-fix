@@ -29,6 +29,8 @@ export class CreateCheckoutOrderDto {
   @IsOptional() @IsString() @MaxLength(50) couponCode?: string;
   @IsOptional() @ValidateNested() @Type(() => GuestCheckoutAddressDto)
   guestShippingAddress?: GuestCheckoutAddressDto;
+  @IsOptional() @ValidateNested() @Type(() => GuestCheckoutAddressDto)
+  guestBillingAddress?: GuestCheckoutAddressDto;
 }
 
 
