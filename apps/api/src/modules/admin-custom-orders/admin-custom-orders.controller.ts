@@ -1,13 +1,14 @@
 import { Controller, Get, Param, Patch, Post, Query, UseGuards, Body } from '@nestjs/common';
 import { AdminCustomOrdersService } from './admin-custom-orders.service';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 import { CustomQuotesService } from '../custom-quotes/custom-quotes.service';
 import { CustomMessagesService } from '../custom-messages/custom-messages.service';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
 import { AdminUser, SenderType } from '@prisma/client';
 
 @Controller('admin/custom-orders')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class AdminCustomOrdersController {
   constructor(
     private readonly svc: AdminCustomOrdersService,
