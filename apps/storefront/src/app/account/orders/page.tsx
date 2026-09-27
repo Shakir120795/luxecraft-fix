@@ -66,7 +66,7 @@ export default function OrdersPage() {
             <div className="sticky top-24 rounded-lg border border-[#ded8d0] bg-white p-5 shadow-sm">
               <h2 className="mb-5 font-serif text-lg text-[#302b35]">Filter Orders</h2>
               <div className="space-y-2">
-                {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(status => (
+                {['all', 'pending', 'failed', 'processing', 'shipped', 'delivered', 'cancelled'].map(status => (
                   <button
                     key={status}
                     onClick={() => setFilter(status)}
@@ -156,6 +156,15 @@ export default function OrdersPage() {
                         View Details 
                       </Link>
                       
+                      {(order.paymentStatus === 'FAILED' || order.status === 'Failed') && (
+                        <Link
+                          href={`/checkout?retryOrderId=${order.id}`}
+                          className="border border-luxury-gold bg-luxury-gold/10 px-6 py-2 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors"
+                        >
+                          Retry Payment
+                        </Link>
+                      )}
+
                       {order.status === 'Delivered' && (
                         <button className="border border-luxury-sand bg-luxury-cream px-6 py-2 text-sm text-luxury-brown hover:border-luxury-gold transition-colors">
                           Reorder
