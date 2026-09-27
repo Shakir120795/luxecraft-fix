@@ -2,6 +2,7 @@ import { Controller, Get, Param, Patch, Post, Query, UseGuards, Body } from '@ne
 import { AdminOrdersService } from './admin-orders.service';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
 import { UpdateAdminOrderStatusDto } from './dto/update-admin-order-status.dto';
+import { ProcessAdminRefundDto } from './dto/process-admin-refund.dto';
 
 @Controller('admin/orders')
 @UseGuards(AdminJwtAuthGuard)
@@ -35,7 +36,7 @@ export class AdminOrdersController {
   }
 
   @Post(':id/refund')
-  processRefund(@Param('id') id: string, @Body() data: { refundAmount: number }) {
-    return this.svc.processRefund(id, data.refundAmount);
+  processRefund(@Param('id') id: string, @Body() data: ProcessAdminRefundDto) {
+    return this.svc.processRefund(id, data);
   }
 }
