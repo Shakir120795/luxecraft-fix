@@ -235,11 +235,16 @@ export class AdminTwoFactorService {
     }
   }
 
-  async consumeChallenge(id: string): Promise<void> {
-    await this.prisma.adminTwoFactorChallenge.update({
-      where: { id },
+  async consumeChallenge(id: string): Promise<boolean> {
+    const result = await this.prisma.adminTwoFactorChallenge.updateMany({
+      where: {
+        id,
+        consumedAt: null,
+        expiresAt: { gt: new Date() },
+      },
       data: { consumedAt: new Date() },
     });
+    return result.count === 1;
   }
 
   private generateTotp(secret: string, counter: number): string {
