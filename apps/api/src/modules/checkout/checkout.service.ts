@@ -291,14 +291,12 @@ export class CheckoutService {
     shippingAddress: GuestCheckoutAddressDto | Awaited<ReturnType<AddressesService['findOne']>>,
   ): Promise<GuestCheckoutAddressDto | Awaited<ReturnType<AddressesService['findOne']>>> {
     if (userId) {
-      if (dto.shippingAddressId && dto.guestBillingAddress) {
+      if (dto.guestBillingAddress) {
         throw new BadRequestException('Invalid billing address selection.');
       }
 
-      if (dto.shippingAddressId && dto.guestBillingAddress === undefined) {
-        if (dto.billingAddressId) {
-          return this.addresses.findOne(dto.billingAddressId, userId);
-        }
+      if (dto.billingAddressId) {
+        return this.addresses.findOne(dto.billingAddressId, userId);
       }
 
       return shippingAddress;
