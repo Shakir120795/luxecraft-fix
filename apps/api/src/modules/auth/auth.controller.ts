@@ -8,6 +8,7 @@ import {
   UseGuards,
   Get,
   Patch,
+  Res,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
