@@ -12,6 +12,9 @@
 } from '@nestjs/common';
 import { ShippingService } from './shipping.service';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoles } from '../admin-auth/decorators/admin-roles.decorator';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
+import { AdminRole } from '@prisma/client';
 
 @Controller('shipping')
 export class ShippingController {
@@ -74,7 +77,7 @@ export class ShippingController {
 }
 
 @Controller('admin/shipping')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class AdminShippingController {
   constructor(private readonly shipping: ShippingService) {}
 
@@ -83,6 +86,7 @@ export class AdminShippingController {
     return this.shipping.adminListZones();
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post('zones')
   createZone(@Body() body: { name?: string; countries?: string[]; isActive?: boolean }) {
     if (!body.name?.trim() || !Array.isArray(body.countries) || body.countries.length === 0) {
@@ -95,6 +99,7 @@ export class AdminShippingController {
     });
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch('zones/:id')
   updateZone(
     @Param('id') id: string,
@@ -103,12 +108,14 @@ export class AdminShippingController {
     return this.shipping.adminUpdateZone(id, body);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Delete('zones/:id')
   async deleteZone(@Param('id') id: string) {
     await this.shipping.adminDeleteZone(id);
     return { success: true };
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post('methods')
   createMethod(
     @Body()
@@ -145,6 +152,7 @@ export class AdminShippingController {
     });
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch('methods/:id')
   updateMethod(
     @Param('id') id: string,
@@ -171,6 +179,7 @@ export class AdminShippingController {
     });
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Delete('methods/:id')
   async deleteMethod(@Param('id') id: string) {
     await this.shipping.adminDeleteMethod(id);
