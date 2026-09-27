@@ -62,7 +62,11 @@ async function refreshAdminAccessToken(): Promise<string | null> {
 
 async function getAdminAuthHeaders(): Promise<HeadersInit> {
   if (!adminAccessToken || isTokenExpiringSoon(adminAccessToken)) {
-    if (!adminRefreshBlocked) await refreshAdminAccessToken();
+    // Refresh tokens are only available to the browser via the HttpOnly cookie.
+    // Never attempt a refresh during server-side rendering.
+    if (typeof window !== 'undefined' && !adminRefreshBlocked) {
+      await refreshAdminAccessToken();
+    }
   }
   return adminAccessToken ? { Authorization: `Bearer ${adminAccessToken}` } : {};
 }
