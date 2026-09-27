@@ -1,11 +1,14 @@
 import { Controller, Get, Param, Patch, Post, Query, UseGuards, Body } from '@nestjs/common';
 import { AdminOrdersService } from './admin-orders.service';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoles } from '../admin-auth/decorators/admin-roles.decorator';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
+import { AdminRole } from '@prisma/client';
 import { UpdateAdminOrderStatusDto } from './dto/update-admin-order-status.dto';
 import { ProcessAdminRefundDto } from './dto/process-admin-refund.dto';
 
 @Controller('admin/orders')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class AdminOrdersController {
   constructor(private readonly svc: AdminOrdersService) {}
 
@@ -30,11 +33,13 @@ export class AdminOrdersController {
     return this.svc.updateStatus(id, data.orderStatus, data.fulfillmentStatus);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post(':id/cancel')
   cancelOrder(@Param('id') id: string) {
     return this.svc.cancelOrder(id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post(':id/refund')
   processRefund(@Param('id') id: string, @Body() data: ProcessAdminRefundDto) {
     return this.svc.processRefund(id, data);
