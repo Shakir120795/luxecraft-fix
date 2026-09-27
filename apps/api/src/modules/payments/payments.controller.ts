@@ -29,6 +29,64 @@ export class PaymentsController {
   configuration(@Query('currency') currency = 'USD') {
     return this.providers.status(currency);
   }
+  @UseGuards(JwtAuthGuard)
+  @Post('resume')
+  async resumePayment(
+    @Body() body: { orderId: string },
+    @Req() req: Request & { user?: { id: string } },
+  ) {
+    if (!body.orderId || !req.user?.id) {
+      throw new BadRequestException('orderId is required');
+    }
+
+    const order = await this.orders.findOneForUser(body.orderId, req.user.id);
+
+    if (order.paymentStatus !== PaymentStatus.PENDING || order.orderStatus === 'CANCELLED') {
+      throw new BadRequestException('This order is not available for payment resume.');
+    }
+
+    const pendingPayment = order.payments.find(
+      (item) => item.status === PaymentStatus.PENDING || item.status === PaymentStatus.AUTHORIZED,
+    );
+
+    if (!pendingPayment || !['razorpay', 'paypal', 'crypto'].includes(pendingPayment.provider)) {
+      throw new BadRequestException('No resumable payment is available for this order.');
+    }
+
+    const claimed = await this.payments.cancelPendingPayment(pendingPayment.id);
+    if (!claimed) {
+      throw new BadRequestException('Payment is already being resumed. Please try again.');
+    }
+
+    try {
+      const result = await this.payments.createPayment({
+        orderId: order.id,
+        amount: Number(order.total),
+        currency: order.currency,
+        provider: pendingPayment.provider,
+        paymentMethod: pendingPayment.paymentMethod || undefined,
+        metadata: {
+          orderNumber: order.orderNumber,
+          retryOfPaymentId: pendingPayment.id,
+        },
+      });
+
+      return {
+        success: true,
+        orderId: order.id,
+        payment: result.payment,
+        provider: result.provider,
+        providerOrderId: result.providerOrderId,
+        publicKey: result.publicKey,
+        approveUrl: result.approveUrl,
+        crypto: result.crypto,
+      };
+    } catch (error) {
+      await this.payments.updateStatus(pendingPayment.id, PaymentStatus.PENDING);
+      throw error;
+    }
+  }
+
   @UseGuards(OptionalJwtAuthGuard)
   @Post('razorpay/verify')
   async verifyRazorpayPayment(
