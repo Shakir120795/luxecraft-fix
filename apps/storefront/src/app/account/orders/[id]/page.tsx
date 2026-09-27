@@ -415,6 +415,28 @@ export default function OrderDetailPage() {
 
               {/* Actions */}
               <div className="space-y-3">
+                {order.paymentStatus === 'PENDING' && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleResumePayment}
+                      disabled={resumingPayment}
+                      className="w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors disabled:opacity-50"
+                    >
+                      {resumingPayment ? 'Preparing Payment…' : 'Resume Payment'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCancelOrder}
+                      disabled={resumingPayment}
+                      className="w-full border border-luxury-terracotta bg-luxury-terracotta/10 px-6 py-3 text-sm text-luxury-terracotta hover:bg-luxury-terracotta/20 transition-colors disabled:opacity-50"
+                    >
+                      Cancel Order
+                    </button>
+                  </>
+                )}
+
                 {(order.paymentStatus === 'FAILED' || order.status === 'Failed') && (
                   <Link
                     href={`/checkout?retryOrderId=${order.id}`}
@@ -424,15 +446,47 @@ export default function OrderDetailPage() {
                   </Link>
                 )}
 
+                {resumeProviderOrderId && order.paymentStatus === 'PENDING' && (
+                  <button
+                    type="button"
+                    onClick={handleCaptureResumedPayPal}
+                    disabled={resumingPayment}
+                    className="w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors disabled:opacity-50"
+                  >
+                    {resumingPayment ? 'Capturing…' : 'Capture PayPal Payment'}
+                  </button>
+                )}
+
+                {resumeCrypto && order.paymentStatus === 'PENDING' && (
+                  <div className="border border-luxury-sand bg-white p-5">
+                    <h3 className="font-serif text-lg text-luxury-charcoal">Complete Crypto Payment</h3>
+                    <p className="mt-2 text-sm text-luxury-brown">
+                      Send {resumeCrypto.amount.toFixed(2)} {resumeCrypto.asset} on {resumeCrypto.network}.
+                    </p>
+                    {resumeCryptoQr && (
+                      <img src={resumeCryptoQr} alt="Crypto payment QR code" className="mx-auto my-4 h-48 w-48" />
+                    )}
+                    <p className="break-all text-xs text-luxury-brown">{resumeCrypto.address}</p>
+                    <input
+                      value={resumeCryptoTxHash}
+                      onChange={(e) => setResumeCryptoTxHash(e.target.value)}
+                      placeholder="Transaction hash"
+                      className="mt-4 w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleVerifyResumedCrypto}
+                      disabled={resumingPayment || !resumeCryptoTxHash.trim()}
+                      className="mt-3 w-full btn-luxury px-6 py-3 text-sm disabled:opacity-50"
+                    >
+                      {resumingPayment ? 'Verifying…' : 'Verify Crypto Payment'}
+                    </button>
+                  </div>
+                )}
+
                 {order.status === 'Delivered' && (
                   <button className="btn-luxury w-full px-6 py-3 text-sm">
                     Reorder
-                  </button>
-                )}
-                
-                {['Pending', 'Processing'].includes(order.status) && (
-                  <button className="w-full border border-luxury-terracotta bg-luxury-terracotta/10 px-6 py-3 text-sm text-luxury-terracotta hover:bg-luxury-terracotta/20 transition-colors">
-                    Cancel Order
                   </button>
                 )}
 
