@@ -7,6 +7,13 @@ export interface PayPalOrderResult {
   approveUrl?: string;
 }
 
+export interface PayPalRefundResult {
+  refundId: string;
+  amount: number;
+  currency: string;
+  status: string;
+}
+
 @Injectable()
 export class PayPalProvider {
   private readonly logger = new Logger(PayPalProvider.name);
@@ -130,6 +137,102 @@ export class PayPalProvider {
     }
 
     return data;
+  }
+
+  async refundOrder(
+    paypalOrderId: string,
+    amount: number,
+    currency: string,
+    requestId: string,
+  ): Promise<PayPalRefundResult> {
+    const accessToken = await this.getAccessToken();
+
+    const orderResponse = await fetch(
+      `${this.baseUrl}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const orderData = await orderResponse.json();
+
+    if (!orderResponse.ok) {
+      this.logger.error(`PayPal order lookup for refund failed: ${orderResponse.status}`);
+      throw new BadRequestException('Unable to verify PayPal payment for refund');
+    }
+
+    const captures = (Array.isArray(orderData.purchase_units)
+      ? orderData.purchase_units
+      : []
+    ).flatMap((unit: any) =>
+      Array.isArray(unit?.payments?.captures) ? unit.payments.captures : [],
+    );
+
+    const capture = captures.find(
+      (item: any) =>
+        String(item?.status || '').toUpperCase() === 'COMPLETED' && item?.id,
+    );
+
+    if (!capture?.id) {
+      throw new BadRequestException('No completed PayPal capture is available for refund');
+    }
+
+    const captureAmount = Number(capture?.amount?.value || 0);
+    const captureCurrency = String(capture?.amount?.currency_code || '').toUpperCase();
+
+    if (
+      !Number.isFinite(captureAmount) ||
+      captureCurrency !== currency.toUpperCase() ||
+      captureAmount < amount - 0.01
+    ) {
+      throw new BadRequestException('PayPal capture amount or currency does not match the refund');
+    }
+
+    const refundResponse = await fetch(
+      `${this.baseUrl}/v2/payments/captures/${encodeURIComponent(capture.id)}/refund`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=representation',
+          'PayPal-Request-Id': requestId,
+        },
+        body: JSON.stringify({
+          amount: {
+            currency_code: captureCurrency,
+            value: amount.toFixed(2),
+          },
+        }),
+      },
+    );
+
+    const refundData = await refundResponse.json();
+
+    if (!refundResponse.ok || !refundData.id) {
+      this.logger.error(`PayPal refund failed: ${refundResponse.status}`);
+      throw new BadRequestException('Failed to process PayPal refund');
+    }
+
+    const status = String(refundData.status || '').toUpperCase();
+    if (status !== 'COMPLETED') {
+      this.logger.error(`PayPal refund not completed: ${status || 'UNKNOWN'}`);
+      throw new BadRequestException(
+        `PayPal refund is not completed: ${status || 'UNKNOWN'}`,
+      );
+    }
+
+    return {
+      refundId: String(refundData.id),
+      amount: Number(refundData.amount?.value || amount),
+      currency: String(
+        refundData.amount?.currency_code || captureCurrency,
+      ).toUpperCase(),
+      status,
+    };
   }
 
   isConfigured(): boolean {
