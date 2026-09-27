@@ -120,8 +120,21 @@ export class CheckoutService {
       0,
     );
     const methods = await this.shipping.calculateShippingRate({ country, cartWeightKg, cartTotal: subtotal });
-    const shippingMethod = methods[0];
-    if (!shippingMethod) throw new BadRequestException('Shipping method is unavailable for this address.');
+    if (methods.length === 0) {
+      throw new BadRequestException('Shipping method is unavailable for this address.');
+    }
+
+    const requestedShippingMethodId = input.dto.shippingMethodId?.trim();
+    if (!requestedShippingMethodId) {
+      throw new BadRequestException('shippingMethodId is required.');
+    }
+
+    // The selected method must be one of the methods currently available
+    // for this address and cart. Never silently fall back to the first method.
+    const shippingMethod = methods.find((method) => method.id === requestedShippingMethodId);
+    if (!shippingMethod) {
+      throw new BadRequestException('The selected shipping method is unavailable for this address.');
+    }
 
     // Validate any coupon against the authoritative server-side cart values.
     // The browser never supplies a trusted discount amount.
