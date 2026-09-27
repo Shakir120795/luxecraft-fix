@@ -16,16 +16,19 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoles } from '../admin-auth/decorators/admin-roles.decorator';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
-import { AdminUser, CategoryStatus } from '@prisma/client';
+import { AdminUser, AdminRole, CategoryStatus } from '@prisma/client';
 
 //  Admin routes: /api/v1/admin/categories 
 
 @Controller('admin/categories')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class AdminCategoriesController {
   constructor(private readonly svc: CategoriesService) {}
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post()
   create(@Body() dto: CreateCategoryDto, @CurrentAdmin() admin: AdminUser) {
     return this.svc.create(dto, admin.id);
@@ -51,6 +54,7 @@ export class AdminCategoriesController {
     return this.svc.findOneAdmin(id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -60,30 +64,35 @@ export class AdminCategoriesController {
     return this.svc.update(id, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id/hide')
   @HttpCode(HttpStatus.OK)
   hide(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.hide(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id/archive')
   @HttpCode(HttpStatus.OK)
   archive(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.archive(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id/restore')
   @HttpCode(HttpStatus.OK)
   restore(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.restore(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.softDelete(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post('reorder')
   @HttpCode(HttpStatus.OK)
   reorder(@Body() dto: ReorderCategoriesDto, @CurrentAdmin() admin: AdminUser) {
