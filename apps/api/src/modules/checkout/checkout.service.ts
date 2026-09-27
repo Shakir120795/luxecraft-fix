@@ -123,10 +123,24 @@ export class CheckoutService {
     const shippingMethod = methods[0];
     if (!shippingMethod) throw new BadRequestException('Shipping method is unavailable for this address.');
 
+    // Validate any coupon against the authoritative server-side cart values.
+    // The browser never supplies a trusted discount amount.
+    let discountAmount = 0;
+    if (input.dto.couponCode?.trim()) {
+      const coupon = await this.cart.validateCoupon(
+        input.dto.couponCode,
+        subtotal,
+        cartItems.map((item) => item.productId),
+        cart.currency,
+      );
+      discountAmount = coupon.discountAmount;
+    }
+
+    const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+
     // Tax is determined exclusively by the active country/state TaxRule.
-    // This must match the checkout totals calculation so the customer sees
-    // the same tax that is persisted on the final order.
-    const taxableAmount = subtotal + shippingMethod.calculatedRate;
+    // This is the same tax source used by checkout totals calculation.
+    const taxableAmount = discountedSubtotal + shippingMethod.calculatedRate;
     const taxCalc = await this.tax.calculateTax({
       country,
       stateProvince: shippingAddress.stateProvince,
@@ -198,6 +212,7 @@ export class CheckoutService {
         shippingCost: shippingMethod.calculatedRate,
         taxAmount,
         subtotal,
+        discountAmount,
         total,
         currency: cart.currency,
       });
@@ -250,6 +265,7 @@ export class CheckoutService {
       providerOrderId: payment?.providerPaymentId,
       approveUrl,
       paymentProvider: payment?.provider,
+      discountAmount,
       ...(payment?.provider === 'crypto' && payment.metadata && typeof payment.metadata === 'object' && !Array.isArray(payment.metadata) ? { crypto: { network: (payment.metadata as Record<string, unknown>).network, asset: (payment.metadata as Record<string, unknown>).asset, address: (payment.metadata as Record<string, unknown>).receivingAddress, amount: (payment.metadata as Record<string, unknown>).expectedAmount, currency: (payment.metadata as Record<string, unknown>).settlementCurrency } } : {}),
       ...(!input.userId ? { guestAccessToken: this.orders.createGuestAccessToken(order) } : {}),
     };
