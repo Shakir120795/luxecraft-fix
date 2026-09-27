@@ -19,7 +19,7 @@ export default function AdminLoginPage() {
     setError('');
 
     try {
-      const response = await adminLogin(formData);
+      await adminLogin(formData);
       
       // Access token stays in memory; refresh token is stored as an HttpOnly cookie.
       
