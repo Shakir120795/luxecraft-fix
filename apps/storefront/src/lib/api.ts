@@ -263,6 +263,74 @@ export async function getHero(): Promise<HeroSection | null> {
     return null;
   }
 }
+export interface PaginatedProducts {
+  items: Product[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface ProductPageParams {
+  page?: number;
+  pageSize?: number;
+  categoryId?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sort?: 'featured' | 'newest' | 'price-low' | 'price-high';
+  filters?: Record<string, string>;
+}
+
+export async function getProductsPage(params: ProductPageParams = {}): Promise<PaginatedProducts> {
+  try {
+    const url = new URL(`${API_URL}/storefront/products`);
+    const page = Math.max(params.page ?? 1, 1);
+    const pageSize = Math.min(Math.max(params.pageSize ?? 12, 1), 48);
+
+    url.searchParams.set('page', page.toString());
+    url.searchParams.set('take', pageSize.toString());
+
+    if (params.categoryId) url.searchParams.set('categoryId', params.categoryId);
+    if (params.search) url.searchParams.set('search', params.search);
+    if (Number.isFinite(params.minPrice)) url.searchParams.set('minPrice', String(params.minPrice));
+    if (Number.isFinite(params.maxPrice)) url.searchParams.set('maxPrice', String(params.maxPrice));
+    if (params.sort) url.searchParams.set('sort', params.sort);
+
+    Object.entries(params.filters ?? {}).forEach(([slug, value]) => {
+      if (value) url.searchParams.set(`filter_${slug}`, value);
+    });
+
+    const res = await fetch(url.toString(), { cache: 'no-store' });
+    if (!res.ok) throw new Error(`API error: ${res.status}`);
+
+    const data = await res.json();
+    const payload = data?.success ? data.data : data;
+
+    if (payload && Array.isArray(payload.items)) {
+      const total = Number(payload.total ?? payload.items.length);
+      return {
+        items: payload.items,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+      };
+    }
+
+    return {
+      items: Array.isArray(payload) ? payload : [],
+      total: Array.isArray(payload) ? payload.length : 0,
+      page,
+      pageSize,
+      totalPages: 1,
+    };
+  } catch (error) {
+    console.error('Failed to fetch products page:', error);
+    throw error instanceof Error ? error : new Error('Failed to fetch products');
+  }
+}
+
 export async function getProducts(limit?: number, categoryId?: string): Promise<Product[]> {
   try {
     const url = new URL(`${API_URL}/storefront/products`);
