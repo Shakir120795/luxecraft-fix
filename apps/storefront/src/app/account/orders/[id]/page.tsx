@@ -40,6 +40,17 @@ export default function OrderDetailPage() {
     }
   }, [orderId]);
 
+  useEffect(() => {
+    if (!resumeCrypto) {
+      setResumeCryptoQr(null);
+      return;
+    }
+
+    QRCode.toDataURL(resumeCrypto.qrPayload, { margin: 2, width: 220 })
+      .then(setResumeCryptoQr)
+      .catch(() => setResumeCryptoQr(null));
+  }, [resumeCrypto]);
+
   async function handleResumePayment() {
     if (!order) return;
     setError(null);
