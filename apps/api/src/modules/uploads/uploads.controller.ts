@@ -7,13 +7,17 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoles } from '../admin-auth/decorators/admin-roles.decorator';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
+import { AdminRole } from '@prisma/client';
 import { UploadsService } from './uploads.service';
 
 @Controller('admin/uploads')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post('categories')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -29,6 +33,7 @@ export class UploadsController {
     return this.uploadsService.saveCategoryImage(file);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post('hero')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -43,6 +48,7 @@ export class UploadsController {
   ) {
     return this.uploadsService.saveHeroImage(file);
   }
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post('products')
   @UseInterceptors(
     FileInterceptor('file', {
