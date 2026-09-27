@@ -88,11 +88,7 @@ export class AdminTwoFactorService {
     };
   }
 
-  async confirmSetup(
-    adminId: string,
-    code: string,
-    verifyPassword: (adminId: string) => Promise<boolean>,
-  ): Promise<void> {
+  async confirmSetup(adminId: string, code: string): Promise<void> {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: adminId },
       select: { email: true, twoFactorEnabled: true, twoFactorSecret: true },
@@ -105,10 +101,6 @@ export class AdminTwoFactorService {
     if (!admin.twoFactorSecret) {
       throw new ConflictException('Start two-factor setup before confirming it.');
     }
-    if (!(await verifyPassword(adminId))) {
-      throw new UnauthorizedException('Current password is incorrect.');
-    }
-
     const secret = this.decryptSecret(admin.twoFactorSecret);
     if (!this.verifyTotp(secret, code)) {
       throw new UnauthorizedException('Invalid two-factor authentication code.');
@@ -123,11 +115,7 @@ export class AdminTwoFactorService {
     });
   }
 
-  async disable(
-    adminId: string,
-    code: string,
-    verifyPassword: (adminId: string) => Promise<boolean>,
-  ): Promise<void> {
+  async disable(adminId: string, code: string): Promise<void> {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: adminId },
       select: { twoFactorEnabled: true, twoFactorSecret: true },
@@ -137,10 +125,6 @@ export class AdminTwoFactorService {
     if (!admin.twoFactorEnabled || !admin.twoFactorSecret) {
       throw new ConflictException('Two-factor authentication is not enabled.');
     }
-    if (!(await verifyPassword(adminId))) {
-      throw new UnauthorizedException('Current password is incorrect.');
-    }
-
     const secret = this.decryptSecret(admin.twoFactorSecret);
     if (!this.verifyTotp(secret, code)) {
       throw new UnauthorizedException('Invalid two-factor authentication code.');
