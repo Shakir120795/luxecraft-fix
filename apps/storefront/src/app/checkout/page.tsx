@@ -49,6 +49,7 @@ export default function CheckoutPage() {
   // Addresses
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [guestShippingAddress, setGuestShippingAddress] = useState<Omit<Address, 'id' | 'userId' | 'createdAt'>>();
+  const [guestBillingAddress, setGuestBillingAddress] = useState<Omit<Address, 'id' | 'userId' | 'createdAt'>>();
   const [selectedShippingAddressId, setSelectedShippingAddressId] = useState<string>('');
   const [selectedBillingAddressId, setSelectedBillingAddressId] = useState<string>('');
   const [sameAsShipping, setSameAsShipping] = useState(true);
@@ -980,6 +981,7 @@ function AddressForm({
   initialFirstName?: string;
   initialLastName?: string;
   onGuestAddress?: (address: Omit<Address, 'id' | 'userId' | 'createdAt'>) => void;
+  title?: string;
 }) {
   const [formData, setFormData] = useState({
     firstName: initialFirstName,
@@ -1029,7 +1031,7 @@ function AddressForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-6 border border-luxury-sand bg-luxury-cream">
-      <h3 className="font-serif text-lg text-luxury-charcoal mb-4">New Address</h3>
+      <h3 className="font-serif text-lg text-luxury-charcoal mb-4">{title || 'New Address'}</h3>
 
       {error && (
         <div className="border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-4 py-3 text-luxury-charcoal text-sm">
