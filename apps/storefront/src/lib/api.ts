@@ -990,7 +990,9 @@ export async function getAddresses(): Promise<Address[]> {
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : [];
+    return data.success && Array.isArray(data.data)
+      ? data.data.map(normalizeOrder)
+      : [];
   } catch (error) {
     console.error('Failed to fetch addresses:', error);
     return [];
@@ -1301,6 +1303,25 @@ export async function createOrder(params: {
   }
 }
 
+function normalizeOrder(order: any): Order {
+  return {
+    ...order,
+    subtotal: Number(order?.subtotal ?? 0),
+    shippingCost: Number(order?.shippingCost ?? 0),
+    taxAmount: Number(order?.taxAmount ?? 0),
+    discountAmount: Number(order?.discountAmount ?? 0),
+    total: Number(order?.total ?? 0),
+    items: Array.isArray(order?.items)
+      ? order.items.map((item: any) => ({
+          ...item,
+          quantity: Number(item?.quantity ?? 0),
+          unitPrice: Number(item?.unitPrice ?? 0),
+          totalPrice: Number(item?.totalPrice ?? 0),
+        }))
+      : [],
+  };
+}
+
 export async function getOrders(): Promise<Order[]> {
   try {
     const headers = await getAuthHeaders();
@@ -1388,7 +1409,7 @@ export async function getOrder(orderId: string, guestAccessToken?: string): Prom
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : null;
+    return data.success && data.data ? normalizeOrder(data.data) : null;
   } catch (error) {
     console.error('Failed to fetch order:', error);
     return null;
