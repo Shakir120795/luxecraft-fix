@@ -179,6 +179,7 @@ function ProductsContent() {
     return () => {
       cancelled = true;
       if (!isFirstPage) {
+        setLoadingMore(false);
         loadingMoreRef.current = false;
       }
     };
