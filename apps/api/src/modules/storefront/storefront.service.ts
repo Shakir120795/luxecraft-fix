@@ -6,6 +6,7 @@ import {
   Product,
   ProductStatus,
   CategoryStatus,
+  Prisma,
 } from '@prisma/client';
 
 @Injectable()
@@ -94,8 +95,25 @@ export class StorefrontService {
     search?: string;
     skip?: number;
     take?: number;
+    minPrice?: number;
+    maxPrice?: number;
+    sort?: 'featured' | 'newest' | 'price-low' | 'price-high';
+    filters?: Record<string, string>;
   }): Promise<{ items: Product[]; total: number }> {
-    const where: Record<string, unknown> = {
+    const filterEntries = Object.entries(params.filters ?? {}).filter(
+      ([, value]) => Boolean(value),
+    );
+
+    const dynamicFilterConditions: Prisma.ProductWhereInput[] = filterEntries.map(
+      ([slug, value]) => ({
+        filterData: {
+          path: [slug],
+          array_contains: [value],
+        },
+      }),
+    );
+
+    const where: Prisma.ProductWhereInput = {
       status: ProductStatus.ACTIVE,
       deletedAt: null,
       ...(params.categoryId && { categoryId: params.categoryId }),
@@ -124,14 +142,45 @@ export class StorefrontService {
           },
         ],
       }),
+      ...(dynamicFilterConditions.length > 0 && {
+        AND: dynamicFilterConditions,
+      }),
+      ...((Number.isFinite(params.minPrice) || Number.isFinite(params.maxPrice)) && {
+        OR: [
+          {
+            salePrice: {
+              not: null,
+              ...(Number.isFinite(params.minPrice) && { gte: params.minPrice }),
+              ...(Number.isFinite(params.maxPrice) && { lte: params.maxPrice }),
+            },
+          },
+          {
+            salePrice: null,
+            regularPrice: {
+              ...(Number.isFinite(params.minPrice) && { gte: params.minPrice }),
+              ...(Number.isFinite(params.maxPrice) && { lte: params.maxPrice }),
+            },
+          },
+        ],
+      }),
     };
+
+    const take = Math.min(Math.max(params.take ?? 12, 1), 48);
+    const skip = Math.max(params.skip ?? 0, 0);
+
+    const orderBy: Prisma.ProductOrderByWithRelationInput[] =
+      params.sort === 'price-low'
+        ? [{ salePrice: 'asc' }, { regularPrice: 'asc' }, { publishedAt: 'desc' }]
+        : params.sort === 'price-high'
+          ? [{ salePrice: 'desc' }, { regularPrice: 'desc' }, { publishedAt: 'desc' }]
+          : [{ publishedAt: 'desc' }];
 
     const [items, total] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        skip: params.skip ?? 0,
-        take: params.take ?? 24,
-        orderBy: { publishedAt: 'desc' },
+        skip,
+        take,
+        orderBy,
         include: {
           category: {
             select: {
