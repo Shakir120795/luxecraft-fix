@@ -6,6 +6,14 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
 let adminAccessToken: string | null = null;
+
+const ADMIN_AUTH_STORAGE_MIGRATION_KEY = 'wolhomes_admin_auth_cookie_migrated_v1';
+
+if (typeof window !== 'undefined' && !localStorage.getItem(ADMIN_AUTH_STORAGE_MIGRATION_KEY)) {
+  localStorage.removeItem('adminToken');
+  localStorage.removeItem('adminRefreshToken');
+  localStorage.setItem(ADMIN_AUTH_STORAGE_MIGRATION_KEY, '1');
+}
 let adminRefreshPromise: Promise<string | null> | null = null;
 
 function isTokenExpiringSoon(token: string, withinSeconds = 60): boolean {
