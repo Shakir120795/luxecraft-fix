@@ -35,6 +35,11 @@ export class StorefrontController {
   }
 
   // Products
+  @Get('sitemap')
+  getSitemapData() {
+    return this.svc.getSitemapData();
+  }
+
   @Get('products')
   getProducts(@Query() query: Record<string, string>) {
     const page = query.page ? Math.max(Number.parseInt(query.page, 10), 1) : 1;
