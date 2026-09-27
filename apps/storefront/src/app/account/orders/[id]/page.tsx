@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import QRCode from 'qrcode';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getOrder, isAuthenticated, Order } from '@/lib/api';
+import { getOrder, isAuthenticated, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder } from '@/lib/api';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -13,6 +14,20 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [resumingPayment, setResumingPayment] = useState(false);
+  const [resumeProviderOrderId, setResumeProviderOrderId] = useState<string | null>(null);
+  const [resumePaymentId, setResumePaymentId] = useState<string | null>(null);
+  const [resumeCrypto, setResumeCrypto] = useState<{
+    network: string;
+    asset: string;
+    address: string;
+    amount: number;
+    currency: string;
+    instructions: string;
+    qrPayload: string;
+  } | null>(null);
+  const [resumeCryptoTxHash, setResumeCryptoTxHash] = useState('');
+  const [resumeCryptoQr, setResumeCryptoQr] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -24,6 +39,172 @@ export default function OrderDetailPage() {
       loadOrder();
     }
   }, [orderId]);
+
+  async function handleResumePayment() {
+    if (!order) return;
+    setError(null);
+    setResumingPayment(true);
+
+    try {
+      const result = await resumePayment(order.id);
+      if (!result.success) {
+        setError(result.message || 'Unable to resume payment.');
+        return;
+      }
+
+      setResumeProviderOrderId(result.providerOrderId || null);
+      setResumePaymentId(result.payment?.id || null);
+      setResumeCrypto(result.crypto || null);
+
+      if (result.provider === 'razorpay') {
+        if (!result.providerOrderId || !result.publicKey) {
+          setError('Card payment could not be initialized.');
+          return;
+        }
+
+        const loadRazorpay = () =>
+          new Promise<void>((resolve, reject) => {
+            const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+            if (existing) return resolve();
+
+            const script = document.createElement('script');
+            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+            script.async = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Unable to load Card Payment.'));
+            document.body.appendChild(script);
+          });
+
+        await loadRazorpay();
+        const RazorpayCtor = (window as Window & {
+          Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+        }).Razorpay;
+
+        if (!RazorpayCtor) throw new Error('Card Payment is unavailable.');
+
+        const razorpay = new RazorpayCtor({
+          key: result.publicKey,
+          order_id: result.providerOrderId,
+          amount: Math.round(Number(result.payment?.amount || order.total) * 100),
+          currency: result.payment?.currency || order.currency,
+          name: 'Wolhomes',
+          description: `Order ${order.orderNumber}`,
+          prefill: {
+            name: `${order.billingAddress?.firstName || ''} ${order.billingAddress?.lastName || ''}`.trim(),
+            email: order.guestEmail || '',
+            contact: order.billingAddress?.phone || '',
+          },
+          handler: async (response: {
+            razorpay_order_id: string;
+            razorpay_payment_id: string;
+            razorpay_signature: string;
+          }) => {
+            setResumingPayment(true);
+            const verification = await verifyRazorpayPayment({
+              orderId: order.id,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+
+            if (!verification.success) {
+              setError(verification.message || 'Payment verification failed.');
+              setResumingPayment(false);
+              return;
+            }
+
+            await loadOrder();
+            setResumingPayment(false);
+          },
+        });
+
+        razorpay.open();
+        return;
+      }
+
+      if (result.provider === 'paypal') {
+        if (!result.approveUrl || !result.providerOrderId) {
+          setError('PayPal payment could not be initialized.');
+          return;
+        }
+        window.open(result.approveUrl, '_blank', 'noopener,noreferrer');
+        setError('PayPal approval opened in a new tab. Complete it there, then click Capture PayPal Payment.');
+        return;
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'Unable to resume payment.');
+    } finally {
+      setResumingPayment(false);
+    }
+  }
+
+  async function handleCaptureResumedPayPal() {
+    if (!order || !resumeProviderOrderId) return;
+    setResumingPayment(true);
+    setError(null);
+    try {
+      const result = await capturePayPalPayment({
+        orderId: order.id,
+        paypalOrderId: resumeProviderOrderId,
+      });
+      if (!result.success) {
+        setError(result.message || 'PayPal capture failed.');
+        return;
+      }
+      await loadOrder();
+      setResumeProviderOrderId(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'PayPal capture failed.');
+    } finally {
+      setResumingPayment(false);
+    }
+  }
+
+  async function handleVerifyResumedCrypto() {
+    if (!order || !resumeCrypto || !resumeCryptoTxHash.trim()) return;
+    setResumingPayment(true);
+    setError(null);
+    try {
+      const result = await verifyCryptoPayment({
+        orderId: order.id,
+        txHash: resumeCryptoTxHash.trim(),
+        network: resumeCrypto.network,
+        asset: resumeCrypto.asset,
+      });
+      if (!result.success) {
+        setError(result.message || 'Crypto payment verification failed.');
+        return;
+      }
+      await loadOrder();
+      setResumeCrypto(null);
+      setResumeCryptoTxHash('');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Crypto payment verification failed.');
+    } finally {
+      setResumingPayment(false);
+    }
+  }
+
+  async function handleCancelOrder() {
+    if (!order) return;
+    if (!window.confirm('Cancel this unpaid order and release its reservation?')) return;
+
+    setError(null);
+    setResumingPayment(true);
+    try {
+      const result = await cancelOrder(order.id);
+      if (!result.success) {
+        setError(result.message || 'Unable to cancel order.');
+        return;
+      }
+      await loadOrder();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to cancel order.');
+    } finally {
+      setResumingPayment(false);
+    }
+  }
 
   async function loadOrder() {
     try {
