@@ -135,6 +135,7 @@ model AdminUser {
   sessions            AdminSession[]
   auditLogs           AuditLog[]
   inventoryLogs       InventoryLog[]
+  twoFactorChallenges AdminTwoFactorChallenge[]
 
   @@index([email])
   @@index([status])
@@ -155,6 +156,25 @@ model AdminSession {
   @@index([adminId])
   @@index([refreshToken])
   @@map("admin_sessions")
+}
+
+model AdminTwoFactorChallenge {
+  id          String                     @id @default(cuid())
+  adminId     String
+  tokenHash   String                     @unique
+  kind        AdminTwoFactorChallengeKind
+  attempts    Int                        @default(0)
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime                   @default(now())
+  admin       AdminUser                  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([expiresAt])
+  @@index([kind])
+  @@map("admin_two_factor_challenges")
 }
 
 model AuditLog {
@@ -831,6 +851,12 @@ enum OtpPurpose {
 
 enum AdminRole {
   SUPER_ADMIN
+  ADMIN
+}
+
+enum AdminTwoFactorChallengeKind {
+  LOGIN
+  SETUP
 }
 
 enum AdminStatus {
