@@ -166,7 +166,9 @@ export class StorefrontService {
         ? [{ salePrice: 'asc' }, { regularPrice: 'asc' }, { publishedAt: 'desc' }]
         : params.sort === 'price-high'
           ? [{ salePrice: 'desc' }, { regularPrice: 'desc' }, { publishedAt: 'desc' }]
-          : [{ publishedAt: 'desc' }];
+          : params.sort === 'newest'
+            ? [{ createdAt: 'desc' }]
+            : [{ publishedAt: 'desc' }];
 
     const [items, total] = await Promise.all([
       this.prisma.product.findMany({
