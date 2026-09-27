@@ -154,8 +154,10 @@ export class OrdersService {
   }
 
   async findAllForUser(userId: string): Promise<Order[]> {
+    // Keep failed/pending orders visible so customers have a recovery path
+    // instead of losing access to an unpaid order.
     return this.prisma.order.findMany({
-      where: { userId, paymentStatus: PaymentStatus.PAID },
+      where: { userId },
       orderBy: { createdAt: 'desc' },
       include: { items: true },
     });
