@@ -438,6 +438,7 @@ export interface CartTotals {
 }
 
 let refreshPromise: Promise<string | null> | null = null;
+let refreshBlocked = false;
 
 function isTokenExpiringSoon(token: string, withinSeconds = 60): boolean {
   try {
@@ -465,10 +466,12 @@ async function refreshAccessToken(): Promise<string | null> {
 
         if (!res.ok || !auth?.accessToken) {
           accessToken = null;
+          refreshBlocked = res.status === 401 || !auth?.accessToken;
           return null;
         }
 
         accessToken = auth.accessToken as string;
+        refreshBlocked = false;
         if (auth.user) localStorage.setItem('user', JSON.stringify(auth.user));
         return accessToken;
       } catch (error) {
@@ -488,7 +491,7 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
   let token = accessToken;
 
   if (!token || isTokenExpiringSoon(token)) {
-    token = await refreshAccessToken();
+    if (!refreshBlocked) token = await refreshAccessToken();
   }
 
   return token ? { Authorization: `Bearer ${token}` } : {};
@@ -733,6 +736,7 @@ export async function register(params: {
     
     if (res.ok && data.success && data.data) {
       accessToken = data.data.accessToken;
+      refreshBlocked = false;
       localStorage.setItem('user', JSON.stringify(data.data.user));
       return { success: true, data: data.data };
     }
@@ -758,8 +762,9 @@ export async function login(params: {
     const data = await res.json();
     
     if (res.ok && data.success && data.data) {
-      // Store tokens
+      // Keep the access token in memory; the refresh token is an HttpOnly cookie.
       accessToken = data.data.accessToken;
+      refreshBlocked = false;
       localStorage.setItem('user', JSON.stringify(data.data.user));
       
       // Merge guest cart if exists
@@ -801,6 +806,7 @@ export async function logout(): Promise<{ success: boolean }> {
   }
 
   accessToken = null;
+  refreshBlocked = true;
   if (typeof window !== 'undefined') localStorage.removeItem('user');
   return { success: true };
 }
