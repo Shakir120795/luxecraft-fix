@@ -10,7 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AdminSessionService } from './admin-session.service';
-import { AdminTwoFactorService } from './admin-two-factor.service';
+import { AdminTwoFactorService, AdminTwoFactorSetup } from './admin-two-factor.service';
 import { AdminUser, AdminStatus, AdminRole } from '@prisma/client';
 import { CreateAdminDto } from './dto/create-admin.dto';
 import * as bcrypt from 'bcrypt';
@@ -261,7 +261,7 @@ export class AdminAuthService {
     return this.completeLogin(admin, meta, 'ADMIN_LOGIN_2FA_SUCCESS');
   }
 
-  async beginTwoFactorSetup(adminId: string): Promise<ReturnType<AdminTwoFactorService['beginSetup']>> {
+  async beginTwoFactorSetup(adminId: string): Promise<AdminTwoFactorSetup> {
     const admin = await this.prisma.adminUser.findUnique({
       where: { id: adminId },
       select: { email: true },
