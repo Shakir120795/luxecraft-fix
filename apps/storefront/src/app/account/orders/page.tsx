@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOrders, isAuthenticated, Order, resumePayment, cancelOrder } from '@/lib/api';
+import { getOrders, isAuthenticated, Order, cancelOrder } from '@/lib/api';
 
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
-  const [actionOrderId, setActionOrderId] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -162,20 +162,12 @@ export default function OrdersPage() {
                       </Link>
                       
                       {order.paymentStatus === 'PENDING' && (
-                        <button
-                          type="button"
-                          disabled={actionOrderId === order.id}
-                          onClick={async () => {
-                            setActionOrderId(order.id);
-                            const result = await resumePayment(order.id);
-                            setActionOrderId(null);
-                            if (!result.success) window.alert(result.message || 'Unable to resume payment.');
-                            else window.location.href = `/account/orders/${order.id}`;
-                          }}
-                          className="border border-luxury-gold bg-luxury-gold/10 px-6 py-2 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors disabled:opacity-50"
+                        <Link
+                          href={`/account/orders/${order.id}`}
+                          className="border border-luxury-gold bg-luxury-gold/10 px-6 py-2 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors"
                         >
-                          {actionOrderId === order.id ? 'Opening…' : 'Resume Payment'}
-                        </button>
+                          Resume Payment
+                        </Link>
                       )}
 
                       {(order.paymentStatus === 'FAILED' || order.status === 'Failed') && (
@@ -196,7 +188,6 @@ export default function OrdersPage() {
                       {order.paymentStatus === 'PENDING' && (
                         <button
                           type="button"
-                          disabled={actionOrderId === order.id}
                           onClick={async () => {
                             if (!window.confirm('Cancel this unpaid order and release its reservation?')) return;
                             setActionOrderId(order.id);
@@ -205,7 +196,7 @@ export default function OrdersPage() {
                             await loadOrders();
                             setActionOrderId(null);
                           }}
-                          className="border border-luxury-terracotta bg-luxury-terracotta/10 px-6 py-2 text-sm text-luxury-terracotta hover:bg-luxury-terracotta/20 transition-colors disabled:opacity-50"
+                          className="border border-luxury-terracotta bg-luxury-terracotta/10 px-6 py-2 text-sm text-luxury-terracotta hover:bg-luxury-terracotta/20 transition-colors"
                         >
                           Cancel Order
                         </button>
