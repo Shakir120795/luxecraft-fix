@@ -41,13 +41,6 @@ export class PendingOrderCleanupService implements OnModuleInit, OnModuleDestroy
           orderType: 'STANDARD',
           orderStatus: OrderStatus.PENDING,
           paymentStatus: PaymentStatus.PENDING,
-          payments: {
-            some: {
-              status: {
-                in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED],
-              },
-            },
-          },
         },
         include: {
           items: {
@@ -73,7 +66,12 @@ export class PendingOrderCleanupService implements OnModuleInit, OnModuleDestroy
 
       for (const order of orders) {
         const pendingPayment = order.payments[0];
-        if (!pendingPayment || pendingPayment.updatedAt >= cutoff) continue;
+        const isExpired =
+          pendingPayment
+            ? pendingPayment.updatedAt < cutoff
+            : order.createdAt < cutoff;
+
+        if (!isExpired) continue;
 
         const didCleanup = await this.cleanupOrder(order.id, order.items);
         if (didCleanup) cleaned += 1;
