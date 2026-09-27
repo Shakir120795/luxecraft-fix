@@ -165,48 +165,67 @@ export class CheckoutService {
       ? taxableAmount
       : taxableAmount + taxAmount;
 
-    // 2. Reserve inventory stock (transaction for atomicity)
+    // 2. Reserve inventory stock. The reservation itself uses an atomic
+    // conditional UPDATE so the pre-check above can never be the final
+    // authority under concurrent checkout requests.
     const reservedItems: { variantId: string; quantity: number }[] = [];
 
     try {
       await this.prisma.$transaction(async (tx) => {
         for (const item of cartItems) {
           if (item.variantId && item.variant?.trackInventory) {
-            // Reserve stock
-            await tx.productVariant.update({
-              where: { id: item.variantId },
-              data: {
-                reservedQty: {
-                  increment: item.quantity,
-                },
-              },
-            });
+            const reserved = await tx.$queryRaw<
+              Array<{ id: string; productId: string; stockQty: number; reservedQty: number }>
+            >`
+              UPDATE "product_variants"
+              SET "reservedQty" = "reservedQty" + ${item.quantity},
+                  "updatedAt" = CURRENT_TIMESTAMP
+              WHERE "id" = ${item.variantId}
+                AND "deletedAt" IS NULL
+                AND "trackInventory" = TRUE
+                AND (
+                  "allowBackorder" = TRUE
+                  OR "stockQty" - "reservedQty" >= ${item.quantity}
+                )
+              RETURNING "id", "productId", "stockQty", "reservedQty"
+            `;
 
-            // Log reservation
+            if (reserved.length === 0) {
+              throw new BadRequestException(
+                `Insufficient stock for ${item.product.name}${item.variant.name ? ` - ${item.variant.name}` : ''}. Another checkout may have reserved the remaining inventory. Please try again.`,
+              );
+            }
+
+            const updated = reserved[0];
+
+            // Log reservation after the atomic update succeeds.
             await tx.inventoryLog.create({
               data: {
-                productId: item.productId,
-                variantId: item.variantId,
+                productId: updated.productId,
+                variantId: updated.id,
                 changeType: 'ORDER_RESERVE',
                 delta: -item.quantity,
-                qtyBefore: item.variant.stockQty,
-                qtyAfter: item.variant.stockQty - item.quantity,
+                qtyBefore: updated.stockQty,
+                qtyAfter: updated.stockQty,
                 reason: 'Checkout - Stock reserved',
                 reference: cart.id,
               },
             });
 
             reservedItems.push({
-              variantId: item.variantId,
+              variantId: updated.id,
               quantity: item.quantity,
             });
 
-            this.logger.log(`Reserved ${item.quantity} units of variant ${item.variantId}`);
+            this.logger.log(`Reserved ${item.quantity} units of variant ${updated.id}`);
           }
         }
       });
     } catch (error) {
-      this.logger.error(`Failed to reserve inventory: ${error.message}`);
+      this.logger.error(
+        `Failed to reserve inventory: ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+      if (error instanceof BadRequestException) throw error;
       throw new BadRequestException('Failed to reserve inventory. Please try again.');
     }
 
