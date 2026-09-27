@@ -6,6 +6,7 @@ import { OrdersService } from '../orders/orders.service';
 import { CryptoProvider } from './providers/crypto.provider';
 import { WebhookService } from './webhook.service';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { PaymentStatus } from '@prisma/client';
 
