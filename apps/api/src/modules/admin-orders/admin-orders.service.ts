@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { OrderStatus, PaymentStatus, Prisma } from '@prisma/client';
+import { OrderStatus, PaymentStatus, FulfillmentStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class AdminOrdersService {
@@ -43,11 +43,30 @@ export class AdminOrdersService {
     return order;
   }
 
-  async updateStatus(id: string, orderStatus?: string, paymentStatus?: string, fulfillmentStatus?: string): Promise<any> {
-    const updates: any = {};
-    if (orderStatus) updates.orderStatus = orderStatus;
-    if (paymentStatus) updates.paymentStatus = paymentStatus;
-    if (fulfillmentStatus) updates.fulfillmentStatus = fulfillmentStatus;
+  async updateStatus(
+    id: string,
+    orderStatus?: OrderStatus,
+    fulfillmentStatus?: FulfillmentStatus,
+  ): Promise<any> {
+    const updates: Prisma.OrderUpdateInput = {};
+
+    if (orderStatus !== undefined) {
+      if (!Object.values(OrderStatus).includes(orderStatus)) {
+        throw new BadRequestException(`Invalid order status: ${orderStatus}`);
+      }
+      updates.orderStatus = orderStatus;
+    }
+
+    if (fulfillmentStatus !== undefined) {
+      if (!Object.values(FulfillmentStatus).includes(fulfillmentStatus)) {
+        throw new BadRequestException(`Invalid fulfillment status: ${fulfillmentStatus}`);
+      }
+      updates.fulfillmentStatus = fulfillmentStatus;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new BadRequestException('At least one order or fulfillment status is required.');
+    }
 
     return this.prisma.order.update({
       where: { id },
