@@ -36,19 +36,41 @@ export class StorefrontController {
 
   // Products
   @Get('products')
-  getProducts(
-    @Query('categoryId') categoryId?: string,
-    @Query('isFeatured') isFeatured?: string,
-    @Query('search') search?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  getProducts(@Query() query: Record<string, string>) {
+    const page = query.page ? Math.max(Number.parseInt(query.page, 10), 1) : 1;
+    const take = query.take
+      ? Math.min(Math.max(Number.parseInt(query.take, 10), 1), 48)
+      : 12;
+    const skip = query.skip
+      ? Math.max(Number.parseInt(query.skip, 10), 0)
+      : (page - 1) * take;
+
+    const filters = Object.fromEntries(
+      Object.entries(query)
+        .filter(([key, value]) => key.startsWith('filter_') && Boolean(value))
+        .map(([key, value]) => [key.slice('filter_'.length), value.trim().toLowerCase()]),
+    );
+
+    const minPrice = query.minPrice !== undefined ? Number(query.minPrice) : undefined;
+    const maxPrice = query.maxPrice !== undefined ? Number(query.maxPrice) : undefined;
+    const sort =
+      query.sort === 'price-low' ||
+      query.sort === 'price-high' ||
+      query.sort === 'newest' ||
+      query.sort === 'featured'
+        ? query.sort
+        : 'featured';
+
     return this.svc.getProducts({
-      categoryId,
-      isFeatured: isFeatured === 'true' ? true : undefined,
-      search,
-      skip: skip ? parseInt(skip, 10) : undefined,
-      take: take ? parseInt(take, 10) : undefined,
+      categoryId: query.categoryId,
+      isFeatured: query.isFeatured === 'true' ? true : undefined,
+      search: query.search?.trim() || undefined,
+      skip,
+      take,
+      minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+      maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
+      sort,
+      filters,
     });
   }
 
