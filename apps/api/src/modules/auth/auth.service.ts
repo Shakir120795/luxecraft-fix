@@ -192,7 +192,8 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string): Promise<void> {
-    await this.passwordReset.resetPassword(token, newPassword);
+    const userId = await this.passwordReset.resetPassword(token, newPassword);
+    await this.sessions.revokeAll(userId);
   }
 
   async changePassword(user: User, currentPassword: string, newPassword: string): Promise<void> {
@@ -252,9 +253,3 @@ export class AuthService {
     return parseInt(raw);
   }
 }
-
-
-
-
-
-
