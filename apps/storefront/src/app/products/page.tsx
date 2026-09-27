@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { getProducts, getCategories, getProductFilters, Product, Category, ProductFilterSetting } from '@/lib/api';
+import { getProductFilters, getProductsPage, Product, ProductFilterSetting } from '@/lib/api';
 import { ProductCard } from '@/components/ProductCard';
 import { ProductFilterBar } from '@/components/ProductFilterBar';
 
 const ITEMS_PER_PAGE = 12;
+const DEFAULT_MIN_PRICE = 0;
+const DEFAULT_MAX_PRICE = 10000;
+
+type SortOption = 'featured' | 'newest' | 'price-low' | 'price-high';
 
 export default function ProductsPage() {
   return (
@@ -39,155 +43,153 @@ function ProductsLoading() {
 function ProductsContent() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [productFilters, setProductFilters] = useState<ProductFilterSetting[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string>>({});
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [filtersLoading, setFiltersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(10000);
-  const [sortBy, setSortBy] = useState('featured');
-  const [visibleCount, setVisibleCount] = useState(16);
+  const [minPrice, setMinPrice] = useState(DEFAULT_MIN_PRICE);
+  const [maxPrice, setMaxPrice] = useState(DEFAULT_MAX_PRICE);
+  const [sortBy, setSortBy] = useState<SortOption>('featured');
 
   useEffect(() => {
-    setSearchTerm(searchParams.get('q') || '');
-    setSelectedCategory(searchParams.get('category') || '');
-    setSortBy(searchParams.get('sort') || 'featured');
+    async function loadFilters() {
+      try {
+        setFiltersLoading(true);
+        const filtersData = await getProductFilters();
+        setProductFilters(filtersData.filter((filter) => filter.isActive));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load product filters');
+      } finally {
+        setFiltersLoading(false);
+      }
+    }
+
+    loadFilters();
+  }, []);
+
+  useEffect(() => {
+    const incomingSort = searchParams.get('sort');
+    const nextSort: SortOption =
+      incomingSort === 'newest' ||
+      incomingSort === 'price-low' ||
+      incomingSort === 'price-high'
+        ? incomingSort
+        : 'featured';
 
     const incomingFilters: Record<string, string> = {};
     productFilters.forEach((filter) => {
       const value = searchParams.get('filter_' + filter.slug);
       if (value) incomingFilters[filter.slug] = value;
     });
-    setSelectedFilters(incomingFilters);
 
     const incomingPrice = searchParams.get('price');
+    let nextMinPrice = DEFAULT_MIN_PRICE;
+    let nextMaxPrice = DEFAULT_MAX_PRICE;
+
     if (incomingPrice) {
       const [min, max] = incomingPrice.split('-').map(Number);
       if (Number.isFinite(min) && Number.isFinite(max)) {
-        setMinPrice(min);
-        setMaxPrice(max);
+        nextMinPrice = min;
+        nextMaxPrice = max;
       }
-    } else {
-      setMinPrice(0);
-      setMaxPrice(10000);
     }
+
+    const requestedPage = Number(searchParams.get('page') || '1');
+
+    setSearchTerm(searchParams.get('q') || '');
+    setSelectedCategory(searchParams.get('category') || '');
+    setSortBy(nextSort);
+    setSelectedFilters(incomingFilters);
+    setMinPrice(nextMinPrice);
+    setMaxPrice(nextMaxPrice);
+    setCurrentPage(Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1);
   }, [searchParams, productFilters]);
 
   useEffect(() => {
-    async function loadData() {
+    if (filtersLoading) return;
+
+    let cancelled = false;
+
+    async function loadProducts() {
       try {
         setLoading(true);
+        setError(null);
 
-        const [productsData, categoriesData, filtersData] = await Promise.all([
-          getProducts(1000),
-          getCategories(),
-          getProductFilters(),
-        ]);
+        const data = await getProductsPage({
+          page: currentPage,
+          pageSize: ITEMS_PER_PAGE,
+          categoryId: selectedCategory || undefined,
+          search: searchTerm || undefined,
+          minPrice: minPrice !== DEFAULT_MIN_PRICE ? minPrice : undefined,
+          maxPrice: maxPrice !== DEFAULT_MAX_PRICE ? maxPrice : undefined,
+          sort: sortBy,
+          filters: selectedFilters,
+        });
 
-        setProducts(productsData);
-        setCategories(categoriesData);
-        setProductFilters(filtersData.filter((filter) => filter.isActive));
+        if (cancelled) return;
+
+        if (data.totalPages > 0 && currentPage > data.totalPages) {
+          setCurrentPage(data.totalPages);
+          return;
+        }
+
+        setProducts(data.items);
+        setTotalProducts(data.total);
+        setTotalPages(data.totalPages);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load products');
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load products');
+          setProducts([]);
+          setTotalProducts(0);
+          setTotalPages(1);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
 
-    loadData();
-  }, []);
+    loadProducts();
 
-  const slugifyFilterValue = (value: string) =>
-    value.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    filtersLoading,
+    currentPage,
+    selectedCategory,
+    searchTerm,
+    minPrice,
+    maxPrice,
+    sortBy,
+    selectedFilters,
+  ]);
 
-  const filterValueOptions: Record<string, { slug: string; label: string }[]> = {
-    color: Array.from(
-      new Map(
-        products
-          .map((product) => product.color?.trim())
-          .filter((value): value is string => Boolean(value))
-          .map((value) => [slugifyFilterValue(value), value]),
-      ).entries(),
-    )
-      .map(([slug, label]) => ({ slug, label }))
-      .sort((a, b) => a.label.localeCompare(b.label)),
-  };
-
-  const getProductFilterValues = (product: Product, filter: ProductFilterSetting): string[] => {
-    const savedValues = product.filterData?.[filter.slug];
-    if (Array.isArray(savedValues) && savedValues.length > 0) return savedValues;
-    if (filter.slug === 'material' && product.material) return [slugifyFilterValue(product.material)];
-    if (filter.slug === 'style' && product.style) return [slugifyFilterValue(product.style)];
-    if (filter.slug === 'color' && product.color) return [slugifyFilterValue(product.color)];
-    if (filter.slug === 'size') {
-      return (product.variants ?? [])
-        .map((variant) => variant.name?.trim())
-        .filter((value): value is string => Boolean(value))
-        .map(slugifyFilterValue);
-    }
-    return [];
-  };
-
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCategory =
-      !selectedCategory || product.categoryId === selectedCategory;
-
-    const matchesDynamicFilters = productFilters
-      .filter((filter) => filter.isActive)
-      .every((filter) => {
-        const selectedValue = selectedFilters[filter.slug];
-        if (!selectedValue) return true;
-        return getProductFilterValues(product, filter).includes(selectedValue);
-      });
-
-
-    const displayPrice = parseFloat(
-      String(product.salePrice || product.regularPrice)
+  const filterValueOptions: Record<string, { slug: string; label: string }[]> =
+    Object.fromEntries(
+      productFilters.map((filter) => [
+        filter.slug,
+        filter.values
+          .filter((value) => value.isActive)
+          .map((value) => ({ slug: value.slug, label: value.label })),
+      ]),
     );
 
-    const matchesPrice =
-      displayPrice >= minPrice && displayPrice <= maxPrice;
-
-    return matchesSearch && matchesCategory && matchesDynamicFilters && matchesPrice;
-  });
-
-  let sortedProducts = [...filteredProducts];
-
-  if (sortBy === 'price-low') {
-    sortedProducts.sort((a, b) => {
-      const priceA = parseFloat(String(a.salePrice || a.regularPrice));
-      const priceB = parseFloat(String(b.salePrice || b.regularPrice));
-      return priceA - priceB;
-    });
-  } else if (sortBy === 'price-high') {
-    sortedProducts.sort((a, b) => {
-      const priceA = parseFloat(String(a.salePrice || a.regularPrice));
-      const priceB = parseFloat(String(b.salePrice || b.regularPrice));
-      return priceB - priceA;
-    });
-  } else if (sortBy === 'newest') {
-    sortedProducts.sort(
-      (a, b) =>
-        new Date(b.createdAt || 0).getTime() -
-        new Date(a.createdAt || 0).getTime()
-    );
-  }
-  const paginatedProducts = sortedProducts.slice(0, visibleCount);
+  const priceRange =
+    minPrice === DEFAULT_MIN_PRICE && maxPrice === DEFAULT_MAX_PRICE
+      ? ''
+      : minPrice + '-' + maxPrice;
 
   return (
     <main className="min-h-screen bg-white">
-
       <div className="mx-auto max-w-[1400px] px-4 py-12 sm:px-6 lg:px-10 lg:py-16">
         <div className="w-full">
-
           <section className="w-full">
             {error && (
               <div className="mb-8 border border-[rgb(var(--luxecraft-red))] bg-[rgb(var(--luxecraft-red)/0.06)] px-5 py-4 text-sm text-[rgb(var(--luxecraft-ink))]">
@@ -200,34 +202,54 @@ function ProductsContent() {
               valueOptions={filterValueOptions}
               selected={selectedFilters}
               onSelect={(slug, value) => {
-                setSelectedFilters((current) => ({ ...current, [slug]: value }));
-                setVisibleCount(16);
+                setSelectedFilters((current) => ({
+                  ...current,
+                  ...(value ? { [slug]: value } : { [slug]: '' }),
+                }));
+                setCurrentPage(1);
               }}
-              priceRange={minPrice === 0 && maxPrice === 10000 ? '' : minPrice + '-' + maxPrice}
+              priceRange={priceRange}
               onPriceRangeChange={(value) => {
                 if (!value) {
-                  setMinPrice(0);
-                  setMaxPrice(10000);
+                  setMinPrice(DEFAULT_MIN_PRICE);
+                  setMaxPrice(DEFAULT_MAX_PRICE);
                 } else {
                   const [min, max] = value.split('-').map(Number);
-                  setMinPrice(min);
-                  setMaxPrice(max);
+                  if (Number.isFinite(min) && Number.isFinite(max)) {
+                    setMinPrice(min);
+                    setMaxPrice(max);
+                  }
                 }
-                setVisibleCount(16);
+                setCurrentPage(1);
               }}
               onClear={() => {
+                setSearchTerm('');
+                setSelectedCategory('');
                 setSelectedFilters({});
-                setMinPrice(0);
-                setMaxPrice(10000);
-                setVisibleCount(16);
+                setMinPrice(DEFAULT_MIN_PRICE);
+                setMaxPrice(DEFAULT_MAX_PRICE);
+                setSortBy('featured');
+                setCurrentPage(1);
               }}
             />
+
             <div className="mb-8 flex items-center justify-between border-b border-[rgb(var(--luxecraft-border))] pb-4">
               <div className="flex items-center gap-4">
-                <span className="text-sm text-[rgb(var(--luxecraft-ink))]">{sortedProducts.length} products</span>
+                <span className="text-sm text-[rgb(var(--luxecraft-ink))]">
+                  {totalProducts} {totalProducts === 1 ? 'product' : 'products'}
+                </span>
               </div>
-              <label className="flex items-center gap-2 text-sm text-[rgb(var(--luxecraft-ink))]">Sort by:
-                <select value={sortBy} onChange={(event) => { setSortBy(event.target.value); setVisibleCount(16); }} className="border-0 bg-transparent py-1 pr-2 text-sm font-medium outline-none">
+
+              <label className="flex items-center gap-2 text-sm text-[rgb(var(--luxecraft-ink))]">
+                Sort by:
+                <select
+                  value={sortBy}
+                  onChange={(event) => {
+                    setSortBy(event.target.value as SortOption);
+                    setCurrentPage(1);
+                  }}
+                  className="border-0 bg-transparent py-1 pr-2 text-sm font-medium outline-none"
+                >
                   <option value="featured">Featured</option>
                   <option value="newest">Newest</option>
                   <option value="price-low">Price: Low to High</option>
@@ -236,16 +258,14 @@ function ProductsContent() {
               </label>
             </div>
 
-            {loading ? (
+            {loading || filtersLoading ? (
               <div className="flex min-h-[400px] items-center justify-center">
                 <div className="flex items-center gap-3 text-[rgb(var(--luxecraft-muted))]">
                   <div className="h-3 w-3 animate-pulse rounded-full bg-[rgb(var(--luxecraft-gold))]" />
-                  <span className="font-serif">
-                    Loading products...
-                  </span>
+                  <span className="font-serif">Loading products...</span>
                 </div>
               </div>
-            ) : paginatedProducts.length === 0 ? (
+            ) : products.length === 0 ? (
               <div className="border-y border-[rgb(var(--luxecraft-border))] py-20 text-center">
                 <p className="mb-6 font-serif text-xl text-[rgb(var(--luxecraft-ink))]">
                   No products found matching your criteria.
@@ -256,10 +276,11 @@ function ProductsContent() {
                   onClick={() => {
                     setSearchTerm('');
                     setSelectedCategory('');
-                    setMinPrice(0);
-                    setMaxPrice(10000);
+                    setSelectedFilters({});
+                    setMinPrice(DEFAULT_MIN_PRICE);
+                    setMaxPrice(DEFAULT_MAX_PRICE);
                     setSortBy('featured');
-                    setVisibleCount(16);
+                    setCurrentPage(1);
                   }}
                   className="btn-luxury"
                 >
@@ -269,14 +290,33 @@ function ProductsContent() {
             ) : (
               <>
                 <div className="mb-16 grid grid-cols-1 gap-x-7 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-                  {paginatedProducts.map((product) => (
+                  {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
-                {visibleCount < sortedProducts.length && (
-                  <div className="flex justify-center border-t border-[rgb(var(--luxecraft-border))] pt-10">
-                    <button type="button" onClick={() => setVisibleCount((count) => Math.min(count + 16, sortedProducts.length))} className="border border-black bg-black px-8 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-white transition-colors hover:bg-white hover:text-black">
-                      Load more
+
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 border-t border-[rgb(var(--luxecraft-border))] pt-10">
+                    <button
+                      type="button"
+                      disabled={currentPage <= 1 || loading}
+                      onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
+                      className="border border-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] transition-colors hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+
+                    <span className="min-w-[110px] text-center text-sm text-[rgb(var(--luxecraft-ink))]">
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                      type="button"
+                      disabled={currentPage >= totalPages || loading}
+                      onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
+                      className="border border-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] transition-colors hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Next
                     </button>
                   </div>
                 )}
@@ -288,16 +328,3 @@ function ProductsContent() {
     </main>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
