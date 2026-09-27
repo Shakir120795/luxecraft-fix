@@ -203,6 +203,16 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!sameAsShipping && authenticated && !selectedBillingAddressId) {
+      setError('Please select a billing address.');
+      return;
+    }
+
+    if (!sameAsShipping && !authenticated && !guestBillingAddress) {
+      setError('Please enter and use a billing address.');
+      return;
+    }
+
     // Keep the backend shipping method attached to the order while presenting
     // shipping and payment together in one checkout step.
     const shippingAddr = authenticated
@@ -297,6 +307,7 @@ export default function CheckoutPage() {
 
       const result = await createOrder({
         shippingAddressId: selectedShippingAddressId || undefined,
+        billingAddressId: !sameAsShipping ? selectedBillingAddressId || undefined : undefined,
         shippingMethodId: shippingMethod.id,
         paymentProvider: paymentProvider as 'razorpay' | 'paypal' | 'crypto',
         paymentMethod: selectedCryptoMethod,
@@ -315,6 +326,20 @@ export default function CheckoutPage() {
               phone: guestShippingAddress?.phone ?? undefined,
             }
           : undefined,
+        guestBillingAddress:
+          isGuest && !sameAsShipping && guestBillingAddress
+            ? {
+                firstName: guestBillingAddress.firstName,
+                lastName: guestBillingAddress.lastName,
+                addressLine1: guestBillingAddress.addressLine1,
+                addressLine2: guestBillingAddress.addressLine2 ?? undefined,
+                city: guestBillingAddress.city,
+                stateProvince: guestBillingAddress.stateProvince ?? undefined,
+                postalCode: guestBillingAddress.postalCode,
+                country: guestBillingAddress.country,
+                phone: guestBillingAddress.phone ?? undefined,
+              }
+            : undefined,
       });
 
       if (!result.success || !result.data) {
@@ -583,18 +608,75 @@ export default function CheckoutPage() {
 
                   {!isGuest && showNewAddressForm && <AddressForm onSuccess={() => { loadCheckoutData(); setShowNewAddressForm(false); }} />}
 
-                  {!isGuest && <div className="flex items-center gap-2 pt-4">
+                  <div className="flex items-center gap-2 pt-4">
                     <input
                       type="checkbox"
                       id="sameAsShipping"
                       checked={sameAsShipping}
-                      onChange={(e) => setSameAsShipping(e.target.checked)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSameAsShipping(checked);
+                        if (checked && selectedShippingAddressId) {
+                          setSelectedBillingAddressId(selectedShippingAddressId);
+                        }
+                      }}
                       className="w-4 h-4"
                     />
                     <label htmlFor="sameAsShipping" className="text-sm text-luxury-brown">
                       Billing address same as shipping
                     </label>
-                  </div>}
+                  </div>
+
+                  {!sameAsShipping && (
+                    <div className="mt-6 space-y-4 border-t border-[#ded8d0] pt-6">
+                      <div>
+                        <h3 className="font-serif text-xl text-luxury-charcoal">Billing Address</h3>
+                        <p className="mt-1 text-sm text-luxury-brown">
+                          Use a different billing address for your payment and invoice.
+                        </p>
+                      </div>
+
+                      {isGuest ? (
+                        <AddressForm
+                          guestMode
+                          initialFirstName={guestFirstName}
+                          initialLastName={guestLastName}
+                          title="Billing Address"
+                          onGuestAddress={(address) => setGuestBillingAddress(address)}
+                        />
+                      ) : addresses.length > 0 ? (
+                        <div className="space-y-3">
+                          {addresses.map((addr) => (
+                            <label key={addr.id} className="flex items-start gap-3 border border-black/10 bg-white p-4 transition hover:border-black/40 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="billingAddress"
+                                value={addr.id}
+                                checked={selectedBillingAddressId === addr.id}
+                                onChange={(e) => setSelectedBillingAddressId(e.target.value)}
+                                className="mt-1"
+                              />
+                              <div className="flex-1">
+                                <p className="font-medium text-luxury-charcoal">{addr.firstName} {addr.lastName}</p>
+                                <p className="mt-1 text-sm text-luxury-brown">
+                                  {addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}
+                                </p>
+                                <p className="text-sm text-luxury-brown">
+                                  {addr.city}, {addr.stateProvince} {addr.postalCode}
+                                </p>
+                                <p className="text-sm text-luxury-brown">{addr.country}</p>
+                                <p className="text-sm text-luxury-brown">{addr.phone}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-luxury-brown">
+                          No saved addresses. Add a billing address from your account first.
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                 </form>
               </div>
