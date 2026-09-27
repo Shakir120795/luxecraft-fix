@@ -197,6 +197,39 @@ export class StorefrontService {
     return { items, total };
   }
 
+  async getSitemapData(): Promise<{
+    products: Array<{ slug: string; updatedAt: Date; publishedAt: Date | null }>;
+    categories: Array<{ slug: string; updatedAt: Date }>;
+  }> {
+    const [products, categories] = await Promise.all([
+      this.prisma.product.findMany({
+        where: {
+          status: ProductStatus.ACTIVE,
+          deletedAt: null,
+        },
+        select: {
+          slug: true,
+          updatedAt: true,
+          publishedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+      this.prisma.category.findMany({
+        where: {
+          status: CategoryStatus.ACTIVE,
+          deletedAt: null,
+        },
+        select: {
+          slug: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+      }),
+    ]);
+
+    return { products, categories };
+  }
+
   async getProductBySlug(slug: string): Promise<Product> {
     const product = await this.prisma.product.findFirst({
       where: {
