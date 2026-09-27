@@ -91,7 +91,10 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const isAuthEndpoint = path === '/admin/auth/login' || path === '/admin/auth/refresh';
+  const isAuthEndpoint =
+    path === '/admin/auth/login' ||
+    path === '/admin/auth/refresh' ||
+    path === '/admin/auth/2fa/verify';
   const authHeaders = isAuthEndpoint ? {} : await getAdminAuthHeaders();
   const response = await fetch(url, {
     ...init,
@@ -174,6 +177,7 @@ export interface Admin {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  twoFactorEnabled: boolean;
 }
 
 export interface ProductVariant {
@@ -890,11 +894,50 @@ export interface LoginResponse {
   accessToken: string;
 }
 
-export async function adminLogin(credentials: LoginRequest): Promise<LoginResponse> {
-  const response = await adminApi.post<LoginResponse>('/admin/auth/login', credentials);
+export interface TwoFactorLoginChallenge {
+  requiresTwoFactor: true;
+  twoFactorToken: string;
+  expiresIn: number;
+  admin: Admin;
+}
+
+export type AdminLoginResponse = LoginResponse | TwoFactorLoginChallenge;
+
+export async function adminLogin(credentials: LoginRequest): Promise<AdminLoginResponse> {
+  const response = await adminApi.post<AdminLoginResponse>('/admin/auth/login', credentials);
+  if ('accessToken' in response) {
+    adminAccessToken = response.accessToken;
+    adminRefreshBlocked = false;
+  }
+  return response;
+}
+
+export async function verifyAdminTwoFactor(
+  twoFactorToken: string,
+  code: string,
+): Promise<LoginResponse> {
+  const response = await adminApi.post<LoginResponse>('/admin/auth/2fa/verify', {
+    challengeToken: twoFactorToken,
+    code,
+  });
   adminAccessToken = response.accessToken;
   adminRefreshBlocked = false;
   return response;
+}
+
+export async function setupAdminTwoFactor(): Promise<{
+  secret: string;
+  otpauthUrl: string;
+}> {
+  return adminApi.post('/admin/auth/2fa/setup', {});
+}
+
+export async function confirmAdminTwoFactor(password: string, code: string): Promise<void> {
+  await adminApi.post('/admin/auth/2fa/confirm', { password, code });
+}
+
+export async function disableAdminTwoFactor(password: string, code: string): Promise<void> {
+  await adminApi.post('/admin/auth/2fa/disable', { password, code });
 }
 
 export async function adminLogout(): Promise<void> {
