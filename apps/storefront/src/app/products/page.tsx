@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProductFilters, getProductsPage, Product, ProductFilterSetting } from '@/lib/api';
 import { ProductCard } from '@/components/ProductCard';
@@ -49,6 +49,7 @@ function ProductsContent() {
   const [totalPages, setTotalPages] = useState(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [filtersLoading, setFiltersLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +58,8 @@ function ProductsContent() {
   const [minPrice, setMinPrice] = useState(DEFAULT_MIN_PRICE);
   const [maxPrice, setMaxPrice] = useState(DEFAULT_MAX_PRICE);
   const [sortBy, setSortBy] = useState<SortOption>('featured');
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
+  const loadingMoreRef = useRef(false);
 
   useEffect(() => {
     async function loadFilters() {
@@ -101,25 +104,30 @@ function ProductsContent() {
       }
     }
 
-    const requestedPage = Number(searchParams.get('page') || '1');
-
     setSearchTerm(searchParams.get('q') || '');
     setSelectedCategory(searchParams.get('category') || '');
     setSortBy(nextSort);
     setSelectedFilters(incomingFilters);
     setMinPrice(nextMinPrice);
     setMaxPrice(nextMaxPrice);
-    setCurrentPage(Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1);
+    setCurrentPage(1);
   }, [searchParams, productFilters]);
 
   useEffect(() => {
     if (filtersLoading) return;
 
     let cancelled = false;
+    const isFirstPage = currentPage === 1;
 
     async function loadProducts() {
-      try {
+      if (isFirstPage) {
         setLoading(true);
+      } else {
+        setLoadingMore(true);
+        loadingMoreRef.current = true;
+      }
+
+      try {
         setError(null);
 
         const data = await getProductsPage({
@@ -140,18 +148,29 @@ function ProductsContent() {
           return;
         }
 
-        setProducts(data.items);
+        setProducts((current) =>
+          isFirstPage ? data.items : [...current, ...data.items],
+        );
         setTotalProducts(data.total);
         setTotalPages(data.totalPages);
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Failed to load products');
-          setProducts([]);
-          setTotalProducts(0);
-          setTotalPages(1);
+          if (isFirstPage) {
+            setProducts([]);
+            setTotalProducts(0);
+            setTotalPages(1);
+          }
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          if (isFirstPage) {
+            setLoading(false);
+          } else {
+            setLoadingMore(false);
+            loadingMoreRef.current = false;
+          }
+        }
       }
     }
 
@@ -159,6 +178,9 @@ function ProductsContent() {
 
     return () => {
       cancelled = true;
+      if (!isFirstPage) {
+        loadingMoreRef.current = false;
+      }
     };
   }, [
     filtersLoading,
@@ -170,6 +192,30 @@ function ProductsContent() {
     sortBy,
     selectedFilters,
   ]);
+
+  useEffect(() => {
+    const sentinel = loadMoreSentinelRef.current;
+    if (!sentinel || loading || loadingMore || currentPage >= totalPages) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+        if (
+          firstEntry?.isIntersecting &&
+          !loadingMoreRef.current &&
+          currentPage < totalPages
+        ) {
+          loadingMoreRef.current = true;
+          setCurrentPage((page) => page + 1);
+        }
+      },
+      { rootMargin: '700px 0px' },
+    );
+
+    observer.observe(sentinel);
+
+    return () => observer.disconnect();
+  }, [loading, loadingMore, currentPage, totalPages]);
 
   const filterValueOptions: Record<string, { slug: string; label: string }[]> =
     Object.fromEntries(
@@ -295,31 +341,22 @@ function ProductsContent() {
                   ))}
                 </div>
 
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 border-t border-[rgb(var(--luxecraft-border))] pt-10">
-                    <button
-                      type="button"
-                      disabled={currentPage <= 1 || loading}
-                      onClick={() => setCurrentPage((page) => Math.max(page - 1, 1))}
-                      className="border border-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] transition-colors hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Previous
-                    </button>
-
-                    <span className="min-w-[110px] text-center text-sm text-[rgb(var(--luxecraft-ink))]">
-                      Page {currentPage} of {totalPages}
+                <div
+                  ref={loadMoreSentinelRef}
+                  className="flex min-h-16 items-center justify-center border-t border-[rgb(var(--luxecraft-border))] pt-10"
+                  aria-live="polite"
+                >
+                  {loadingMore && (
+                    <span className="text-sm text-[rgb(var(--luxecraft-muted))]">
+                      Loading more products...
                     </span>
-
-                    <button
-                      type="button"
-                      disabled={currentPage >= totalPages || loading}
-                      onClick={() => setCurrentPage((page) => Math.min(page + 1, totalPages))}
-                      className="border border-black px-6 py-3 text-xs font-semibold uppercase tracking-[0.16em] transition-colors hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
+                  )}
+                  {!loadingMore && currentPage >= totalPages && products.length > 0 && (
+                    <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[rgb(var(--luxecraft-muted))]">
+                      You&rsquo;ve reached the end
+                    </span>
+                  )}
+                </div>
               </>
             )}
           </section>
