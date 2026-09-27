@@ -22,6 +22,8 @@ export default function ProductDetailPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [recommendations, setRecommendations] = useState<Product[]>([]);
+  const [cartMessage, setCartMessage] = useState<string | null>(null);
+  const [cartError, setCartError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadProduct() {
@@ -231,7 +233,11 @@ export default function ProductDetailPage() {
   const handleAddToCart = async () => {
     if (!product) return;
 
+    setCartMessage(null);
+    setCartError(null);
+
     if (selectedVariantUnavailable) {
+      setCartError('This selection is currently out of stock.');
       return;
     }
 
@@ -244,7 +250,10 @@ export default function ProductDetailPage() {
     });
 
     if (result.success) {
+      setCartMessage('Added to cart successfully.');
+      window.dispatchEvent(new CustomEvent('wolhomes:cart-updated'));
     } else {
+      setCartError(result.message || 'Unable to add this product to your cart.');
     }
   };
 
@@ -264,8 +273,10 @@ export default function ProductDetailPage() {
     });
 
     if (result.success) {
+      window.dispatchEvent(new CustomEvent('wolhomes:cart-updated'));
       router.push('/checkout');
     } else {
+      setCartError(result.message || 'Unable to add this product to your cart.');
     }
   };
 
@@ -658,6 +669,17 @@ export default function ProductDetailPage() {
                   )}
               </div>
             </div>
+            {cartMessage && (
+              <div className="mb-4 border border-green-700/20 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">
+                {cartMessage}
+              </div>
+            )}
+            {cartError && (
+              <div className="mb-4 border border-[#bf4e48]/30 bg-[#bf4e48]/5 px-4 py-3 text-sm text-[#8f322d]" role="alert">
+                {cartError}
+              </div>
+            )}
+
             <div className="mb-5">
               <div className="grid grid-cols-2 gap-3">
                 <button
