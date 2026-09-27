@@ -5,7 +5,7 @@ import QRCode from 'qrcode';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { loadStripe } from '@stripe/stripe-js';
-import countriesOnly from 'countrycitystatejson/countries';
+import { getCountries } from 'countrycitystatejson/client';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { 
   getCart, 
@@ -5756,13 +5756,12 @@ function AddressForm({
 
 
 , CHF:'CHF ', CNY:'¥' };
-const COUNTRY_OPTIONS = countriesOnly
-  .getCountries()
+const COUNTRY_OPTIONS = getCountries()
   .map((country) => ({
     code: country.shortName.toUpperCase(),
     name: country.name,
   }))
-  .sort((a, b) => a.name.localeCompare(b.name));
+  .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
 function money(amount:number,currency:string){return (CURRENCY_SYMBOLS[currency] ?? (currency + ' ')) + amount.toFixed(2);}
 
 export default function CheckoutPage() {
