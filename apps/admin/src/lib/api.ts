@@ -5,6 +5,58 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
+let adminAccessToken: string | null = null;
+let adminRefreshPromise: Promise<string | null> | null = null;
+
+function isTokenExpiringSoon(token: string, withinSeconds = 60): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1] || ''));
+    const exp = Number(payload?.exp || 0);
+    return !exp || exp <= Math.floor(Date.now() / 1000) + withinSeconds;
+  } catch {
+    return true;
+  }
+}
+
+async function refreshAdminAccessToken(): Promise<string | null> {
+  if (!adminRefreshPromise) {
+    adminRefreshPromise = (async () => {
+      try {
+        const response = await fetch(`${API_BASE}/admin/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        const json = await response.json().catch(() => null);
+        const data = json?.data ?? json;
+        if (!response.ok || !data?.accessToken) {
+          adminAccessToken = null;
+          return null;
+        }
+        adminAccessToken = data.accessToken as string;
+        return adminAccessToken;
+      } catch (error) {
+        console.error('Failed to refresh admin access token:', error);
+        adminAccessToken = null;
+        return null;
+      } finally {
+        adminRefreshPromise = null;
+      }
+    })();
+  }
+  return adminRefreshPromise;
+}
+
+async function getAdminAuthHeaders(): Promise<HeadersInit> {
+  if (!adminAccessToken || isTokenExpiringSoon(adminAccessToken)) {
+    await refreshAdminAccessToken();
+  }
+  return adminAccessToken ? { Authorization: `Bearer ${adminAccessToken}` } : {};
+}
+
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -24,12 +76,13 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const token = typeof window === 'undefined' ? null : localStorage.getItem('adminToken');
+  const isAuthEndpoint = path === '/admin/auth/login' || path === '/admin/auth/refresh';
+  const authHeaders = isAuthEndpoint ? {} : await getAdminAuthHeaders();
   const response = await fetch(url, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...authHeaders,
       ...init?.headers,
     },
     credentials: 'include',
@@ -69,15 +122,11 @@ export async function uploadCategoryImage(file: File): Promise<{
   const formData = new FormData();
   formData.append('file', file);
 
-  const token =
-    typeof window === 'undefined'
-      ? null
-      : localStorage.getItem('adminToken');
-
+  const authHeaders = await getAdminAuthHeaders();
   const response = await fetch(`${API_BASE}/admin/uploads/categories`, {
     method: 'POST',
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...authHeaders,
     },
     credentials: 'include',
     body: formData,
@@ -492,7 +541,6 @@ export interface LoginRequest {
 export interface LoginResponse {
   admin: Admin;
   accessToken: string;
-  refreshToken: string;
 }
 
 export async function uploadHeroImage(file: File): Promise<{
@@ -506,15 +554,11 @@ export async function uploadHeroImage(file: File): Promise<{
   const formData = new FormData();
   formData.append('file', file);
 
-  const token =
-    typeof window === 'undefined'
-      ? null
-      : localStorage.getItem('adminToken');
-
+  const authHeaders = await getAdminAuthHeaders();
   const response = await fetch(`${API_BASE}/admin/uploads/hero`, {
     method: 'POST',
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...authHeaders,
     },
     credentials: 'include',
     body: formData,
@@ -829,21 +873,21 @@ export interface LoginRequest {
 export interface LoginResponse {
   admin: Admin;
   accessToken: string;
-  refreshToken: string;
 }
 
 export async function adminLogin(credentials: LoginRequest): Promise<LoginResponse> {
-  return adminApi.post<LoginResponse>('/admin/auth/login', credentials);
+  const response = await adminApi.post<LoginResponse>('/admin/auth/login', credentials);
+  adminAccessToken = response.accessToken;
+  return response;
 }
 
 export async function adminLogout(): Promise<void> {
   try {
-    const refreshToken = typeof window === 'undefined' ? '' : localStorage.getItem('adminRefreshToken') || '';
-    await adminApi.post<void>('/admin/auth/logout', { refreshToken });
+    await adminApi.post<void>('/admin/auth/logout', {});
   } catch (error) {
     console.error('Logout error:', error);
   }
-  // Clear local storage
+  adminAccessToken = null;
   if (typeof window !== 'undefined') {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminRefreshToken');
