@@ -1,9 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
+import { apiFetch, getAuthHeaders } from '@/lib/api';
 
-async function getAuthHeaders(): Promise<HeadersInit> {
-  const token = localStorage.getItem('accessToken');
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
 
 export async function uploadCustomRequestFiles(
   requestId: string,
@@ -23,7 +20,7 @@ export async function uploadCustomRequestFiles(
     const formData = new FormData();
     files.forEach((file) => formData.append('files', file));
 
-    const res = await fetch(`${API_URL}/custom-requests/${requestId}/files`, {
+    const res = await apiFetch(`${API_URL}/custom-requests/${requestId}/files`, {
       method: 'POST',
       headers: await getAuthHeaders(),
       body: formData,
@@ -51,7 +48,7 @@ export async function sendCustomMessageWithAttachments(
   attachments: string[] = [],
 ): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await fetch(`${API_URL}/custom-requests/${requestId}/messages`, {
+    const res = await apiFetch(`${API_URL}/custom-requests/${requestId}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
