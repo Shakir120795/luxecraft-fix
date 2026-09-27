@@ -231,6 +231,10 @@ export class PaymentsService {
   }
 
   async refund(paymentId: string, amount: number): Promise<Payment> {
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Refund amount must be greater than zero.');
+    }
+
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
     });
@@ -239,25 +243,134 @@ export class PaymentsService {
       throw new BadRequestException(`Payment ${paymentId} not found.`);
     }
 
-    if (payment.provider === 'razorpay' && payment.providerPaymentId) {
-      await this.razorpayProvider.refund(payment.providerPaymentId, amount);
-    } else if (payment.provider === 'paypal') {
+    if (![PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED].includes(payment.status)) {
       throw new BadRequestException(
-        'PayPal refund flow must be processed through PayPal capture/refund handling.',
+        'Only paid payments can be refunded.',
       );
     }
 
-    const newRefundedAmount = Number(payment.refundedAmount) + amount;
-    const isFullRefund = newRefundedAmount >= Number(payment.amount);
+    const originalAmount = Number(payment.amount);
+    const alreadyRefunded = Number(payment.refundedAmount);
+    const remainingAmount = originalAmount - alreadyRefunded;
+
+    if (amount > remainingAmount + 0.01) {
+      throw new BadRequestException(
+        `Refund amount exceeds the remaining refundable amount of ${Math.max(remainingAmount, 0).toFixed(2)}.`,
+      );
+    }
+
+    const provider = String(payment.provider || '').toLowerCase();
+    let refundResult: {
+      refundId: string;
+      amount: number;
+      status: string;
+    };
+
+    if (provider === 'razorpay') {
+      if (!payment.providerPaymentId) {
+        throw new BadRequestException('Razorpay payment reference is missing.');
+      }
+
+      const result = await this.razorpayProvider.refund(
+        payment.providerPaymentId,
+        amount,
+      );
+
+      const status = String(result.status || '').toLowerCase();
+      if (status !== 'processed') {
+        throw new BadRequestException(
+          `Razorpay refund is not completed: ${status || 'UNKNOWN'}`,
+        );
+      }
+
+      refundResult = {
+        refundId: String(result.refundId),
+        amount: Number(result.amount),
+        status,
+      };
+    } else if (provider === 'paypal') {
+      if (!payment.providerPaymentId) {
+        throw new BadRequestException('PayPal order reference is missing.');
+      }
+
+      const result = await this.paypalProvider.refundOrder(
+        payment.providerPaymentId,
+        amount,
+        payment.currency,
+        `wolhomes-${payment.id}-${(alreadyRefunded + amount).toFixed(2)}`,
+      );
+
+      refundResult = {
+        refundId: result.refundId,
+        amount: result.amount,
+        status: result.status.toLowerCase(),
+      };
+    } else if (provider === 'stripe') {
+      if (!payment.providerPaymentId) {
+        throw new BadRequestException('Stripe payment reference is missing.');
+      }
+
+      const result = await this.stripeProvider.refund(
+        payment.providerPaymentId,
+        amount,
+      );
+
+      if (result.status.toLowerCase() !== 'succeeded') {
+        throw new BadRequestException(
+          `Stripe refund is not completed: ${result.status || 'UNKNOWN'}`,
+        );
+      }
+
+      refundResult = {
+        refundId: result.refundId,
+        amount: result.amount,
+        status: result.status.toLowerCase(),
+      };
+    } else {
+      throw new BadRequestException(
+        `Gateway refund is not supported for payment provider: ${provider || 'unknown'}. Use the explicit manual refund flow for non-gateway payments.`,
+      );
+    }
+
+    if (!Number.isFinite(refundResult.amount) || Math.abs(refundResult.amount - amount) > 0.01) {
+      throw new BadRequestException('Gateway refund amount does not match the requested refund.');
+    }
+
+    const newRefundedAmount = alreadyRefunded + amount;
+    const isFullRefund = newRefundedAmount >= originalAmount - 0.01;
+    const existingMetadata =
+      payment.metadata &&
+      typeof payment.metadata === 'object' &&
+      !Array.isArray(payment.metadata)
+        ? (payment.metadata as Record<string, unknown>)
+        : {};
+    const refundHistory = Array.isArray(existingMetadata.refunds)
+      ? existingMetadata.refunds
+      : [];
 
     return this.prisma.payment.update({
       where: { id: paymentId },
       data: {
-        refundedAmount: newRefundedAmount,
+        refundedAmount: isFullRefund ? originalAmount : newRefundedAmount,
         status: isFullRefund
           ? PaymentStatus.REFUNDED
           : PaymentStatus.PARTIALLY_REFUNDED,
         refundedAt: new Date(),
+        metadata: {
+          ...existingMetadata,
+          refunds: [
+            ...refundHistory,
+            {
+              source: 'GATEWAY',
+              provider,
+              refundId: refundResult.refundId,
+              amount,
+              currency: payment.currency,
+              status: refundResult.status,
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        } as Prisma.InputJsonValue,
       },
     });
   }
