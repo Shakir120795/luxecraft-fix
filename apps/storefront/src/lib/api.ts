@@ -1183,6 +1183,7 @@ export async function createOrder(params: {
   guestEmail?: string;
   guestShippingAddress?: any;
   guestBillingAddress?: any;
+  couponCode?: string;
 }): Promise<{ 
   success: boolean; 
   data?: { 
