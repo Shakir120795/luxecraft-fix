@@ -63,7 +63,7 @@ export class PasswordResetService {
   }
 
   /** Consume the token and set a new password. */
-  async resetPassword(token: string, newPassword: string): Promise<void> {
+  async resetPassword(token: string, newPassword: string): Promise<string> {
     const userId = await this.validateToken(token);
 
     await this.users.updatePassword(userId, newPassword);
@@ -74,5 +74,6 @@ export class PasswordResetService {
     });
 
     this.logger.log(`Password reset for user ${userId}`);
+    return userId;
   }
 }
