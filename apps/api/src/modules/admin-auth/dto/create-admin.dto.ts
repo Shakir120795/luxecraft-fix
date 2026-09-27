@@ -4,9 +4,9 @@ import {
   MinLength,
   MaxLength,
   Matches,
+  IsEnum,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { IsEnum } from 'class-validator';
 import { AdminRole } from '@prisma/client';
 
 export class CreateAdminDto {
