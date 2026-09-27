@@ -320,14 +320,38 @@ export class WebhookService {
       throw new NotFoundException(`Payment with intent ${data.paymentIntentId} not found`);
     }
 
-    const isFullRefund = data.refundAmount >= Number(payment.amount);
+    if (payment.currency.toUpperCase() !== data.currency.toUpperCase()) {
+      throw new BadRequestException('Refund currency does not match the payment');
+    }
+
+    const currentRefundedAmount = Number(payment.refundedAmount);
+    const reportedRefundedAmount = Number(data.refundAmount);
+
+    if (!Number.isFinite(reportedRefundedAmount) || reportedRefundedAmount <= 0) {
+      throw new BadRequestException('Refund amount must be greater than zero');
+    }
+
+    // Provider refund webhooks report the cumulative refunded amount.
+    // Ignore duplicate/stale callbacks so inventory is never restocked twice.
+    if (reportedRefundedAmount <= currentRefundedAmount + 0.01) {
+      this.logger.log(
+        `Refund webhook already reflected for payment ${payment.id}; skipping duplicate callback`,
+      );
+      return;
+    }
+
+    const originalAmount = Number(payment.amount);
+    if (reportedRefundedAmount > originalAmount + 0.01) {
+      throw new BadRequestException('Refund amount exceeds the payment amount');
+    }
+
+    const isFullRefund = reportedRefundedAmount >= originalAmount - 0.01;
 
     await this.prisma.$transaction(async (tx) => {
-      // Update payment
       await tx.payment.update({
         where: { id: payment.id },
         data: {
-          refundedAmount: data.refundAmount,
+          refundedAmount: isFullRefund ? originalAmount : reportedRefundedAmount,
           status: isFullRefund
             ? PaymentStatus.REFUNDED
             : PaymentStatus.PARTIALLY_REFUNDED,
@@ -335,53 +359,51 @@ export class WebhookService {
         },
       });
 
-      // If full refund, update order status and restock inventory
-      if (isFullRefund) {
-        await tx.order.update({
-          where: { id: payment.orderId },
+      if (!isFullRefund) return;
+
+      await tx.order.update({
+        where: { id: payment.orderId },
+        data: {
+          orderStatus: OrderStatus.REFUNDED,
+          paymentStatus: PaymentStatus.REFUNDED,
+        },
+      });
+
+      for (const item of payment.order.items) {
+        if (!item.variantId) continue;
+        const variant = await tx.productVariant.findUnique({
+          where: { id: item.variantId },
+        });
+        if (!variant?.trackInventory) continue;
+
+        await tx.productVariant.update({
+          where: { id: variant.id },
           data: {
-            orderStatus: OrderStatus.REFUNDED,
-            paymentStatus: PaymentStatus.REFUNDED,
+            stockQty: {
+              increment: item.quantity,
+            },
           },
         });
 
-        // Restock inventory for each item
-        for (const item of payment.order.items) {
-          if (!item.variantId) continue;
-          const variant = await tx.productVariant.findUnique({ where: { id: item.variantId } });
-          if (variant?.trackInventory) {
-            await tx.productVariant.update({
-              where: { id: item.variantId },
-              data: {
-                stockQty: {
-                  increment: item.quantity,
-                },
-              },
-            });
+        await tx.inventoryLog.create({
+          data: {
+            variantId: item.variantId,
+            changeType: 'RETURN_RESTOCK',
+            delta: item.quantity,
+            qtyBefore: variant.stockQty,
+            qtyAfter: variant.stockQty + item.quantity,
+            reason: `Order ${payment.order.orderNumber} - Full refund`,
+            reference: payment.orderId,
+          },
+        });
 
-            // Log inventory change
-            await tx.inventoryLog.create({
-              data: {
-                variantId: item.variantId,
-                changeType: 'RETURN_RESTOCK',
-                delta: item.quantity,
-                qtyBefore: variant.stockQty,
-                qtyAfter: variant.stockQty + item.quantity,
-                reason: `Order ${payment.order.orderNumber} - Full refund`,
-                reference: payment.orderId,
-              },
-            });
-
-            this.logger.log(
-              `Restocked variant ${item.variantId}: ${item.quantity} units (refund)`,
-            );
-          }
-        }
+        this.logger.log(
+          `Restocked variant ${item.variantId}: ${item.quantity} units (refund)`,
+        );
       }
     });
 
     this.logger.log(
-      `Refund processed for payment ${payment.id}: ${data.refundAmount} ${data.currency}`,
+      `Refund reconciled for payment ${payment.id}: ${reportedRefundedAmount} ${data.currency}`,
     );
-  }
-}
+  }}
