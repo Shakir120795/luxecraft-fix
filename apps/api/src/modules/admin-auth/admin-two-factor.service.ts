@@ -155,6 +155,10 @@ export class AdminTwoFactorService {
     });
   }
 
+  decryptForVerification(value: string): string {
+    return this.decryptSecret(value);
+  }
+
   verifyTotp(secret: string, code: string, timestamp = Date.now()): boolean {
     const normalizedCode = String(code).trim();
     if (!/^\d{6}$/.test(normalizedCode)) return false;
