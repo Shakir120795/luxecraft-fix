@@ -1250,6 +1250,64 @@ export async function getOrders(): Promise<Order[]> {
   }
 }
 
+export async function resumePayment(orderId: string): Promise<{
+  success: boolean;
+  orderId?: string;
+  provider?: string;
+  payment?: any;
+  providerOrderId?: string;
+  publicKey?: string;
+  approveUrl?: string;
+  crypto?: {
+    network: string;
+    asset: string;
+    address: string;
+    amount: number;
+    currency: string;
+    instructions: string;
+    qrPayload: string;
+  };
+  message?: string;
+}> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/payments/resume`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...headers,
+      },
+      body: JSON.stringify({ orderId }),
+    });
+
+    const data = await res.json();
+    return res.ok && data.success
+      ? data
+      : { success: false, message: data?.message || 'Unable to resume payment.' };
+  } catch (error) {
+    console.error('Failed to resume payment:', error);
+    return { success: false, message: 'Unable to resume payment.' };
+  }
+}
+
+export async function cancelOrder(orderId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/orders/${orderId}/cancel`, {
+      method: 'POST',
+      headers,
+    });
+
+    const data = await res.json().catch(() => null);
+    return res.ok && data?.success !== false
+      ? { success: true }
+      : { success: false, message: data?.message || 'Unable to cancel order.' };
+  } catch (error) {
+    console.error('Failed to cancel order:', error);
+    return { success: false, message: 'Unable to cancel order.' };
+  }
+}
+
 export async function getOrder(orderId: string, guestAccessToken?: string): Promise<Order | null> {
   try {
     const headers = await getAuthHeaders();
