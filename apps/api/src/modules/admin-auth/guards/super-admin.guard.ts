@@ -10,9 +10,9 @@ import { AdminUser, AdminRole } from '@prisma/client';
  * Requires the authenticated admin to have SUPER_ADMIN role.
  * Must be used after AdminJwtAuthGuard.
  *
- * Phase 2: All admins are SUPER_ADMIN, but this guard
- * enforces the check explicitly so future granular roles
- * can be added without architectural changes.
+ * SUPER_ADMIN is the privileged administrative role.
+ * Use this guard only for operations that must remain reserved
+ * for the highest-privilege administrator.
  */
 @Injectable()
 export class SuperAdminGuard implements CanActivate {
