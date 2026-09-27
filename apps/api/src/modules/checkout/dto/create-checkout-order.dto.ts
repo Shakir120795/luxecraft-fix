@@ -1,9 +1,9 @@
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   IsEmail,
+  IsISO31661Alpha2,
   IsOptional,
   IsString,
-  Length,
   MaxLength,
   ValidateNested,
 } from 'class-validator';
@@ -16,7 +16,10 @@ export class GuestCheckoutAddressDto {
   @IsString() @MaxLength(100) city!: string;
   @IsOptional() @IsString() @MaxLength(100) stateProvince?: string;
   @IsString() @MaxLength(30) postalCode!: string;
-  @IsString() @Length(2, 2) country!: string;
+  @IsString()
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toUpperCase() : value))
+  @IsISO31661Alpha2()
+  country!: string;
   @IsOptional() @IsString() @MaxLength(30) phone?: string;
 }
 
