@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Patch, Post, Query, UseGuards, Body } from '@nestjs/common';
 import { AdminOrdersService } from './admin-orders.service';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { UpdateAdminOrderStatusDto } from './dto/update-admin-order-status.dto';
 
 @Controller('admin/orders')
 @UseGuards(AdminJwtAuthGuard)
@@ -24,8 +25,8 @@ export class AdminOrdersController {
   }
 
   @Patch(':id/status')
-  updateStatus(@Param('id') id: string, @Body() data: { orderStatus?: string; paymentStatus?: string; fulfillmentStatus?: string }) {
-    return this.svc.updateStatus(id, data.orderStatus, data.paymentStatus, data.fulfillmentStatus);
+  updateStatus(@Param('id') id: string, @Body() data: UpdateAdminOrderStatusDto) {
+    return this.svc.updateStatus(id, data.orderStatus, data.fulfillmentStatus);
   }
 
   @Post(':id/cancel')
