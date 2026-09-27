@@ -157,7 +157,7 @@ export class CheckoutService {
     const taxableAmount = discountedSubtotal + shippingMethod.calculatedRate;
     const taxCalc = await this.tax.calculateTax({
       country,
-      stateProvince: shippingAddress.stateProvince,
+      stateProvince: shippingAddress.stateProvince ?? undefined,
       amount: taxableAmount,
     });
     const taxAmount = taxCalc.taxAmount;
