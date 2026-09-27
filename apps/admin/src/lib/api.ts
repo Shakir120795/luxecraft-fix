@@ -6,6 +6,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
 let adminAccessToken: string | null = null;
+let adminRefreshBlocked = false;
 
 const ADMIN_AUTH_STORAGE_MIGRATION_KEY = 'wolhomes_admin_auth_cookie_migrated_v1';
 
@@ -41,9 +42,11 @@ async function refreshAdminAccessToken(): Promise<string | null> {
         const data = json?.data ?? json;
         if (!response.ok || !data?.accessToken) {
           adminAccessToken = null;
+          adminRefreshBlocked = response.status === 401 || !data?.accessToken;
           return null;
         }
         adminAccessToken = data.accessToken as string;
+        adminRefreshBlocked = false;
         return adminAccessToken;
       } catch (error) {
         console.error('Failed to refresh admin access token:', error);
@@ -59,7 +62,7 @@ async function refreshAdminAccessToken(): Promise<string | null> {
 
 async function getAdminAuthHeaders(): Promise<HeadersInit> {
   if (!adminAccessToken || isTokenExpiringSoon(adminAccessToken)) {
-    await refreshAdminAccessToken();
+    if (!adminRefreshBlocked) await refreshAdminAccessToken();
   }
   return adminAccessToken ? { Authorization: `Bearer ${adminAccessToken}` } : {};
 }
@@ -886,6 +889,7 @@ export interface LoginResponse {
 export async function adminLogin(credentials: LoginRequest): Promise<LoginResponse> {
   const response = await adminApi.post<LoginResponse>('/admin/auth/login', credentials);
   adminAccessToken = response.accessToken;
+  adminRefreshBlocked = false;
   return response;
 }
 
@@ -896,6 +900,7 @@ export async function adminLogout(): Promise<void> {
     console.error('Logout error:', error);
   }
   adminAccessToken = null;
+  adminRefreshBlocked = true;
   if (typeof window !== 'undefined') {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminRefreshToken');
