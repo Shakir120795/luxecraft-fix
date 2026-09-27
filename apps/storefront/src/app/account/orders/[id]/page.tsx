@@ -223,6 +223,15 @@ export default function OrderDetailPage() {
 
               {/* Actions */}
               <div className="space-y-3">
+                {(order.paymentStatus === 'FAILED' || order.status === 'Failed') && (
+                  <Link
+                    href={`/checkout?retryOrderId=${order.id}`}
+                    className="block w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-center text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors"
+                  >
+                    Retry Payment
+                  </Link>
+                )}
+
                 {order.status === 'Delivered' && (
                   <button className="btn-luxury w-full px-6 py-3 text-sm">
                     Reorder
