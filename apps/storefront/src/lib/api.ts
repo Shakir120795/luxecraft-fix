@@ -491,7 +491,11 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
   let token = accessToken;
 
   if (!token || isTokenExpiringSoon(token)) {
-    if (!refreshBlocked) token = await refreshAccessToken();
+    // Refresh tokens are only available to the browser via the HttpOnly cookie.
+    // Never attempt a refresh during server-side rendering, where that cookie is not forwarded here.
+    if (typeof window !== 'undefined' && !refreshBlocked) {
+      token = await refreshAccessToken();
+    }
   }
 
   return token ? { Authorization: `Bearer ${token}` } : {};
