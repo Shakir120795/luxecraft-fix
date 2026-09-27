@@ -1306,6 +1306,9 @@ export async function createOrder(params: {
 function normalizeOrder(order: any): Order {
   return {
     ...order,
+    status: String(order?.status ?? order?.orderStatus ?? ''),
+    fulfillmentStatus: String(order?.fulfillmentStatus ?? ''),
+    paymentStatus: String(order?.paymentStatus ?? ''),
     subtotal: Number(order?.subtotal ?? 0),
     shippingCost: Number(order?.shippingCost ?? 0),
     taxAmount: Number(order?.taxAmount ?? 0),
@@ -1332,7 +1335,9 @@ export async function getOrders(): Promise<Order[]> {
 
     if (!res.ok) throw new Error(`API error: ${res.status}`);
     const data = await res.json();
-    return data.success ? data.data : [];
+    return data.success && Array.isArray(data.data)
+      ? data.data.map(normalizeOrder)
+      : [];
   } catch (error) {
     console.error('Failed to fetch orders:', error);
     return [];
