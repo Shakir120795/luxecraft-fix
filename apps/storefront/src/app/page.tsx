@@ -280,7 +280,7 @@ export default function HomePage() {
               {categories.map((category, index) => (
                 <Link
                   key={category.id}
-                  href={`/categories/${category.slug}`}
+                  href="/products"
                   className="group relative min-w-[76vw] snap-start overflow-hidden rounded-2xl bg-[#eee9e3] shadow-sm transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.14)] sm:min-w-[360px] lg:min-w-[390px]"
                 >
                   <div className="relative aspect-[1.18] overflow-hidden">
