@@ -11,6 +11,7 @@ type ProductSeo = {
   id: string;
   name: string;
   slug: string;
+  sku?: string | null;
   description?: string | null;
   shortDescription?: string | null;
   regularPrice: string | number;
@@ -156,6 +157,11 @@ function ProductJsonLd({ product }: { product: ProductSeo }) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: product.name,
+    sku: product.sku || undefined,
+    brand: {
+      '@type': 'Brand',
+      name: 'Wolhomes',
+    },
     description:
       product.shortDescription ||
       product.description?.replace(/<[^>]*>/g, ' ').replace(/\\s+/g, ' ').trim() ||
