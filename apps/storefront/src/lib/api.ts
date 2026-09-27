@@ -2,6 +2,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1
 
 let accessToken: string | null = null;
 
+const AUTH_STORAGE_MIGRATION_KEY = 'wolhomes_auth_cookie_migrated_v1';
+
+if (typeof window !== 'undefined' && !localStorage.getItem(AUTH_STORAGE_MIGRATION_KEY)) {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('user');
+  localStorage.setItem(AUTH_STORAGE_MIGRATION_KEY, '1');
+}
+
 export async function apiFetch(
   input: RequestInfo | URL,
   init: RequestInit = {},
