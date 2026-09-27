@@ -243,7 +243,10 @@ export class PaymentsService {
       throw new BadRequestException(`Payment ${paymentId} not found.`);
     }
 
-    if (![PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED].includes(payment.status)) {
+    if (
+      payment.status !== PaymentStatus.PAID &&
+      payment.status !== PaymentStatus.PARTIALLY_REFUNDED
+    ) {
       throw new BadRequestException(
         'Only paid payments can be refunded.',
       );
