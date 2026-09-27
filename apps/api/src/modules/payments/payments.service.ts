@@ -218,6 +218,18 @@ export class PaymentsService {
     });
   }
 
+  async cancelPendingPayment(paymentId: string): Promise<boolean> {
+    const result = await this.prisma.payment.updateMany({
+      where: {
+        id: paymentId,
+        status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
+      },
+      data: { status: PaymentStatus.CANCELLED },
+    });
+
+    return result.count > 0;
+  }
+
   async refund(paymentId: string, amount: number): Promise<Payment> {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
