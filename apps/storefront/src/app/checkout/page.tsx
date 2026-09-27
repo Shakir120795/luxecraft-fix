@@ -22,6 +22,7 @@ import {
   Cart,
   Address,
   ShippingMethod,
+  validateCoupon,
 } from '@/lib/api';
 
 type CheckoutStep = 'customer' | 'address' | 'payment';
@@ -73,6 +74,8 @@ export default function CheckoutPage() {
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
   const [paymentProviderOrderId, setPaymentProviderOrderId] = useState<string | null>(null);
   const [paymentGuestAccessToken, setPaymentGuestAccessToken] = useState<string | null>(null);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponDiscount, setCouponDiscount] = useState(0);
 
   useEffect(() => {
     loadCheckoutData();
@@ -101,6 +104,24 @@ export default function CheckoutPage() {
       }
 
       setCart(cartData);
+
+      // Re-validate the coupon from the cart page against the current server-side cart.
+      const savedCouponCode = localStorage.getItem('appliedCouponCode');
+      if (savedCouponCode) {
+        try {
+          const coupon = await validateCoupon(
+            savedCouponCode,
+            cartData.items.reduce((sum, item) => sum + Number(item.priceSnapshot) * item.quantity, 0),
+            cartData.items.map((item) => item.productId),
+          );
+          setCouponCode(coupon.code);
+          setCouponDiscount(coupon.discountAmount);
+        } catch {
+          localStorage.removeItem('appliedCouponCode');
+          setCouponCode('');
+          setCouponDiscount(0);
+        }
+      }
 
       // Load payment provider configuration for the cart currency
       const paymentConfig = await getPaymentConfiguration(cartData.currency);
@@ -279,6 +300,7 @@ export default function CheckoutPage() {
         paymentProvider: paymentProvider as 'razorpay' | 'paypal' | 'crypto',
         paymentMethod: selectedCryptoMethod,
         guestEmail: isGuest ? guestEmail : undefined,
+        couponCode: couponCode || undefined,
         guestShippingAddress: isGuest
           ? {
               firstName: guestShippingAddress?.firstName ?? guestFirstName,
@@ -850,10 +872,16 @@ export default function CheckoutPage() {
                   <span>Delivery</span>
                   <span className="font-semibold text-green-700">{shippingCost === 0 ? "FREE" : "$" + shippingCost.toFixed(2)}</span>
                 </div>
+                {couponCode && couponDiscount > 0 && (
+                  <div className="flex justify-between text-[#59535b]">
+                    <span>Coupon ({couponCode})</span>
+                    <span className="font-medium text-green-700">-${couponDiscount.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
               <div className="flex justify-between text-2xl font-serif text-luxury-charcoal">
                 <span>Total</span>
-                <span className="text-2xl font-medium text-luxury-charcoal">${total.toFixed(2)}</span>
+                <span className="text-2xl font-medium text-luxury-charcoal">${Math.max(0, total - couponDiscount).toFixed(2)}</span>
               </div>
             </div>
             {currentStep === "address" && (
