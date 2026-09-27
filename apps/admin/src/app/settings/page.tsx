@@ -17,6 +17,9 @@ import {
   getHomepageVideos,
   updateHomepageVideos,
   HomepageVideoSetting,
+  setupAdminTwoFactor,
+  confirmAdminTwoFactor,
+  disableAdminTwoFactor,
 } from '@/lib/api';
 
 export default function SettingsPage() {
@@ -33,6 +36,12 @@ export default function SettingsPage() {
   const [homepageVideos, setHomepageVideos] = useState<HomepageVideoSetting[]>([]);
   const [savingVideos, setSavingVideos] = useState(false);
   const [videoMessage, setVideoMessage] = useState('');
+  const [twoFactorSecret, setTwoFactorSecret] = useState('');
+  const [twoFactorUri, setTwoFactorUri] = useState('');
+  const [twoFactorPassword, setTwoFactorPassword] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [twoFactorMessage, setTwoFactorMessage] = useState('');
+  const [savingTwoFactor, setSavingTwoFactor] = useState(false);
   const [form, setForm] = useState({
     productId: '',
     imageUrl: '',
@@ -193,6 +202,58 @@ export default function SettingsPage() {
       setCurrencyMessage('Failed to save default currency.');
     } finally {
       setSavingCurrency(false);
+    }
+  }
+
+  async function startTwoFactorSetup() {
+    try {
+      setSavingTwoFactor(true);
+      setTwoFactorMessage('');
+      const setup = await setupAdminTwoFactor();
+      setTwoFactorSecret(setup.secret);
+      setTwoFactorUri(setup.otpauthUrl);
+      setTwoFactorMessage('Setup started. Add this secret to your authenticator app, then confirm below.');
+    } catch (error: any) {
+      console.error('Failed to start 2FA setup:', error);
+      setTwoFactorMessage(error?.message || 'Failed to start two-factor setup.');
+    } finally {
+      setSavingTwoFactor(false);
+    }
+  }
+
+  async function confirmTwoFactorSetup() {
+    try {
+      setSavingTwoFactor(true);
+      setTwoFactorMessage('');
+      await confirmAdminTwoFactor(twoFactorPassword, twoFactorCode);
+      setAdmin((current) => (current ? { ...current, twoFactorEnabled: true } : current));
+      setTwoFactorSecret('');
+      setTwoFactorUri('');
+      setTwoFactorPassword('');
+      setTwoFactorCode('');
+      setTwoFactorMessage('Two-factor authentication is enabled.');
+    } catch (error: any) {
+      console.error('Failed to confirm 2FA setup:', error);
+      setTwoFactorMessage(error?.message || 'Failed to enable two-factor authentication.');
+    } finally {
+      setSavingTwoFactor(false);
+    }
+  }
+
+  async function handleDisableTwoFactor() {
+    try {
+      setSavingTwoFactor(true);
+      setTwoFactorMessage('');
+      await disableAdminTwoFactor(twoFactorPassword, twoFactorCode);
+      setAdmin((current) => (current ? { ...current, twoFactorEnabled: false } : current));
+      setTwoFactorPassword('');
+      setTwoFactorCode('');
+      setTwoFactorMessage('Two-factor authentication is disabled.');
+    } catch (error: any) {
+      console.error('Failed to disable 2FA:', error);
+      setTwoFactorMessage(error?.message || 'Failed to disable two-factor authentication.');
+    } finally {
+      setSavingTwoFactor(false);
     }
   }
 
@@ -987,6 +1048,140 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* ADMIN TWO-FACTOR AUTHENTICATION */}
+        <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--color-accent)]">
+                Security
+              </p>
+              <h2 className="mt-1 text-xl font-serif text-[var(--color-primary)]">
+                Two-Factor Authentication
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-muted)]">
+                Require an authenticator code in addition to your admin password at sign-in.
+              </p>
+            </div>
+            <span className="text-sm font-medium">
+              {admin?.twoFactorEnabled ? (
+                <span className="text-green-600">Enabled</span>
+              ) : (
+                <span className="text-[var(--color-muted)]">Not enabled</span>
+              )}
+            </span>
+          </div>
+
+          {!admin?.twoFactorEnabled ? (
+            <div className="mt-6 space-y-4">
+              {!twoFactorSecret ? (
+                <button
+                  type="button"
+                  onClick={startTwoFactorSetup}
+                  disabled={savingTwoFactor}
+                  className="border border-[var(--color-primary)] bg-[var(--color-primary)] px-6 py-3 text-xs uppercase tracking-[0.15em] text-white disabled:opacity-50"
+                >
+                  {savingTwoFactor ? 'Starting...' : 'Start 2FA Setup'}
+                </button>
+              ) : (
+                <>
+                  <div className="border border-[var(--color-border)] bg-[var(--color-bg)] p-4">
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--color-muted)]">Authenticator Secret</p>
+                    <p className="mt-2 break-all font-mono text-sm text-[var(--color-text)]">{twoFactorSecret}</p>
+                    <button
+                      type="button"
+                      onClick={() => void navigator.clipboard?.writeText(twoFactorSecret)}
+                      className="mt-3 text-xs uppercase tracking-[0.12em] text-[var(--color-accent)]"
+                    >
+                      Copy Secret
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">
+                      Authenticator URI
+                    </label>
+                    <textarea
+                      readOnly
+                      rows={3}
+                      value={twoFactorUri}
+                      className="w-full resize-none border border-[var(--color-border)] bg-white px-4 py-3 text-xs text-[var(--color-text)]"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">Current Password</label>
+                      <input
+                        type="password"
+                        value={twoFactorPassword}
+                        onChange={(e) => setTwoFactorPassword(e.target.value)}
+                        className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">Authenticator Code</label>
+                      <input
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={twoFactorCode}
+                        onChange={(e) => setTwoFactorCode(e.target.value.replace(/\\D/g, '').slice(0, 6))}
+                        className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm tracking-[0.3em] outline-none focus:border-[var(--color-accent)]"
+                        placeholder="123456"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={confirmTwoFactorSetup}
+                    disabled={savingTwoFactor || twoFactorCode.length !== 6 || !twoFactorPassword}
+                    className="border border-[var(--color-primary)] bg-[var(--color-primary)] px-6 py-3 text-xs uppercase tracking-[0.15em] text-white disabled:opacity-50"
+                  >
+                    {savingTwoFactor ? 'Enabling...' : 'Enable 2FA'}
+                  </button>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="mt-6 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">Current Password</label>
+                  <input
+                    type="password"
+                    value={twoFactorPassword}
+                    onChange={(e) => setTwoFactorPassword(e.target.value)}
+                    className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-medium text-[var(--color-text)]">Authenticator Code</label>
+                  <input
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={twoFactorCode}
+                    onChange={(e) => setTwoFactorCode(e.target.value.replace(/\\D/g, '').slice(0, 6))}
+                    className="w-full border border-[var(--color-border)] bg-white px-4 py-3 text-sm tracking-[0.3em] outline-none focus:border-[var(--color-accent)]"
+                    placeholder="123456"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleDisableTwoFactor}
+                disabled={savingTwoFactor || twoFactorCode.length !== 6 || !twoFactorPassword}
+                className="border border-red-600 px-6 py-3 text-xs uppercase tracking-[0.15em] text-red-600 disabled:opacity-50"
+              >
+                {savingTwoFactor ? 'Disabling...' : 'Disable 2FA'}
+              </button>
+            </div>
+          )}
+
+          {twoFactorMessage && (
+            <p className="mt-4 text-sm text-[var(--color-muted)]">{twoFactorMessage}</p>
           )}
         </div>
 
