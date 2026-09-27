@@ -18,16 +18,19 @@ import { CreateVariantDto } from './dto/create-variant.dto';
 import { AddMediaDto } from './dto/add-media.dto';
 import { AddCustomizationOptionDto } from './dto/add-customization-option.dto';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { AdminRoles } from '../admin-auth/decorators/admin-roles.decorator';
+import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
-import { AdminUser, ProductStatus } from '@prisma/client';
+import { AdminUser, AdminRole, ProductStatus } from '@prisma/client';
 
 //  Admin routes: /api/v1/admin/products 
 
 @Controller('admin/products')
-@UseGuards(AdminJwtAuthGuard)
+@UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class AdminProductsController {
   constructor(private readonly svc: ProductsService) {}
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post()
   create(@Body() dto: CreateProductDto, @CurrentAdmin() admin: AdminUser) {
     return this.svc.create(dto, admin.id);
@@ -55,6 +58,7 @@ export class AdminProductsController {
     return this.svc.findOneAdmin(id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -64,30 +68,35 @@ export class AdminProductsController {
     return this.svc.update(id, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id/publish')
   @HttpCode(HttpStatus.OK)
   publish(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.publish(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id/hide')
   @HttpCode(HttpStatus.OK)
   hide(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.hide(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id/archive')
   @HttpCode(HttpStatus.OK)
   archive(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.archive(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch(':id/restore')
   @HttpCode(HttpStatus.OK)
   restore(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
     return this.svc.restore(id, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @CurrentAdmin() admin: AdminUser) {
@@ -96,6 +105,7 @@ export class AdminProductsController {
 
   //  Variants 
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post(':id/variants')
   addVariant(
     @Param('id') id: string,
@@ -105,6 +115,7 @@ export class AdminProductsController {
     return this.svc.addVariant(id, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch('variants/:variantId')
   updateVariant(
     @Param('variantId') variantId: string,
@@ -114,6 +125,7 @@ export class AdminProductsController {
     return this.svc.updateVariant(variantId, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Delete('variants/:variantId')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteVariant(
@@ -125,6 +137,7 @@ export class AdminProductsController {
 
   //  Media 
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post(':id/media')
   addMedia(
     @Param('id') id: string,
@@ -134,6 +147,7 @@ export class AdminProductsController {
     return this.svc.addMedia(id, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch('media/:mediaId')
   updateMedia(
     @Param('mediaId') mediaId: string,
@@ -143,6 +157,7 @@ export class AdminProductsController {
     return this.svc.updateMedia(mediaId, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Delete('media/:mediaId')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteMedia(@Param('mediaId') mediaId: string, @CurrentAdmin() admin: AdminUser) {
@@ -151,6 +166,7 @@ export class AdminProductsController {
 
   //  Customization Options 
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Post(':id/customization-options')
   addCustomizationOption(
     @Param('id') id: string,
@@ -160,6 +176,7 @@ export class AdminProductsController {
     return this.svc.addCustomizationOption(id, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Patch('customization-options/:optionId')
   updateCustomizationOption(
     @Param('optionId') optionId: string,
@@ -169,6 +186,7 @@ export class AdminProductsController {
     return this.svc.updateCustomizationOption(optionId, dto, admin.id);
   }
 
+  @AdminRoles(AdminRole.SUPER_ADMIN)
   @Delete('customization-options/:optionId')
   @HttpCode(HttpStatus.NO_CONTENT)
   deleteCustomizationOption(
