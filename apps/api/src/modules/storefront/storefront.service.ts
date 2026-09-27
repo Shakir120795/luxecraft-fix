@@ -104,14 +104,49 @@ export class StorefrontService {
       ([, value]) => Boolean(value),
     );
 
-    const dynamicFilterConditions: Prisma.ProductWhereInput[] = filterEntries.map(
-      ([slug, value]) => ({
+    const andConditions: Prisma.ProductWhereInput[] = [];
+
+    if (params.search) {
+      andConditions.push({
+        OR: [
+          { name: { contains: params.search, mode: 'insensitive' } },
+          { description: { contains: params.search, mode: 'insensitive' } },
+          { sku: { contains: params.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    for (const [slug, value] of filterEntries) {
+      andConditions.push({
         filterData: {
           path: [slug],
           array_contains: [value],
         },
-      }),
-    );
+      });
+    }
+
+    if (Number.isFinite(params.minPrice) || Number.isFinite(params.maxPrice)) {
+      const minPrice = Number.isFinite(params.minPrice) ? params.minPrice : undefined;
+      const maxPrice = Number.isFinite(params.maxPrice) ? params.maxPrice : undefined;
+      andConditions.push({
+        OR: [
+          {
+            salePrice: {
+              not: null,
+              ...(minPrice !== undefined && { gte: minPrice }),
+              ...(maxPrice !== undefined && { lte: maxPrice }),
+            },
+          },
+          {
+            salePrice: null,
+            regularPrice: {
+              ...(minPrice !== undefined && { gte: minPrice }),
+              ...(maxPrice !== undefined && { lte: maxPrice }),
+            },
+          },
+        ],
+      });
+    }
 
     const where: Prisma.ProductWhereInput = {
       status: ProductStatus.ACTIVE,
@@ -120,49 +155,7 @@ export class StorefrontService {
       ...(params.isFeatured !== undefined && {
         isFeatured: params.isFeatured,
       }),
-      ...(params.search && {
-        OR: [
-          {
-            name: {
-              contains: params.search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            description: {
-              contains: params.search,
-              mode: 'insensitive',
-            },
-          },
-          {
-            sku: {
-              contains: params.search,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      }),
-      ...(dynamicFilterConditions.length > 0 && {
-        AND: dynamicFilterConditions,
-      }),
-      ...((Number.isFinite(params.minPrice) || Number.isFinite(params.maxPrice)) && {
-        OR: [
-          {
-            salePrice: {
-              not: null,
-              ...(Number.isFinite(params.minPrice) && { gte: params.minPrice }),
-              ...(Number.isFinite(params.maxPrice) && { lte: params.maxPrice }),
-            },
-          },
-          {
-            salePrice: null,
-            regularPrice: {
-              ...(Number.isFinite(params.minPrice) && { gte: params.minPrice }),
-              ...(Number.isFinite(params.maxPrice) && { lte: params.maxPrice }),
-            },
-          },
-        ],
-      }),
+      ...(andConditions.length > 0 && { AND: andConditions }),
     };
 
     const take = Math.min(Math.max(params.take ?? 12, 1), 48);
