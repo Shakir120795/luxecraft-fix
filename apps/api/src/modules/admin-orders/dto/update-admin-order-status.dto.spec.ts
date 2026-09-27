@@ -1,6 +1,5 @@
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
-import { OrderStatus } from '@prisma/client';
 import { UpdateAdminOrderStatusDto } from './update-admin-order-status.dto';
 
 describe('UpdateAdminOrderStatusDto', () => {
@@ -19,7 +18,7 @@ describe('UpdateAdminOrderStatusDto', () => {
 
   it('accepts a valid order status', async () => {
     const dto = plainToInstance(UpdateAdminOrderStatusDto, {
-      orderStatus: OrderStatus.PROCESSING,
+      orderStatus: 'PROCESSING',
     });
 
     const errors = await validate(dto, {
