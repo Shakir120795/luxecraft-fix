@@ -48,13 +48,16 @@ export class CheckoutService {
     stateProvince?: string;
     currency: string;
   }): Promise<any> {
+    const taxableAmount = data.subtotal + data.shippingCost;
     const taxCalc = await this.tax.calculateTax({
       country: data.country,
       stateProvince: data.stateProvince,
-      amount: data.subtotal + data.shippingCost,
+      amount: taxableAmount,
     });
 
-    const total = data.subtotal + data.shippingCost + taxCalc.taxAmount;
+    const total = taxCalc.isInclusive
+      ? taxableAmount
+      : taxableAmount + taxCalc.taxAmount;
 
     return {
       subtotal: data.subtotal,
@@ -70,8 +73,6 @@ export class CheckoutService {
    * The only customer-facing standard-order entry point. Prices, weight,
    * shipping and tax are recalculated from database-backed cart data here;
    * browser values are never accepted as the source of truth.
-   * 
-   * NEW: Reserves inventory stock before order creation, creates Stripe payment intent
    */
   async createStandardOrder(input: {
     userId?: string;
@@ -122,15 +123,23 @@ export class CheckoutService {
     const shippingMethod = methods[0];
     if (!shippingMethod) throw new BadRequestException('Shipping method is unavailable for this address.');
 
-    const taxAmount = cartItems.reduce((sum, item) => {
-      const rate = Number(item.product.taxRate ?? 0);
-      return sum + (Number(item.priceSnapshot) * item.quantity * rate) / 100;
-    }, 0);
-    const total = subtotal + shippingMethod.calculatedRate + taxAmount;
+    // Tax is determined exclusively by the active country/state TaxRule.
+    // This must match the checkout totals calculation so the customer sees
+    // the same tax that is persisted on the final order.
+    const taxableAmount = subtotal + shippingMethod.calculatedRate;
+    const taxCalc = await this.tax.calculateTax({
+      country,
+      stateProvince: shippingAddress.stateProvince,
+      amount: taxableAmount,
+    });
+    const taxAmount = taxCalc.taxAmount;
+    const total = taxCalc.isInclusive
+      ? taxableAmount
+      : taxableAmount + taxAmount;
 
     // 2. Reserve inventory stock (transaction for atomicity)
     const reservedItems: { variantId: string; quantity: number }[] = [];
-    
+
     try {
       await this.prisma.$transaction(async (tx) => {
         for (const item of cartItems) {
@@ -216,7 +225,7 @@ export class CheckoutService {
     } catch (error) {
       // If order/payment creation fails, release reserved stock
       this.logger.error(`Order creation failed, releasing reserved stock: ${error.message}`);
-      
+
       for (const reserved of reservedItems) {
         try {
           await this.inventory.release(
@@ -376,7 +385,4 @@ export class CheckoutService {
     return { order, payment };
   }
 }
-
-
-
 
