@@ -80,7 +80,15 @@ export function SiteHeader() {
     setIsAuth(isAuthenticated());
 
     const interval = setInterval(loadCartCount, 5000);
-    return () => clearInterval(interval);
+    const handleCartUpdated = () => {
+      loadCartCount();
+    };
+    window.addEventListener('wolhomes:cart-updated', handleCartUpdated);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('wolhomes:cart-updated', handleCartUpdated);
+    };
   }, []);
 
   useEffect(() => {
