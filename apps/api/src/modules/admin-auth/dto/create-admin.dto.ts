@@ -6,6 +6,8 @@ import {
   Matches,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
+import { IsEnum } from 'class-validator';
+import { AdminRole } from '@prisma/client';
 
 export class CreateAdminDto {
   @IsEmail()
@@ -28,4 +30,7 @@ export class CreateAdminDto {
   @IsString()
   @MaxLength(100)
   lastName!: string;
+
+  @IsEnum(AdminRole)
+  role: AdminRole = AdminRole.ADMIN;
 }
