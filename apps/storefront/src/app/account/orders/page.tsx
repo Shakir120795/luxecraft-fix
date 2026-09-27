@@ -190,11 +190,9 @@ export default function OrdersPage() {
                           type="button"
                           onClick={async () => {
                             if (!window.confirm('Cancel this unpaid order and release its reservation?')) return;
-                            setActionOrderId(order.id);
                             const result = await cancelOrder(order.id);
                             if (!result.success) window.alert(result.message || 'Unable to cancel order.');
                             await loadOrders();
-                            setActionOrderId(null);
                           }}
                           className="border border-luxury-terracotta bg-luxury-terracotta/10 px-6 py-2 text-sm text-luxury-terracotta hover:bg-luxury-terracotta/20 transition-colors"
                         >
