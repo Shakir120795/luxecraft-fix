@@ -51,6 +51,24 @@ export default function OrderDetailPage() {
       .catch(() => setResumeCryptoQr(null));
   }, [resumeCrypto]);
 
+  const normalizedStatus = (order?.orderStatus || order?.status || 'PENDING').toUpperCase();
+
+  const statusLabel = (status: string) => ({
+    PENDING: 'Payment Pending',
+    PAYMENT_CONFIRMED: 'Payment Confirmed',
+    PROCESSING: 'Processing',
+    SHIPPED: 'Shipped',
+    DELIVERED: 'Delivered',
+    CANCELLED: 'Cancelled',
+  }[status] || status);
+
+  const statusTone = (status: string) => {
+    if (status === 'DELIVERED') return 'border-[#2f6b36]/30 bg-[#2f6b36]/10 text-[#2f6b36]';
+    if (['PAYMENT_CONFIRMED', 'PROCESSING', 'SHIPPED'].includes(status)) return 'border-[#c99545]/30 bg-[#c99545]/10 text-[#7a5a2c]';
+    if (status === 'CANCELLED') return 'border-[#b94740]/30 bg-[#b94740]/10 text-[#b94740]';
+    return 'border-[#ded8d0] bg-[#faf9f7] text-[#6a636b]';
+  };
+
   async function handleResumePayment() {
     if (!order) return;
     setError(null);
@@ -237,9 +255,9 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-luxury-cream flex items-center justify-center">
+      <div className="min-h-screen bg-[#f7f3ef] flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-flex items-center gap-3 text-luxury-brown">
+          <div className="inline-flex items-center gap-3 text-[#67625c]">
             <div className="w-4 h-4 bg-luxury-gold rounded-full animate-pulse" />
             <span className="font-serif">Loading order...</span>
           </div>
@@ -250,10 +268,10 @@ export default function OrderDetailPage() {
 
   if (error || !order) {
     return (
-      <div className="min-h-screen bg-luxury-cream flex items-center justify-center py-16 px-4">
+      <div className="min-h-screen bg-[#f7f3ef] flex items-center justify-center py-16 px-4">
         <div className="w-full max-w-md text-center">
-          <h1 className="text-4xl font-serif font-light text-luxury-charcoal mb-4">Order Not Found</h1>
-          <p className="text-luxury-brown mb-8">{error || 'The order could not be found'}</p>
+          <h1 className="text-4xl font-serif font-light text-[#302b35] mb-4">Order Not Found</h1>
+          <p className="text-[#67625c] mb-8">{error || 'The order could not be found'}</p>
           <Link href="/account/orders" className="btn-luxury px-10 py-4 inline-block">
             Back to Orders 
           </Link>
@@ -263,19 +281,19 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <main className="min-h-screen bg-luxury-cream">
+    <main className="min-h-screen bg-[#f7f3ef]">
       {/* Header */}
-      <div className="bg-luxury-beige border-b border-luxury-sand py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+      <div className="border-b border-[#e0dbd6] bg-white px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
+        <div className="mx-auto max-w-[1400px]">
           <div className="flex items-center gap-3 mb-4">
             <Link href="/account/orders" className="text-luxury-gold hover:text-luxury-darkGold">
                Back
             </Link>
           </div>
-          <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-3">
+          <h1 className="font-serif text-4xl font-medium tracking-[-0.03em] text-[#161616] sm:text-5xl">
             Order #{order.orderNumber}
           </h1>
-          <p className="text-luxury-brown text-lg">
+          <p className="mt-3 text-sm leading-6 text-[#67625c]">
             Placed on {new Date(order.createdAt).toLocaleDateString('en-US', {
               year: 'numeric',
               month: 'long',
@@ -285,34 +303,34 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div className="mx-auto max-w-[1400px] px-5 py-8 sm:px-8 lg:px-10 lg:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
             {/* Order Status */}
-            <div className="border border-luxury-sand bg-luxury-beige p-8">
-              <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Order Status</h2>
+            <div className="border border-[#e0dbd6] bg-white p-6 shadow-[0_8px_30px_rgba(48,43,53,0.04)] sm:p-8">
+              <div className="mb-6 flex items-center justify-between gap-4"><div><p className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#2f6b36]">Order Tracking</p><h2 className="mt-1 font-serif text-2xl text-[#161616]">Order Status</h2></div><span className="hidden text-[10px] uppercase tracking-[0.16em] text-[#8a837c] sm:block">#{order.orderNumber}</span></div>
               
               <div className="flex items-center gap-4 mb-6">
                 <span className={`px-4 py-2 text-sm ${
                   order.status === 'Delivered' ? 'bg-luxury-gold/20 text-luxury-gold' :
                   order.status === 'Shipped' ? 'bg-luxury-gold/10 text-luxury-gold' :
                   order.status === 'Cancelled' ? 'bg-luxury-terracotta/20 text-luxury-terracotta' :
-                  'bg-luxury-sand text-luxury-brown'
+                  'bg-luxury-sand text-[#67625c]'
                 }`}>
                   {order.status}
                 </span>
                 
                 <span className={`px-4 py-2 text-sm ${
                   order.paymentStatus === 'Paid' ? 'bg-luxury-gold/20 text-luxury-gold' :
-                  'bg-luxury-sand text-luxury-brown'
+                  'bg-luxury-sand text-[#67625c]'
                 }`}>
                   Payment: {order.paymentStatus}
                 </span>
                 
                 <span className={`px-4 py-2 text-sm ${
                   order.fulfillmentStatus === 'Fulfilled' ? 'bg-luxury-gold/20 text-luxury-gold' :
-                  'bg-luxury-sand text-luxury-brown'
+                  'bg-luxury-sand text-[#67625c]'
                 }`}>
                   {order.fulfillmentStatus}
                 </span>
@@ -325,13 +343,13 @@ export default function OrderDetailPage() {
             </div>
 
             {/* Order Items */}
-            <div className="border border-luxury-sand bg-luxury-beige p-8">
-              <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Order Items</h2>
+            <div className="border border-[#e0dbd6] bg-white p-6 shadow-[0_8px_30px_rgba(48,43,53,0.04)] sm:p-8">
+              <h2 className="text-2xl font-serif text-[#302b35] mb-6">Order Items</h2>
               
               <div className="space-y-6">
                 {order.items.map((item: any, idx: number) => (
-                  <div key={idx} className="flex gap-4 pb-6 border-b border-luxury-sand last:border-0 last:pb-0">
-                    <div className="w-24 h-24 border border-luxury-sand bg-luxury-cream shrink-0">
+                  <div key={idx} className="flex gap-4 pb-6 border-b border-[#e0dbd6] last:border-0 last:pb-0">
+                    <div className="h-24 w-24 shrink-0 overflow-hidden border border-[#e0dbd6] bg-[#f7f3ef]">
                       {item.productSnapshot?.media?.[0]?.url ? (
                         <img
                           src={item.productSnapshot.media[0].url}
@@ -339,23 +357,23 @@ export default function OrderDetailPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-luxury-sand" />
+                        <div className="flex h-full w-full items-center justify-center bg-[#faf9f7] text-[#c99545] font-serif text-xl" />
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-serif text-lg text-luxury-charcoal mb-1">
+                      <h3 className="font-serif text-lg text-[#302b35] mb-1">
                         {item.productSnapshot?.name || 'Product'}
                       </h3>
                       {item.variantSnapshot && (
-                        <p className="text-sm text-luxury-brown mb-2">
+                        <p className="text-sm text-[#67625c] mb-2">
                           Variant: {item.variantSnapshot.name}
                         </p>
                       )}
-                      <p className="text-sm text-luxury-brown">Quantity: {item.quantity}</p>
+                      <p className="text-sm text-[#67625c]">Quantity: {item.quantity}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-serif text-xl text-luxury-charcoal">${item.totalPrice.toFixed(2)}</p>
-                      <p className="text-sm text-luxury-brown mt-1">${item.unitPrice.toFixed(2)} each</p>
+                      <p className="font-serif text-xl text-[#302b35]">${item.totalPrice.toFixed(2)}</p>
+                      <p className="text-sm text-[#67625c] mt-1">${item.unitPrice.toFixed(2)} each</p>
                     </div>
                   </div>
                 ))}
@@ -364,10 +382,10 @@ export default function OrderDetailPage() {
 
             {/* Shipping Address */}
             {order.shippingAddress && (
-              <div className="border border-luxury-sand bg-luxury-beige p-8">
-                <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Shipping Address</h2>
-                <div className="text-luxury-brown space-y-1">
-                  <p className="font-medium text-luxury-charcoal">
+              <div className="border border-[#e0dbd6] bg-white p-6 shadow-[0_8px_30px_rgba(48,43,53,0.04)] sm:p-8">
+                <h2 className="text-2xl font-serif text-[#302b35] mb-6">Shipping Address</h2>
+                <div className="text-[#67625c] space-y-1">
+                  <p className="font-medium text-[#302b35]">
                     {order.shippingAddress.firstName} {order.shippingAddress.lastName}
                   </p>
                   <p>{order.shippingAddress.addressLine1}</p>
@@ -384,19 +402,19 @@ export default function OrderDetailPage() {
 
           {/* Sidebar - Order Summary */}
           <div className="lg:col-span-1">
-            <div className="sticky top-24 border border-luxury-sand bg-luxury-beige p-6">
-              <h2 className="text-xl font-serif text-luxury-charcoal mb-6">Order Summary</h2>
+            <div className="sticky top-24 border border-[#e0dbd6] bg-luxury-beige p-6">
+              <h2 className="text-xl font-serif text-[#302b35] mb-6">Order Summary</h2>
 
-              <div className="space-y-3 mb-6 pb-6 border-b border-luxury-sand text-sm">
-                <div className="flex justify-between text-luxury-brown">
+              <div className="space-y-3 mb-6 pb-6 border-b border-[#e0dbd6] text-sm">
+                <div className="flex justify-between text-[#67625c]">
                   <span>Subtotal</span>
                   <span>${order.subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-luxury-brown">
+                <div className="flex justify-between text-[#67625c]">
                   <span>Shipping</span>
                   <span>${order.shippingCost.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-luxury-brown">
+                <div className="flex justify-between text-[#67625c]">
                   <span>Tax</span>
                   <span>${order.taxAmount.toFixed(2)}</span>
                 </div>
@@ -408,7 +426,7 @@ export default function OrderDetailPage() {
                 )}
               </div>
 
-              <div className="flex justify-between text-2xl font-serif text-luxury-charcoal mb-8">
+              <div className="flex justify-between text-2xl font-serif text-[#302b35] mb-8">
                 <span>Total</span>
                 <span>${order.total.toFixed(2)}</span>
               </div>
@@ -421,7 +439,7 @@ export default function OrderDetailPage() {
                       type="button"
                       onClick={handleResumePayment}
                       disabled={resumingPayment}
-                      className="w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors disabled:opacity-50"
+                      className="w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-sm text-[#302b35] hover:bg-luxury-gold/20 transition-colors disabled:opacity-50"
                     >
                       {resumingPayment ? 'Preparing Payment…' : 'Resume Payment'}
                     </button>
@@ -440,7 +458,7 @@ export default function OrderDetailPage() {
                 {(order.paymentStatus === 'FAILED' || order.status === 'Failed') && (
                   <Link
                     href={`/checkout?retryOrderId=${order.id}`}
-                    className="block w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-center text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors"
+                    className="block w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-center text-sm text-[#302b35] hover:bg-luxury-gold/20 transition-colors"
                   >
                     Retry Payment
                   </Link>
@@ -451,27 +469,27 @@ export default function OrderDetailPage() {
                     type="button"
                     onClick={handleCaptureResumedPayPal}
                     disabled={resumingPayment}
-                    className="w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors disabled:opacity-50"
+                    className="w-full border border-luxury-gold bg-luxury-gold/10 px-6 py-3 text-sm text-[#302b35] hover:bg-luxury-gold/20 transition-colors disabled:opacity-50"
                   >
                     {resumingPayment ? 'Capturing…' : 'Capture PayPal Payment'}
                   </button>
                 )}
 
                 {resumeCrypto && order.paymentStatus === 'PENDING' && (
-                  <div className="border border-luxury-sand bg-white p-5">
-                    <h3 className="font-serif text-lg text-luxury-charcoal">Complete Crypto Payment</h3>
-                    <p className="mt-2 text-sm text-luxury-brown">
+                  <div className="border border-[#e0dbd6] bg-white p-5">
+                    <h3 className="font-serif text-lg text-[#302b35]">Complete Crypto Payment</h3>
+                    <p className="mt-2 text-sm text-[#67625c]">
                       Send {resumeCrypto.amount.toFixed(2)} {resumeCrypto.asset} on {resumeCrypto.network}.
                     </p>
                     {resumeCryptoQr && (
                       <img src={resumeCryptoQr} alt="Crypto payment QR code" className="mx-auto my-4 h-48 w-48" />
                     )}
-                    <p className="break-all text-xs text-luxury-brown">{resumeCrypto.address}</p>
+                    <p className="break-all text-xs text-[#67625c]">{resumeCrypto.address}</p>
                     <input
                       value={resumeCryptoTxHash}
                       onChange={(e) => setResumeCryptoTxHash(e.target.value)}
                       placeholder="Transaction hash"
-                      className="mt-4 w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal"
+                      className="mt-4 w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-[#302b35]"
                     />
                     <button
                       type="button"
@@ -484,13 +502,13 @@ export default function OrderDetailPage() {
                   </div>
                 )}
 
-                {order.status === 'Delivered' && (
+                {normalizedStatus === 'DELIVERED' && (
                   <button className="btn-luxury w-full px-6 py-3 text-sm">
                     Reorder
                   </button>
                 )}
 
-                <button className="w-full border border-luxury-sand bg-luxury-cream px-6 py-3 text-sm text-luxury-brown hover:border-luxury-gold transition-colors">
+                <button className="w-full border border-[#e0dbd6] bg-[#f7f3ef] px-6 py-3 text-sm text-[#67625c] hover:border-luxury-gold transition-colors">
                   Contact Support
                 </button>
               </div>
@@ -503,34 +521,30 @@ export default function OrderDetailPage() {
 }
 
 function OrderTimeline({ status, createdAt }: { status: string; createdAt: string }) {
-  const statuses = [
-    { label: 'Order Placed', completed: true },
-    { label: 'Processing', completed: ['Processing', 'Shipped', 'Delivered'].includes(status) },
-    { label: 'Shipped', completed: ['Shipped', 'Delivered'].includes(status) },
-    { label: 'Delivered', completed: status === 'Delivered' },
+  const normalized = status.toUpperCase();
+  const stages = [
+    { label: 'Order Placed', active: true },
+    { label: 'Processing', active: ['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(normalized) },
+    { label: 'Shipped', active: ['SHIPPED', 'DELIVERED'].includes(normalized) },
+    { label: 'Delivered', active: normalized === 'DELIVERED' },
   ];
 
   return (
     <div className="relative">
-      {statuses.map((item, idx) => (
-        <div key={idx} className="flex items-center gap-4 mb-4 last:mb-0">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-            item.completed ? 'bg-luxury-gold text-white' : 'bg-luxury-sand text-luxury-brown'
-          }`}>
-            {item.completed ? '' : idx + 1}
+      <div className="absolute left-[15px] top-4 h-[calc(100%-32px)] w-px bg-[#e0dbd6]" />
+      <div className="space-y-5">
+        {stages.map((item, idx) => (
+          <div key={item.label} className="relative flex items-center gap-4">
+            <div className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${item.active ? 'border-[#c99545] bg-[#c99545] text-white' : 'border-[#e0dbd6] bg-white text-[#8a837c]'}`}>
+              {item.active ? '✓' : idx + 1}
+            </div>
+            <div>
+              <p className={`text-sm ${item.active ? 'font-medium text-[#302b35]' : 'text-[#8a837c]'}`}>{item.label}</p>
+              {idx === 0 && <p className="mt-1 text-xs text-[#8a837c]">{new Date(createdAt).toLocaleString()}</p>}
+            </div>
           </div>
-          <div className="flex-1">
-            <p className={`text-sm ${item.completed ? 'text-luxury-charcoal font-medium' : 'text-luxury-brown'}`}>
-              {item.label}
-            </p>
-            {idx === 0 && (
-              <p className="text-xs text-luxury-brown/70">
-                {new Date(createdAt).toLocaleString()}
-              </p>
-            )}
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
