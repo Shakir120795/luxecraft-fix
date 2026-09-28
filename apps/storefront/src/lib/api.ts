@@ -1313,10 +1313,14 @@ export async function createOrder(params: {
 }
 
 function normalizeOrder(order: any): Order {
+  const rawOrderStatus = String(order?.orderStatus ?? order?.status ?? '').toUpperCase();
+  const normalizedOrderStatus =
+    rawOrderStatus === 'PAYMENT_CONFIRMED' ? 'PENDING' : rawOrderStatus;
+
   return {
     ...order,
-    status: String(order?.orderStatus ?? order?.status ?? ''),
-    orderStatus: String(order?.orderStatus ?? order?.status ?? ''),
+    status: normalizedOrderStatus,
+    orderStatus: normalizedOrderStatus,
     fulfillmentStatus: String(order?.fulfillmentStatus ?? ''),
     paymentStatus: String(order?.paymentStatus ?? ''),
     subtotal: Number(order?.subtotal ?? 0),
