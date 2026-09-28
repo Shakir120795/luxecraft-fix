@@ -93,7 +93,13 @@ export class WebhookService {
     paymentIntentId: string;
     amount: number;
     currency: string;
-  }): Promise<void> {
+    paymentId?: string;
+    cryptoTransactionHash?: string;
+    cryptoEvent?: {
+      eventId: string;
+      payload: Record<string, unknown>;
+    };
+  }): Promise<boolean> {
     const order = await this.prisma.order.findUnique({
       where: { id: data.orderId },
       include: {
@@ -106,23 +112,24 @@ export class WebhookService {
       throw new NotFoundException(`Order ${data.orderId} not found`);
     }
 
-    // Find the payment record
-    const payment = order.payments.find((p) => {
-      if (p.providerPaymentId === data.paymentIntentId) return true;
+    const payment = data.paymentId
+      ? order.payments.find((p) => p.id === data.paymentId)
+      : order.payments.find((p) => {
+          if (p.providerPaymentId === data.paymentIntentId) return true;
 
-      if (p.provider === 'paypal') {
-        const metadata =
-          p.metadata &&
-          typeof p.metadata === 'object' &&
-          !Array.isArray(p.metadata)
-            ? (p.metadata as Record<string, unknown>)
-            : {};
+          if (p.provider === 'paypal') {
+            const metadata =
+              p.metadata &&
+              typeof p.metadata === 'object' &&
+              !Array.isArray(p.metadata)
+                ? (p.metadata as Record<string, unknown>)
+                : {};
 
-        return String(metadata.paypalOrderId || '') === data.paymentIntentId;
-      }
+            return String(metadata.paypalOrderId || '') === data.paymentIntentId;
+          }
 
-      return false;
-    });
+          return false;
+        });
 
     if (!payment) {
       this.logger.error(
@@ -131,82 +138,143 @@ export class WebhookService {
       throw new NotFoundException('Payment not found');
     }
 
+    const isCrypto = payment.provider === 'crypto';
+    const cryptoTransactionHash = data.cryptoTransactionHash?.trim().toLowerCase();
+
+    if (isCrypto && !cryptoTransactionHash) {
+      throw new BadRequestException('Crypto transaction reference is required');
+    }
+
     if (
-      payment.provider !== 'crypto' &&
+      !isCrypto &&
       Math.abs(Number(payment.amount) - data.amount) > 0.01
     ) {
       throw new BadRequestException('Payment amount does not match the order');
     }
 
-    if (
-      payment.currency.toUpperCase() !== data.currency.toUpperCase()
-    ) {
+    if (payment.currency.toUpperCase() !== data.currency.toUpperCase()) {
       throw new BadRequestException('Payment currency does not match the order');
     }
 
-    // Use a transaction and a conditional payment update so callbacks/webhooks
-    // cannot mark the same payment paid (or deduct stock) more than once.
     let processed = false;
-    await this.prisma.$transaction(async (tx) => {
-      const paidUpdate = await tx.payment.updateMany({
-        where: { id: payment.id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
-        data: {
-          status: PaymentStatus.PAID,
-          paidAt: new Date(),
-        },
-      });
 
-      if (paidUpdate.count === 0) return;
-      processed = true;
-
-      await tx.order.update({
-        where: { id: order.id },
-        data: {
-          orderStatus: OrderStatus.PAYMENT_CONFIRMED,
-          paymentStatus: PaymentStatus.PAID,
-        },
-      });
-
-      for (const item of order.items) {
-        if (!item.variantId) continue;
-
-        const variant = await tx.productVariant.findUnique({
-          where: { id: item.variantId },
-        });
-
-        if (!variant || !variant.trackInventory) continue;
-
-        this.logger.log(`Decrementing stock for variant ${variant.id}: ${item.quantity} units`);
-
-        await tx.productVariant.update({
-          where: { id: variant.id },
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const paidUpdate = await tx.payment.updateMany({
+          where: {
+            id: payment.id,
+            status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
+            ...(isCrypto
+              ? {
+                  OR: [
+                    { cryptoTransactionHash: null },
+                    { cryptoTransactionHash },
+                  ],
+                }
+              : {}),
+          },
           data: {
-            stockQty: { decrement: item.quantity },
-            reservedQty: { decrement: item.quantity },
+            status: PaymentStatus.PAID,
+            paidAt: new Date(),
+            ...(isCrypto
+              ? {
+                  cryptoTransactionHash,
+                  providerPaymentId: data.paymentIntentId,
+                }
+              : {}),
           },
         });
 
-        await tx.inventoryLog.create({
+        if (paidUpdate.count === 0) return;
+        processed = true;
+
+        await tx.order.update({
+          where: { id: order.id },
           data: {
-            variantId: variant.id,
-            changeType: 'ORDER_DEDUCT',
-            delta: -item.quantity,
-            qtyBefore: variant.stockQty,
-            qtyAfter: variant.stockQty - item.quantity,
-            reason: `Order ${order.orderNumber} - Payment confirmed`,
-            reference: order.id,
+            orderStatus: OrderStatus.PAYMENT_CONFIRMED,
+            paymentStatus: PaymentStatus.PAID,
           },
         });
+
+        for (const item of order.items) {
+          if (!item.variantId) continue;
+
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+          });
+
+          if (!variant || !variant.trackInventory) continue;
+
+          this.logger.log(`Decrementing stock for variant ${variant.id}: ${item.quantity} units`);
+
+          await tx.productVariant.update({
+            where: { id: variant.id },
+            data: {
+              stockQty: { decrement: item.quantity },
+              reservedQty: { decrement: item.quantity },
+            },
+          });
+
+          await tx.inventoryLog.create({
+            data: {
+              variantId: item.variantId,
+              changeType: 'ORDER_DEDUCT',
+              delta: -item.quantity,
+              qtyBefore: variant.stockQty,
+              qtyAfter: variant.stockQty - item.quantity,
+              reason: `Order ${order.orderNumber} - Payment confirmed`,
+              reference: order.id,
+            },
+          });
+        }
+
+        if (isCrypto && data.cryptoEvent) {
+          await tx.webhookEvent.upsert({
+            where: { eventId: data.cryptoEvent.eventId },
+            create: {
+              provider: 'crypto',
+              eventType: 'payment.verified',
+              eventId: data.cryptoEvent.eventId,
+              payload: data.cryptoEvent.payload,
+              status: 'completed',
+              processedAt: new Date(),
+            },
+            update: {
+              provider: 'crypto',
+              eventType: 'payment.verified',
+              payload: data.cryptoEvent.payload,
+              status: 'completed',
+              processedAt: new Date(),
+            },
+          });
+        }
+      });
+    } catch (error) {
+      if (
+        isCrypto &&
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        (error as { code?: string }).code === 'P2002'
+      ) {
+        throw new BadRequestException(
+          'This crypto transaction has already been assigned to another payment',
+        );
       }
-    });
+      throw error;
+    }
 
     if (!processed) {
-      this.logger.log(`Payment ${payment.id} was already processed; skipping duplicate success callback`);
-      return;
+      this.logger.log(
+        `Payment ${payment.id} was already processed; skipping duplicate success callback`,
+      );
+      return false;
     }
+
     this.logger.log(
       `Payment success processed for order ${order.orderNumber}: inventory decremented`,
     );
+    return true;
   }
 
   /**
