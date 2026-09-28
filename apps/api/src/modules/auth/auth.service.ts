@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   ForbiddenException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -50,20 +51,29 @@ export class AuthService {
   async register(
     dto: RegisterDto,
     _meta: { ipAddress?: string; userAgent?: string },
-  ): Promise<{ user: Omit<User, 'passwordHash'>; message: string }> {
-    const user = await this.users.create(dto);
-    // Send OTP (non-blocking  in production this dispatches a BullMQ email job)
+  ): Promise<{ message: string }> {
+    const message =
+      'If this email is eligible for registration, your request has been received. Please check your email for a verification code.';
+
+    const existing = await this.users.findByEmail(dto.email);
+    if (existing) return { message };
+
+    let user: User;
+    try {
+      user = await this.users.create(dto);
+    } catch (error) {
+      // Keep registration responses identical even if two requests race on the unique email.
+      if (error instanceof ConflictException) return { message };
+      throw error;
+    }
+
     const _code = await this.otp.generate(
       user.email,
       OtpPurpose.EMAIL_VERIFICATION,
       user.id,
     );
     await this.email.sendVerificationCode(user.email, _code);
-    return {
-      user: this.users.sanitize(user),
-      message:
-        'Account created. Please check your email for a verification code.',
-    };
+    return { message };
   }
 
   // ----------------------------------------------------------------
@@ -98,7 +108,7 @@ export class AuthService {
         success: false,
         failReason: 'USER_NOT_FOUND',
       });
-      throw new UnauthorizedException('User not found. Please create an account.');
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     if (!validPassword) {
@@ -109,11 +119,11 @@ export class AuthService {
         success: false,
         failReason: 'INVALID_PASSWORD',
       });
-      throw new UnauthorizedException('Incorrect password.');
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     if (user.status === UserStatus.SUSPENDED) {
-      throw new ForbiddenException('This account has been suspended.');
+      throw new UnauthorizedException('Invalid email or password.');
     }
 
     await this.loginAttempts.record({
