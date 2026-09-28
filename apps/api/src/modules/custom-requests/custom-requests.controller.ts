@@ -10,6 +10,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Throttle,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
@@ -68,6 +69,7 @@ export class CustomRequestsController {
   }
 
   @Post(':id/files')
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FilesInterceptor('files', CUSTOM_REQUEST_MAX_FILES, {
