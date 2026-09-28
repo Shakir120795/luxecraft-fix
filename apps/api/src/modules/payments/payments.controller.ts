@@ -310,38 +310,102 @@ export class PaymentsController {
   }
   @UseGuards(OptionalJwtAuthGuard)
   @Post('crypto/verify')
-  async verifyCryptoPayment(@Body() body: { orderId: string; txHash: string; network: string; asset: string }, @Req() req: Request & { user?: { id: string } }) {
-    if (!body.orderId || !body.txHash || !body.network || !body.asset) throw new BadRequestException('orderId, txHash, network and asset are required');
+  async verifyCryptoPayment(
+    @Body() body: { orderId: string; txHash: string; network: string; asset: string },
+    @Req() req: Request & { user?: { id: string } },
+  ) {
+    if (!body.orderId || !body.txHash || !body.network || !body.asset) {
+      throw new BadRequestException(
+        'orderId, txHash, network and asset are required',
+      );
+    }
+
+    const txHash = body.txHash.trim().toLowerCase();
+    if (!txHash) {
+      throw new BadRequestException('Transaction hash is required');
+    }
+
     const order = req.user?.id
       ? await this.orders.findOneForUser(body.orderId, req.user.id)
       : await this.orders.findOneForGuest(
           body.orderId,
           req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
         );
+
     if (order.paymentStatus !== PaymentStatus.PENDING) {
       throw new BadRequestException('This order is no longer awaiting payment');
     }
 
-    const payment = order.payments.find((item) => item.provider === 'crypto' && item.status !== 'PAID');
-    if (!payment) throw new BadRequestException('Crypto payment is not pending for this order');
-    if (await this.webhooks.isEventProcessed('crypto', body.txHash)) throw new BadRequestException('This transaction has already been processed');
-    const metadata = payment.metadata && typeof payment.metadata === 'object' && !Array.isArray(payment.metadata) ? payment.metadata as Record<string, unknown> : {};
-    const expectedNetwork = String(metadata.network || '').toLowerCase();
-    const expectedAsset = String(metadata.asset || '').toUpperCase();
-    const receivingAddress = String(metadata.receivingAddress || '');
-    const expectedAmount = Number(metadata.expectedAmount || payment.amount);
-    if (expectedNetwork !== body.network.toLowerCase() || expectedAsset !== body.asset.toUpperCase()) throw new BadRequestException('Network or asset does not match the order payment details');
-    const verification = await this.crypto.verifyTransaction({ txHash: body.txHash.trim(), network: expectedNetwork, asset: expectedAsset, expectedAmount, receivingAddress });
-    if (!verification.verified) throw new BadRequestException('Blockchain payment could not be verified');
-    await this.webhooks.recordWebhookEvent({ provider: 'crypto', eventType: 'payment.verified', eventId: body.txHash, payload: { orderId: order.id, txHash: body.txHash, network: expectedNetwork, asset: expectedAsset, amountReceived: verification.amountReceived }, status: 'processing' });
-    try {
-      await this.payments.updateStatus(payment.id, PaymentStatus.PENDING, body.txHash);
-      await this.webhooks.handlePaymentSuccess({ orderId: order.id, paymentIntentId: body.txHash, amount: verification.amountReceived, currency: order.currency });
-      await this.webhooks.markEventProcessed('crypto', body.txHash);
-    } catch (error) {
-      await this.webhooks.markEventFailed('crypto', body.txHash, error instanceof Error ? error.message : 'Crypto verification processing failed');
-      throw error;
+    const payment = order.payments.find(
+      (item) => item.provider === 'crypto' && item.status !== PaymentStatus.PAID,
+    );
+    if (!payment) {
+      throw new BadRequestException('Crypto payment is not pending for this order');
     }
-    return { success: true, verified: true, amountReceived: verification.amountReceived, txHash: body.txHash };
+
+    const metadata =
+      payment.metadata &&
+      typeof payment.metadata === 'object' &&
+      !Array.isArray(payment.metadata)
+        ? (payment.metadata as Record<string, unknown>)
+        : {};
+
+    const expectedNetwork = String(metadata.network || '').trim().toLowerCase();
+    const expectedAsset = String(metadata.asset || '').trim().toUpperCase();
+    const receivingAddress = String(metadata.receivingAddress || '').trim();
+    const expectedAmount = Number(metadata.expectedAmount || payment.amount);
+
+    if (
+      expectedNetwork !== body.network.trim().toLowerCase() ||
+      expectedAsset !== body.asset.trim().toUpperCase()
+    ) {
+      throw new BadRequestException(
+        'Network or asset does not match the order payment details',
+      );
+    }
+
+    if (!receivingAddress || !Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+      throw new BadRequestException('Crypto payment configuration is invalid for this order');
+    }
+
+    const verification = await this.crypto.verifyTransaction({
+      txHash,
+      network: expectedNetwork,
+      asset: expectedAsset,
+      expectedAmount,
+      receivingAddress,
+    });
+
+    if (!verification.verified) {
+      throw new BadRequestException('Blockchain payment could not be verified');
+    }
+
+    const eventId = `${expectedNetwork}:${txHash}`;
+
+    await this.webhooks.handlePaymentSuccess({
+      orderId: order.id,
+      paymentIntentId: txHash,
+      paymentId: payment.id,
+      cryptoTransactionHash: eventId,
+      amount: verification.amountReceived,
+      currency: order.currency,
+      cryptoEvent: {
+        eventId,
+        payload: {
+          orderId: order.id,
+          txHash,
+          network: expectedNetwork,
+          asset: expectedAsset,
+          amountReceived: verification.amountReceived,
+        },
+      },
+    });
+
+    return {
+      success: true,
+      verified: true,
+      amountReceived: verification.amountReceived,
+      txHash,
+    };
   }
 }
