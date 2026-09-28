@@ -45,9 +45,17 @@ export class CustomRequestsController {
   @Post(':id/files')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(
-    FilesInterceptor('files', 8, {
+    FilesInterceptor('files', CUSTOM_REQUEST_MAX_FILES, {
+      storage: diskStorage({
+        destination: (_req, _file, callback) => callback(null, CUSTOM_UPLOAD_TMP),
+        filename: (_req, file, callback) => {
+          callback(null, `${randomUUID()}${extname(file.originalname).toLowerCase()}`);
+        },
+      }),
       limits: {
-        fileSize: 10 * 1024 * 1024,
+        fileSize: CUSTOM_REQUEST_MAX_FILE_SIZE,
+        files: CUSTOM_REQUEST_MAX_FILES,
+        parts: CUSTOM_REQUEST_MAX_FILES,
       },
     }),
   )
