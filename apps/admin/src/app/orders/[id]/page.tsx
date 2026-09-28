@@ -126,14 +126,71 @@ export default function OrderDetailPage() {
               {order.items && order.items.length > 0 ? (
                 <div className="space-y-4">
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex gap-4 border-b border-[var(--color-border)] pb-4 last:border-0 last:pb-0">
-                      {item.product?.images?.[0] ? (
-                        <img
-                          src={item.product.images[0]}
-                          alt={item.product.name}
-                          className="w-20 h-20 object-cover border border-[var(--color-border)]"
-                        />
-                      ) : (
+                    <div key={item.id} className="border-b border-[var(--color-border)] pb-5 last:border-0 last:pb-0">
+                      <div className="flex flex-col gap-4 sm:flex-row">
+                        {item.product?.images?.[0] ? (
+                          <img
+                            src={item.product.images[0]}
+                            alt={item.product.name}
+                            className="h-24 w-24 shrink-0 object-cover border border-[var(--color-border)]"
+                          />
+                        ) : (
+                          <div className="h-24 w-24 shrink-0 bg-[var(--color-border)] flex items-center justify-center">
+                            W
+                          </div>
+                        )}
+
+                        <div className="flex-1">
+                          <div className="font-medium text-[var(--color-text)]">
+                            {item.product?.name || 'Product'}
+                          </div>
+
+                          <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-[var(--color-muted)] sm:grid-cols-2">
+                            <div><strong className="text-[var(--color-text)]">SKU:</strong> {item.product?.sku || 'N/A'}</div>
+                            {item.product?.variant?.name && <div><strong className="text-[var(--color-text)]">Size / Variant:</strong> {item.product.variant.name}</div>}
+                            {item.product?.color && <div><strong className="text-[var(--color-text)]">Color:</strong> {item.product.color}</div>}
+                            {item.product?.material && <div><strong className="text-[var(--color-text)]">Material:</strong> {item.product.material}</div>}
+                            {item.product?.style && <div><strong className="text-[var(--color-text)]">Style:</strong> {item.product.style}</div>}
+                            {item.product?.collection && <div><strong className="text-[var(--color-text)]">Collection:</strong> {item.product.collection}</div>}
+                            {item.product?.origin && <div><strong className="text-[var(--color-text)]">Origin:</strong> {item.product.origin}</div>}
+                            <div><strong className="text-[var(--color-text)]">Quantity:</strong> {item.quantity}</div>
+                          </div>
+
+                          {item.product?.dimensions && (
+                            <div className="mt-3 border-t border-[var(--color-border)] pt-3 text-xs text-[var(--color-muted)]">
+                              {item.product.dimensions.lengthCm && <span className="mr-4">L {item.product.dimensions.lengthCm} cm</span>}
+                              {item.product.dimensions.widthCm && <span className="mr-4">W {item.product.dimensions.widthCm} cm</span>}
+                              {item.product.dimensions.heightCm && <span className="mr-4">H {item.product.dimensions.heightCm} cm</span>}
+                              {item.product.dimensions.weightKg && <span>Weight {item.product.dimensions.weightKg} kg</span>}
+                            </div>
+                          )}
+
+                          {item.customization && typeof item.customization === 'object' && (
+                            <div className="mt-3 border-l-2 border-[var(--color-accent)] bg-[var(--color-bg)] px-3 py-2">
+                              <div className="text-[10px] uppercase tracking-wider text-[var(--color-muted)]">Selected Options</div>
+                              <div className="mt-1 grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
+                                {Object.entries(item.customization).map(([key, value]) => (
+                                  <div key={key}>
+                                    <strong>{key}:</strong> {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="text-left sm:text-right">
+                          <div className="font-medium text-[var(--color-text)]">
+                            ${Number(item.total).toFixed(2)}
+                          </div>
+                          <div className="mt-1 text-xs text-[var(--color-muted)]">
+                            ${Number(item.price).toFixed(2)} each
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              ) : (
                         <div className="w-20 h-20 bg-[var(--color-border)] flex items-center justify-center">
                           
                         </div>
