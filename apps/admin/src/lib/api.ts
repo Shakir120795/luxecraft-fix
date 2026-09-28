@@ -811,10 +811,35 @@ export interface OrderItem {
   quantity: number;
   price: number;
   total: number;
+  customization?: Record<string, unknown> | null;
   product?: {
     id: string;
     name: string;
     sku: string;
+    slug?: string;
+    color?: string | null;
+    material?: string | null;
+    style?: string | null;
+    collection?: string | null;
+    origin?: string | null;
+    productNote?: string | null;
+    dimensions?: {
+      lengthCm?: number | string | null;
+      widthCm?: number | string | null;
+      heightCm?: number | string | null;
+      weightKg?: number | string | null;
+    } | null;
+    variant?: {
+      id: string;
+      name?: string | null;
+      sku?: string | null;
+      dimensions?: {
+        lengthCm?: number | string | null;
+        widthCm?: number | string | null;
+        heightCm?: number | string | null;
+        weightKg?: number | string | null;
+      } | null;
+    } | null;
     images: string[];
   };
 }
