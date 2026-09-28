@@ -95,6 +95,20 @@ export class SupportChatService {
     return created;
   }
 
+  async closeUserConversation(userId: string) {
+    try {
+      return await this.prisma.supportConversation.update({
+        where: { userId },
+        data: { status: SupportChatStatus.CLOSED },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Support conversation not found');
+      }
+      throw error;
+    }
+  }
+
   async getAdminConversations(status?: SupportChatStatus) {
     const conversations = await this.prisma.supportConversation.findMany({
       where: status ? { status } : undefined,
