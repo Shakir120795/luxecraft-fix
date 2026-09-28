@@ -63,9 +63,43 @@ export class OrdersService {
               name: item.product.name,
               slug: item.product.slug,
               sku: item.product.sku,
+              color: item.product.color,
+              material: item.product.material,
+              style: item.product.style,
+              collection: item.product.collection,
+              origin: item.product.origin,
+              productNote: item.product.productNote,
+              dimensions: {
+                lengthCm: item.product.lengthCm,
+                widthCm: item.product.widthCm,
+                heightCm: item.product.heightCm,
+                weightKg: item.product.weightKg,
+              },
+              images: item.product.media.map((media: any) => ({
+                url: media.url,
+                altText: media.altText,
+                isMain: media.isMain,
+                sortOrder: media.sortOrder,
+              })),
             } as Prisma.InputJsonValue,
             variantSnapshot: item.variant
-              ? ({ name: item.variant.name, sku: item.variant.sku } as Prisma.InputJsonValue)
+              ? ({
+                  id: item.variant.id,
+                  name: item.variant.name,
+                  sku: item.variant.sku,
+                  dimensions: {
+                    lengthCm: item.variant.lengthCm,
+                    widthCm: item.variant.widthCm,
+                    heightCm: item.variant.heightCm,
+                    weightKg: item.variant.weightKg,
+                  },
+                  images: item.variant.media.map((media: any) => ({
+                    url: media.url,
+                    altText: media.altText,
+                    isMain: media.isMain,
+                    sortOrder: media.sortOrder,
+                  })),
+                } as Prisma.InputJsonValue)
               : Prisma.DbNull,
             customization: item.customization as Prisma.InputJsonValue,
             quantity: item.quantity,
@@ -145,7 +179,7 @@ export class OrdersService {
       include: { items: true, payments: true },
     });
     if (!order) throw new NotFoundException(`Order ${id} not found.`);
-    return order;
+    return (await this.attachProductDetails([order]))[0];
   }
 
   async findOneForUser(id: string, userId: string): Promise<Order & { payments: Payment[] }> {
@@ -154,7 +188,7 @@ export class OrdersService {
       include: { items: true, payments: true },
     });
     if (!order) throw new NotFoundException(`Order ${id} not found.`);
-    return order;
+    return (await this.attachProductDetails([order]))[0] as Order & { payments: Payment[] };
   }
 
   async cancelForUser(id: string, userId: string): Promise<Order> {
@@ -257,11 +291,12 @@ export class OrdersService {
   async findAllForUser(userId: string): Promise<Order[]> {
     // Keep failed/pending orders visible so customers have a recovery path
     // instead of losing access to an unpaid order.
-    return this.prisma.order.findMany({
+    const orders = await this.prisma.order.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: { items: true },
     });
+    return this.attachProductDetails(orders);
   }
 
   async findAll(params: {
@@ -287,6 +322,132 @@ export class OrdersService {
     ]);
 
     return { items, total };
+  }
+
+  private async attachProductDetails<T extends { items?: any[] }>(orders: T[]): Promise<T[]> {
+    const productIds = Array.from(
+      new Set(
+        orders.flatMap((order) =>
+          (order.items ?? [])
+            .map((item: any) => item.productId)
+            .filter((id: any): id is string => typeof id === 'string' && id.length > 0),
+        ),
+      ),
+    );
+
+    if (productIds.length === 0) return orders;
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        sku: true,
+        color: true,
+        material: true,
+        style: true,
+        collection: true,
+        origin: true,
+        productNote: true,
+        lengthCm: true,
+        widthCm: true,
+        heightCm: true,
+        weightKg: true,
+        media: {
+          where: { type: 'IMAGE' },
+          orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+          select: { url: true, altText: true, isMain: true, sortOrder: true },
+        },
+        variants: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            lengthCm: true,
+            widthCm: true,
+            heightCm: true,
+            weightKg: true,
+            media: {
+              where: { type: 'IMAGE' },
+              orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+              select: { url: true, altText: true, isMain: true, sortOrder: true },
+            },
+          },
+        },
+      },
+    });
+
+    const productMap = new Map(products.map((product) => [product.id, product]));
+
+    return orders.map((order) => ({
+      ...order,
+      items: (order.items ?? []).map((item: any) => {
+        const snapshot =
+          item.productSnapshot &&
+          typeof item.productSnapshot === 'object' &&
+          !Array.isArray(item.productSnapshot)
+            ? (item.productSnapshot as Record<string, any>)
+            : {};
+        const variantSnapshot =
+          item.variantSnapshot &&
+          typeof item.variantSnapshot === 'object' &&
+          !Array.isArray(item.variantSnapshot)
+            ? (item.variantSnapshot as Record<string, any>)
+            : {};
+        const product = item.productId ? productMap.get(item.productId) : undefined;
+        const variant = product?.variants.find((entry) => entry.id === item.variantId);
+
+        const currentVariantImages = variant?.media?.map((media) => media.url) ?? [];
+        const currentProductImages = product?.media?.map((media) => media.url) ?? [];
+        const snapshotVariantImages = Array.isArray(variantSnapshot.images)
+          ? variantSnapshot.images.map((media: any) => media?.url).filter((url: any): url is string => typeof url === 'string')
+          : [];
+        const snapshotProductImages = Array.isArray(snapshot.images)
+          ? snapshot.images.map((media: any) => media?.url).filter((url: any): url is string => typeof url === 'string')
+          : [];
+
+        return {
+          ...item,
+          product: {
+            id: product?.id ?? item.productId ?? '',
+            name: product?.name ?? snapshot.name ?? 'Product',
+            slug: product?.slug ?? snapshot.slug ?? '',
+            sku: variant?.sku ?? product?.sku ?? variantSnapshot.sku ?? snapshot.sku ?? '',
+            color: product?.color ?? snapshot.color ?? null,
+            material: product?.material ?? snapshot.material ?? null,
+            style: product?.style ?? snapshot.style ?? null,
+            collection: product?.collection ?? snapshot.collection ?? null,
+            origin: product?.origin ?? snapshot.origin ?? null,
+            productNote: product?.productNote ?? snapshot.productNote ?? null,
+            dimensions: {
+              lengthCm: variant?.lengthCm ?? snapshot.dimensions?.lengthCm ?? product?.lengthCm ?? null,
+              widthCm: variant?.widthCm ?? snapshot.dimensions?.widthCm ?? product?.widthCm ?? null,
+              heightCm: variant?.heightCm ?? snapshot.dimensions?.heightCm ?? product?.heightCm ?? null,
+              weightKg: variant?.weightKg ?? snapshot.dimensions?.weightKg ?? product?.weightKg ?? null,
+            },
+            images: currentVariantImages.length
+              ? currentVariantImages
+              : currentProductImages.length
+                ? currentProductImages
+                : (snapshotVariantImages.length ? snapshotVariantImages : snapshotProductImages),
+            variant: item.variantId
+              ? {
+                  id: variant?.id ?? item.variantId,
+                  name: variant?.name ?? variantSnapshot.name ?? null,
+                  sku: variant?.sku ?? variantSnapshot.sku ?? null,
+                  dimensions: {
+                    lengthCm: variant?.lengthCm ?? variantSnapshot.dimensions?.lengthCm ?? null,
+                    widthCm: variant?.widthCm ?? variantSnapshot.dimensions?.widthCm ?? null,
+                    heightCm: variant?.heightCm ?? variantSnapshot.dimensions?.heightCm ?? null,
+                    weightKg: variant?.weightKg ?? variantSnapshot.dimensions?.weightKg ?? null,
+                  },
+                }
+              : null,
+          },
+        };
+      }),
+    }));
   }
 
   private async generateOrderNumber(): Promise<string> {
