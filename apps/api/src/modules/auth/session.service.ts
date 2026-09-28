@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto';
+import { hashOpaqueToken } from '../../common/utils/token-hash.util';
 
 @Injectable()
 export class SessionService {
@@ -21,7 +22,7 @@ export class SessionService {
     await this.prisma.session.create({
       data: {
         userId,
-        refreshToken,
+        refreshTokenHash: hashOpaqueToken(refreshToken),
         ipAddress: meta.ipAddress,
         userAgent: meta.userAgent,
         expiresAt,
@@ -38,13 +39,15 @@ export class SessionService {
   ): Promise<{ userId: string; newRefreshToken: string } | null> {
     const now = new Date();
     const newRefreshToken = crypto.randomBytes(48).toString('hex');
+    const newRefreshTokenHash = hashOpaqueToken(newRefreshToken);
+    const oldRefreshTokenHash = hashOpaqueToken(oldToken);
     const expiresAt = new Date(now.getTime() + this.TTL_MS);
 
     return this.prisma.$transaction(async (tx) => {
       // Atomically claim the old token. Exactly one concurrent refresh can win.
       const revoked = await tx.session.updateMany({
         where: {
-          refreshToken: oldToken,
+          refreshTokenHash: oldRefreshTokenHash,
           revokedAt: null,
           expiresAt: { gt: now },
         },
@@ -54,7 +57,7 @@ export class SessionService {
       if (revoked.count !== 1) return null;
 
       const session = await tx.session.findUnique({
-        where: { refreshToken: oldToken },
+        where: { refreshTokenHash: oldRefreshTokenHash },
         select: { userId: true },
       });
 
@@ -63,7 +66,7 @@ export class SessionService {
       await tx.session.create({
         data: {
           userId: session.userId,
-          refreshToken: newRefreshToken,
+          refreshTokenHash: newRefreshTokenHash,
           ipAddress: meta.ipAddress,
           userAgent: meta.userAgent,
           expiresAt,
@@ -77,7 +80,7 @@ export class SessionService {
   /** Revoke a single session by refresh token. */
   async revoke(refreshToken: string): Promise<void> {
     await this.prisma.session.updateMany({
-      where: { refreshToken },
+      where: { refreshTokenHash: hashOpaqueToken(refreshToken) },
       data: { revokedAt: new Date() },
     });
   }
