@@ -4,7 +4,6 @@ import {
   Get,
   Param,
   Post,
-  Get,
   Query,
   Res,
   UploadedFiles,
@@ -14,12 +13,22 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { mkdirSync } from 'node:fs';
+import { extname, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { CustomRequestsService } from './custom-requests.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CustomMessagesService } from '../custom-messages/custom-messages.service';
 import { UploadsService } from '../uploads/uploads.service';
 import { SenderType } from '@prisma/client';
+
+const CUSTOM_REQUEST_MAX_FILE_SIZE = 4 * 1024 * 1024;
+const CUSTOM_REQUEST_MAX_FILES = 8;
+const CUSTOM_UPLOAD_TMP = join(process.cwd(), 'uploads', '.tmp', 'custom-requests');
+
+mkdirSync(CUSTOM_UPLOAD_TMP, { recursive: true });
 
 @Controller('custom-requests')
 export class CustomRequestsController {
