@@ -31,7 +31,7 @@ export class PaymentsController {
   configuration(@Query('currency') currency = 'USD') {
     return this.providers.status(currency);
   }
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('resume')
   async resumePayment(
     @Body() body: { orderId: string },
@@ -41,7 +41,12 @@ export class PaymentsController {
       throw new BadRequestException('orderId is required');
     }
 
-    const order = await this.orders.findOneForUser(body.orderId, req.user.id);
+    const order = req.user?.id
+      ? await this.orders.findOneForUser(body.orderId, req.user.id)
+      : await this.orders.findOneForGuest(
+          body.orderId,
+          req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
+        );
 
     if (order.paymentStatus !== PaymentStatus.PENDING || order.orderStatus === 'CANCELLED') {
       throw new BadRequestException('This order is not available for payment resume.');
@@ -53,6 +58,37 @@ export class PaymentsController {
 
     if (!pendingPayment || !['razorpay', 'paypal', 'crypto'].includes(pendingPayment.provider)) {
       throw new BadRequestException('No resumable payment is available for this order.');
+    }
+
+    if (pendingPayment.provider === 'crypto') {
+      const metadata =
+        pendingPayment.metadata &&
+        typeof pendingPayment.metadata === 'object' &&
+        !Array.isArray(pendingPayment.metadata)
+          ? (pendingPayment.metadata as Record<string, unknown>)
+          : {};
+      const network = String(metadata.network || '').trim().toLowerCase();
+      const asset = String(metadata.asset || '').trim().toUpperCase();
+      const address = String(metadata.receivingAddress || '').trim();
+      const amount = Number(metadata.expectedAmount || pendingPayment.amount);
+
+      if (!network || !asset || !address || !Number.isFinite(amount) || amount <= 0) {
+        throw new BadRequestException('Crypto payment details are invalid for this order.');
+      }
+
+      const crypto = this.crypto.createPayment(amount, network, asset);
+
+      return {
+        success: true,
+        orderId: order.id,
+        payment: pendingPayment,
+        provider: 'crypto',
+        crypto,
+      };
+    }
+
+    if (!req.user?.id) {
+      throw new BadRequestException('Please sign in to resume this payment.');
     }
 
     const claimed = await this.payments.cancelPendingPayment(pendingPayment.id);
@@ -320,7 +356,11 @@ export class PaymentsController {
       );
     }
 
-    const txHash = body.txHash.trim().toLowerCase();
+    const networkInput = body.network.trim().toLowerCase();
+    const txHash = networkInput === 'solana'
+      ? body.txHash.trim()
+      : body.txHash.trim().toLowerCase();
+
     if (!txHash) {
       throw new BadRequestException('Transaction hash is required');
     }
@@ -352,6 +392,17 @@ export class PaymentsController {
 
     const expectedNetwork = String(metadata.network || '').trim().toLowerCase();
     const expectedAsset = String(metadata.asset || '').trim().toUpperCase();
+
+    if (networkInput !== expectedNetwork) {
+      throw new BadRequestException('Network does not match the order payment details');
+    }
+
+    const existingCryptoPayment = await this.payments.findCryptoPaymentByTransactionHash(txHash);
+    if (existingCryptoPayment) {
+      throw new BadRequestException(
+        'This transaction has already been used for a payment and cannot be reused.',
+      );
+    }
     const receivingAddress = String(metadata.receivingAddress || '').trim();
     const expectedAmount = Number(metadata.expectedAmount || payment.amount);
 
