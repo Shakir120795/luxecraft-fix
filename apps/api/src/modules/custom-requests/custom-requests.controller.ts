@@ -23,6 +23,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CustomMessagesService } from '../custom-messages/custom-messages.service';
 import { UploadsService } from '../uploads/uploads.service';
 import { SenderType } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 
 const CUSTOM_REQUEST_MAX_FILE_SIZE = 4 * 1024 * 1024;
 const CUSTOM_REQUEST_MAX_FILES = 8;
