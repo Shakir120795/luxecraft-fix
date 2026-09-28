@@ -66,20 +66,36 @@ export class AdminOrdersService {
       select: {
         id: true,
         name: true,
+        slug: true,
         sku: true,
+        color: true,
+        material: true,
+        style: true,
+        collection: true,
+        origin: true,
+        productNote: true,
+        lengthCm: true,
+        widthCm: true,
+        heightCm: true,
+        weightKg: true,
         media: {
           where: { type: 'IMAGE' },
           orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
-          select: { url: true, isMain: true },
+          select: { url: true, altText: true, isMain: true, sortOrder: true },
         },
         variants: {
           select: {
             id: true,
+            name: true,
             sku: true,
+            lengthCm: true,
+            widthCm: true,
+            heightCm: true,
+            weightKg: true,
             media: {
               where: { type: 'IMAGE' },
               orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
-              select: { url: true, isMain: true },
+              select: { url: true, altText: true, isMain: true, sortOrder: true },
             },
           },
         },
@@ -112,6 +128,12 @@ export class AdminOrdersService {
         const currentImages = variant?.media?.map((media) => media.url) ?? [];
         const productImages = product?.media?.map((media) => media.url) ?? [];
 
+        const snapshotVariantImages = Array.isArray(variantSnapshot.images)
+          ? variantSnapshot.images
+              .map((media: any) => media?.url)
+              .filter((url: any): url is string => typeof url === 'string')
+          : [];
+
         return {
           ...item,
           product: {
@@ -119,6 +141,9 @@ export class AdminOrdersService {
             name:
               product?.name ??
               (typeof snapshot.name === 'string' ? snapshot.name : 'Product'),
+            slug:
+              product?.slug ??
+              (typeof snapshot.slug === 'string' ? snapshot.slug : ''),
             sku:
               variant?.sku ??
               product?.sku ??
@@ -127,11 +152,86 @@ export class AdminOrdersService {
                 : typeof snapshot.sku === 'string'
                   ? snapshot.sku
                   : ''),
+            color:
+              product?.color ??
+              (typeof snapshot.color === 'string' ? snapshot.color : null),
+            material:
+              product?.material ??
+              (typeof snapshot.material === 'string' ? snapshot.material : null),
+            style:
+              product?.style ??
+              (typeof snapshot.style === 'string' ? snapshot.style : null),
+            collection:
+              product?.collection ??
+              (typeof snapshot.collection === 'string' ? snapshot.collection : null),
+            origin:
+              product?.origin ??
+              (typeof snapshot.origin === 'string' ? snapshot.origin : null),
+            productNote:
+              product?.productNote ??
+              (typeof snapshot.productNote === 'string' ? snapshot.productNote : null),
+            dimensions: {
+              lengthCm:
+                variant?.lengthCm ??
+                (snapshot.dimensions as any)?.lengthCm ??
+                product?.lengthCm ??
+                null,
+              widthCm:
+                variant?.widthCm ??
+                (snapshot.dimensions as any)?.widthCm ??
+                product?.widthCm ??
+                null,
+              heightCm:
+                variant?.heightCm ??
+                (snapshot.dimensions as any)?.heightCm ??
+                product?.heightCm ??
+                null,
+              weightKg:
+                variant?.weightKg ??
+                (snapshot.dimensions as any)?.weightKg ??
+                product?.weightKg ??
+                null,
+            },
             images: currentImages.length
               ? currentImages
               : productImages.length
                 ? productImages
-                : snapshotImages,
+                : snapshotImages.length
+                  ? snapshotImages
+                  : snapshotVariantImages,
+            variant: item.variantId
+              ? {
+                  id: variant?.id ?? item.variantId,
+                  name:
+                    variant?.name ??
+                    (typeof variantSnapshot.name === 'string'
+                      ? variantSnapshot.name
+                      : null),
+                  sku:
+                    variant?.sku ??
+                    (typeof variantSnapshot.sku === 'string'
+                      ? variantSnapshot.sku
+                      : null),
+                  dimensions: {
+                    lengthCm:
+                      variant?.lengthCm ??
+                      (variantSnapshot.dimensions as any)?.lengthCm ??
+                      null,
+                    widthCm:
+                      variant?.widthCm ??
+                      (variantSnapshot.dimensions as any)?.widthCm ??
+                      null,
+                    heightCm:
+                      variant?.heightCm ??
+                      (variantSnapshot.dimensions as any)?.heightCm ??
+                      null,
+                    weightKg:
+                      variant?.weightKg ??
+                      (variantSnapshot.dimensions as any)?.weightKg ??
+                      null,
+                  },
+                }
+              : null,
           },
         };
       }),
