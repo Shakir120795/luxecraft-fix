@@ -36,26 +36,42 @@ export class SessionService {
     oldToken: string,
     meta: { ipAddress?: string; userAgent?: string },
   ): Promise<{ userId: string; newRefreshToken: string } | null> {
-    const session = await this.prisma.session.findUnique({
-      where: { refreshToken: oldToken },
+    const now = new Date();
+    const newRefreshToken = crypto.randomBytes(48).toString('hex');
+    const expiresAt = new Date(now.getTime() + this.TTL_MS);
+
+    return this.prisma.$transaction(async (tx) => {
+      // Atomically claim the old token. Exactly one concurrent refresh can win.
+      const revoked = await tx.session.updateMany({
+        where: {
+          refreshToken: oldToken,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
+        data: { revokedAt: now },
+      });
+
+      if (revoked.count !== 1) return null;
+
+      const session = await tx.session.findUnique({
+        where: { refreshToken: oldToken },
+        select: { userId: true },
+      });
+
+      if (!session) return null;
+
+      await tx.session.create({
+        data: {
+          userId: session.userId,
+          refreshToken: newRefreshToken,
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+          expiresAt,
+        },
+      });
+
+      return { userId: session.userId, newRefreshToken };
     });
-
-    if (
-      !session ||
-      session.revokedAt ||
-      session.expiresAt < new Date()
-    ) {
-      return null;
-    }
-
-    // Revoke old token (rotation)
-    await this.prisma.session.update({
-      where: { id: session.id },
-      data: { revokedAt: new Date() },
-    });
-
-    const newRefreshToken = await this.create(session.userId, meta);
-    return { userId: session.userId, newRefreshToken };
   }
 
   /** Revoke a single session by refresh token. */
