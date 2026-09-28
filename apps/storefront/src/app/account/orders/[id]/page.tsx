@@ -558,7 +558,11 @@ export default function OrderDetailPage() {
                   </button>
                 )}
 
-                <button className="w-full border border-[#e0dbd6] bg-[#f7f3ef] px-6 py-3 text-sm text-[#67625c] hover:border-luxury-gold transition-colors">
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('wolhomes:open-support-chat'))}
+                  className="w-full border border-[#e0dbd6] bg-[#f7f3ef] px-6 py-3 text-sm text-[#67625c] hover:border-luxury-gold transition-colors"
+                >
                   Contact Support
                 </button>
               </div>
