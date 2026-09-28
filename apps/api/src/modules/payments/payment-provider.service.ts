@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CryptoProvider, CryptoPaymentOption } from './providers/crypto.provider';
 
 export type PaymentProviderStatus = {
   provider: string;
@@ -9,12 +10,16 @@ export type PaymentProviderStatus = {
   publicKey?: string;
   cryptoNetworks?: string[];
   cryptoSupportedAssets?: string[];
+  cryptoPaymentOptions?: CryptoPaymentOption[];
 };
 
 /** Safe provider metadata for checkout; credentials never leave the API. */
 @Injectable()
 export class PaymentProviderService {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly cryptoProvider: CryptoProvider,
+  ) {}
 
   status(currency: string): PaymentProviderStatus {
     const configuredProvider = this.config.get<string>(
@@ -49,14 +54,12 @@ export class PaymentProviderService {
       );
     }
 
-    const cryptoNetworks = this.config.get<string[]>(
-      'commerce.payment.cryptoNetworks',
-      [],
+    const cryptoPaymentOptions = this.cryptoProvider.getConfiguredPaymentOptions();
+    const cryptoNetworks = Array.from(
+      new Set(cryptoPaymentOptions.map((option) => option.network)),
     );
-
-    const cryptoSupportedAssets = this.config.get<string[]>(
-      'commerce.payment.cryptoSupportedAssets',
-      [],
+    const cryptoSupportedAssets = Array.from(
+      new Set(cryptoPaymentOptions.map((option) => option.asset)),
     );
 
     return {
@@ -65,8 +68,8 @@ export class PaymentProviderService {
       configured: this.isConfigured(configuredProvider),
       currencySupported: currencies.includes(currency.toUpperCase()),
       ...(publicKey ? { publicKey } : {}),
-      ...(providers.includes('crypto')
-        ? { cryptoNetworks, cryptoSupportedAssets }
+      ...(cryptoPaymentOptions.length > 0
+        ? { cryptoNetworks, cryptoSupportedAssets, cryptoPaymentOptions }
         : {}),
     };
   }
@@ -85,34 +88,8 @@ export class PaymentProviderService {
             this.config.get<string>('commerce.payment.paypalClientSecret'),
         );
 
-      case 'crypto': {
-        const enabled = String(
-          this.config.get('commerce.payment.cryptoEnabled') ?? 'false',
-        ).toLowerCase() === 'true';
-
-        const networks = this.config.get<string[]>(
-          'commerce.payment.cryptoNetworks',
-          [],
-        );
-
-        const assets = this.config.get<string[]>(
-          'commerce.payment.cryptoSupportedAssets',
-          [],
-        );
-
-        const wallets =
-          this.config.get<Record<string, string>>(
-            'commerce.payment.cryptoWallets',
-            {},
-          ) || {};
-
-        return (
-          enabled &&
-          networks.length > 0 &&
-          assets.length > 0 &&
-          Object.values(wallets).some(Boolean)
-        );
-      }
+      case 'crypto':
+        return this.cryptoProvider.isConfigured();
 
       default:
         return false;
