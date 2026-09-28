@@ -128,23 +128,26 @@ export class CryptoProvider {
       const transferTopic = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55aeb3e5f6a6';
       const recipient = data.receivingAddress.toLowerCase().replace(/^0x/, '');
 
+      let receivedUnits = 0n;
+
       for (const log of receipt.logs ?? []) {
         if (
           String(log.address).toLowerCase() === tokenContract.toLowerCase() &&
           String(log.topics?.[0]).toLowerCase() === transferTopic &&
           String(log.topics?.[2] ?? '').slice(-40).toLowerCase() === recipient
         ) {
-          const receivedUnits = BigInt(log.data);
-          const amountReceived = Number(receivedUnits) / 1_000_000;
-          return {
-            verified: receivedUnits >= expectedUnits,
-            amountReceived,
-            tokenContract,
-          };
+          const rawAmount = String(log.data ?? '0');
+          if (/^0x[0-9a-f]+$/i.test(rawAmount)) {
+            receivedUnits += BigInt(rawAmount);
+          }
         }
       }
 
-      return { verified: false, amountReceived: 0, tokenContract };
+      return {
+        verified: receivedUnits >= expectedUnits,
+        amountReceived: Number(receivedUnits) / 1_000_000,
+        tokenContract,
+      };
     }
 
     if (network === 'solana') {
@@ -176,23 +179,28 @@ export class CryptoProvider {
       const post = transaction.meta?.postTokenBalances ?? [];
       let receivedUnits = 0n;
 
-      for (const after of post) {
-        if (
-          after.mint === tokenContract &&
-          after.owner === data.receivingAddress
-        ) {
-          const before = pre.find(
-            (entry: any) =>
-              entry.accountIndex === after.accountIndex &&
-              entry.mint === tokenContract &&
-              entry.owner === data.receivingAddress,
-          );
+      const recipient = data.receivingAddress.trim();
 
-          const beforeUnits = BigInt(before?.uiTokenAmount?.amount ?? '0');
-          const afterUnits = BigInt(after.uiTokenAmount?.amount ?? '0');
-          if (afterUnits > beforeUnits) {
-            receivedUnits += afterUnits - beforeUnits;
-          }
+      for (const after of post) {
+        if (after.mint !== tokenContract) continue;
+
+        const ownerMatches =
+          String(after.owner ?? '').trim() === recipient;
+
+        if (!ownerMatches) continue;
+
+        const before = pre.find(
+          (entry: any) =>
+            entry.accountIndex === after.accountIndex &&
+            entry.mint === tokenContract &&
+            String(entry.owner ?? '').trim() === recipient,
+        );
+
+        const beforeUnits = BigInt(before?.uiTokenAmount?.amount ?? '0');
+        const afterUnits = BigInt(after.uiTokenAmount?.amount ?? '0');
+
+        if (afterUnits > beforeUnits) {
+          receivedUnits += afterUnits - beforeUnits;
         }
       }
 
@@ -225,8 +233,8 @@ export class CryptoProvider {
         const value = String(result.value ?? result._value ?? '0');
 
         if (
-          contractAddress === tokenContract &&
-          to === data.receivingAddress &&
+          contractAddress.trim().toLowerCase() === tokenContract.toLowerCase() &&
+          to.trim().toLowerCase() === data.receivingAddress.trim().toLowerCase() &&
           /^\d+$/.test(value)
         ) {
           receivedUnits += BigInt(value);
