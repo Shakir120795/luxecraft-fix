@@ -235,7 +235,7 @@ export class WebhookService {
               provider: 'crypto',
               eventType: 'payment.verified',
               eventId: data.cryptoEvent.eventId,
-              payload: data.cryptoEvent.payload,
+              payload: data.cryptoEvent.payload as any,
               status: 'completed',
               processedAt: new Date(),
             },
