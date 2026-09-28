@@ -543,8 +543,25 @@ function mapOrder(order: any): Order {
     ...order,
     status: order.orderStatus,
     tax: Number(order.taxAmount ?? 0),
-    shippingAddressId: order.shippingMethodId,
-    billingAddressId: order.shippingMethodId,
+    shippingAddressId: order.shippingAddressId ?? null,
+    billingAddressId: order.billingAddressId ?? null,
+    items: Array.isArray(order.items)
+      ? order.items.map((item: any) => ({
+          ...item,
+          price: Number(item.unitPrice ?? 0),
+          total: Number(item.totalPrice ?? 0),
+          product: item.productSnapshot
+            ? {
+                id: item.productId ?? '',
+                name: item.productSnapshot.name ?? 'Product',
+                sku: item.productSnapshot.sku ?? '',
+                images: Array.isArray(item.productSnapshot.images)
+                  ? item.productSnapshot.images
+                  : [],
+              }
+            : undefined,
+        }))
+      : [],
   };
 }
 
