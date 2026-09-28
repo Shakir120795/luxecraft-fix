@@ -559,6 +559,15 @@ function mapOrder(order: any): Order {
                 id: item.product.id ?? item.productId ?? '',
                 name: item.product.name ?? 'Product',
                 sku: item.product.sku ?? '',
+                slug: item.product.slug ?? '',
+                color: item.product.color ?? null,
+                material: item.product.material ?? null,
+                style: item.product.style ?? null,
+                collection: item.product.collection ?? null,
+                origin: item.product.origin ?? null,
+                productNote: item.product.productNote ?? null,
+                dimensions: item.product.dimensions ?? null,
+                variant: item.product.variant ?? null,
                 images: Array.isArray(item.product.images) ? item.product.images : [],
               }
             : item.productSnapshot
