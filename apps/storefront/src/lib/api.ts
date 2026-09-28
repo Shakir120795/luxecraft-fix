@@ -1820,3 +1820,65 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
 
 
 
+
+
+// ============================================
+// CUSTOMER SUPPORT CHAT API
+// ============================================
+
+export interface SupportChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderType: 'CUSTOMER' | 'ADMIN' | 'SYSTEM';
+  message: string;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface SupportConversation {
+  id: string;
+  userId: string;
+  status: 'OPEN' | 'CLOSED';
+  lastMessageAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  messages: SupportChatMessage[];
+}
+
+export async function getSupportChat(): Promise<SupportConversation | null> {
+  try {
+    const res = await apiFetch(`${API_URL}/support-chat`, {
+      headers: await getAuthHeaders(),
+      cache: 'no-store',
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json?.success ? json.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function sendSupportChatMessage(
+  message: string,
+): Promise<{ success: boolean; data?: SupportChatMessage; message?: string }> {
+  try {
+    const res = await apiFetch(`${API_URL}/support-chat/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...await getAuthHeaders(),
+      },
+      body: JSON.stringify({ message }),
+    });
+
+    const json = await res.json().catch(() => null);
+    return res.ok && json?.success
+      ? { success: true, data: json.data }
+      : { success: false, message: json?.message || 'Failed to send message' };
+  } catch {
+    return { success: false, message: 'Failed to send message' };
+  }
+}
