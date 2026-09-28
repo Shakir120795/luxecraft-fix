@@ -14,6 +14,14 @@ export interface CryptoPaymentResult {
   qrPayload: string;
 }
 
+export interface CryptoPaymentOption {
+  network: CryptoNetwork;
+  asset: CryptoAsset;
+}
+
+const SUPPORTED_NETWORKS: CryptoNetwork[] = ['ethereum', 'solana', 'tron'];
+const SUPPORTED_ASSETS: CryptoAsset[] = ['USDT', 'USDC'];
+
 @Injectable()
 export class CryptoProvider {
   constructor(private readonly config: ConfigService) {}
@@ -23,82 +31,37 @@ export class CryptoProvider {
     network: string,
     asset: string,
   ): CryptoPaymentResult {
-    const normalizedNetwork = network.toLowerCase() as CryptoNetwork;
-    const normalizedAsset = asset.toUpperCase() as CryptoAsset;
-
-    if (!['ethereum', 'solana', 'tron'].includes(normalizedNetwork)) {
-      throw new BadRequestException('Unsupported crypto network');
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('Crypto payment amount must be greater than zero');
     }
 
-    if (!['USDT', 'USDC'].includes(normalizedAsset)) {
-      throw new BadRequestException('Unsupported crypto asset');
-    }
-
-    if (normalizedNetwork === 'tron' && normalizedAsset === 'USDC') {
-      throw new BadRequestException('USDC is not supported on the Tron network');
-    }
-
-    if (normalizedNetwork === 'tron' && normalizedAsset === 'USDC') {
-      throw new BadRequestException('USDC is not supported on the Tron network');
-    }
-
-    const wallets = this.config.get<Record<string, string>>(
-      'commerce.payment.cryptoWallets',
-      {},
-    );
-    const tokens = this.config.get<Record<string, string>>(
-      'commerce.payment.cryptoTokens',
-      {},
-    ) || {};
-
-    const walletKey =
-      normalizedNetwork === 'ethereum'
-        ? normalizedAsset === 'USDT'
-          ? 'ethereumUsdt'
-          : 'ethereumUsdc'
-        : normalizedNetwork === 'solana'
-          ? normalizedAsset === 'USDT'
-            ? 'solanaUsdt'
-            : 'solanaUsdc'
-          : normalizedAsset === 'USDT'
-            ? 'tronUsdt'
-            : 'tronUsdc';
-
-    const address = wallets[walletKey];
-
-    if (!address) {
-      throw new BadRequestException(
-        `Crypto wallet is not configured for ${normalizedAsset} on ${normalizedNetwork}`,
-      );
-    }
-
-    const tokenKey =
-      normalizedNetwork === 'ethereum'
-        ? normalizedAsset === 'USDT'
-          ? 'ethereumUsdt'
-          : 'ethereumUsdc'
-        : normalizedNetwork === 'solana'
-          ? normalizedAsset === 'USDT'
-            ? 'solanaUsdt'
-            : 'solanaUsdc'
-          : 'tronUsdt';
-    const tokenContract = tokens[tokenKey];
+    const pair = this.getConfiguredPair(network, asset);
     const tokenUnits = BigInt(Math.round(amount * 1_000_000)).toString();
 
     const qrPayload =
-      normalizedNetwork === 'ethereum'
-        ? 'ethereum:' + tokenContract + '/transfer?address=' + address + '&uint256=' + tokenUnits
-        : normalizedNetwork === 'solana'
-          ? 'solana:' + address + '?amount=' + amount.toFixed(6) + '&spl-token=' + tokenContract
-          : address;
+      pair.network === 'ethereum'
+        ? 'ethereum:' +
+          pair.tokenContract +
+          '/transfer?address=' +
+          pair.address +
+          '&uint256=' +
+          tokenUnits
+        : pair.network === 'solana'
+          ? 'solana:' +
+            pair.address +
+            '?amount=' +
+            amount.toFixed(6) +
+            '&spl-token=' +
+            pair.tokenContract
+          : pair.address;
 
     return {
-      network: normalizedNetwork,
-      asset: normalizedAsset,
-      address,
+      network: pair.network,
+      asset: pair.asset,
+      address: pair.address,
       amount,
       currency: 'USD',
-      instructions: `Send exactly ${amount.toFixed(2)} ${normalizedAsset} on ${normalizedNetwork} network to the address shown above. Do not send through another network.`,
+      instructions: `Send exactly ${amount.toFixed(2)} ${pair.asset} on ${pair.network} network to the address shown above. Do not send through another network.`,
       qrPayload,
     };
   }
@@ -110,15 +73,14 @@ export class CryptoProvider {
     expectedAmount: number;
     receivingAddress: string;
   }): Promise<{ verified: boolean; amountReceived: number; tokenContract: string }> {
-    const network = data.network.toLowerCase();
-    const asset = data.asset.toUpperCase();
-    const tokenKey = network + asset.charAt(0) + asset.slice(1).toLowerCase();
-    const rpc = this.config.get<string>('commerce.payment.cryptoRpc.' + network);
-    const tokens = this.config.get<Record<string, string>>('commerce.payment.cryptoTokens', {}) || {};
-    const tokenContract = tokens[tokenKey];
+    const pair = this.getConfiguredPair(data.network, data.asset);
+    const network = pair.network;
+    const asset = pair.asset;
+    const rpc = pair.rpc;
+    const tokenContract = pair.tokenContract;
 
-    if (!rpc || !tokenContract) {
-      throw new BadRequestException('Crypto verification is not configured for ' + asset + ' on ' + network);
+    if (!Number.isFinite(data.expectedAmount) || data.expectedAmount <= 0) {
+      throw new BadRequestException('Crypto payment amount is invalid');
     }
 
     const expectedUnits = BigInt(Math.round(data.expectedAmount * 1_000_000));
@@ -281,40 +243,136 @@ export class CryptoProvider {
     throw new BadRequestException('Unsupported crypto network: ' + network);
   }
   isConfigured(): boolean {
-    if (String(this.config.get('commerce.payment.cryptoEnabled') ?? 'false').toLowerCase() !== 'true') {
-      return false;
+    return this.getConfiguredPaymentOptions().length > 0;
+  }
+
+  getConfiguredPaymentOptions(): CryptoPaymentOption[] {
+    if (
+      String(this.config.get('commerce.payment.cryptoEnabled') ?? 'false').toLowerCase() !==
+      'true'
+    ) {
+      return [];
     }
 
-    const networks = this.config.get<string[]>(
-      'commerce.payment.cryptoNetworks',
-      [],
+    const configuredNetworks = new Set(
+      this.config
+        .get<string[]>('commerce.payment.cryptoNetworks', [])
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean),
     );
-    const assets = this.config.get<string[]>(
-      'commerce.payment.cryptoSupportedAssets',
-      [],
+    const configuredAssets = new Set(
+      this.config
+        .get<string[]>('commerce.payment.cryptoSupportedAssets', [])
+        .map((value) => value.trim().toUpperCase())
+        .filter(Boolean),
     );
-    const wallets =
-      this.config.get<Record<string, string>>(
-        'commerce.payment.cryptoWallets',
-        {},
-      ) || {};
 
-    return (
-      networks.length > 0 &&
-      assets.length > 0 &&
-      Object.values(wallets).some(Boolean)
-    );
+    const options: CryptoPaymentOption[] = [];
+
+    for (const network of SUPPORTED_NETWORKS) {
+      if (!configuredNetworks.has(network)) continue;
+
+      for (const asset of SUPPORTED_ASSETS) {
+        if (!configuredAssets.has(asset)) continue;
+        if (network === 'tron' && asset === 'USDC') continue;
+
+        try {
+          this.getConfiguredPair(network, asset, false);
+          options.push({ network, asset });
+        } catch {
+          // Invalid/incomplete pairs are intentionally not advertised.
+        }
+      }
+    }
+
+    return options;
   }
 
   getNetworks(): string[] {
-    return this.config.get<string[]>('commerce.payment.cryptoNetworks', []);
+    return Array.from(new Set(this.getConfiguredPaymentOptions().map((option) => option.network)));
   }
 
   getAssets(): string[] {
-    return this.config.get<string[]>(
-      'commerce.payment.cryptoSupportedAssets',
-      [],
-    );
+    return Array.from(new Set(this.getConfiguredPaymentOptions().map((option) => option.asset)));
   }
+
+  private getWalletKey(network: CryptoNetwork, asset: CryptoAsset): string {
+    if (network === 'ethereum') return asset === 'USDT' ? 'ethereumUsdt' : 'ethereumUsdc';
+    if (network === 'solana') return asset === 'USDT' ? 'solanaUsdt' : 'solanaUsdc';
+    return asset === 'USDT' ? 'tronUsdt' : 'tronUsdc';
+  }
+
+  private getTokenKey(network: CryptoNetwork, asset: CryptoAsset): string {
+    if (network === 'ethereum') return asset === 'USDT' ? 'ethereumUsdt' : 'ethereumUsdc';
+    if (network === 'solana') return asset === 'USDT' ? 'solanaUsdt' : 'solanaUsdc';
+    return 'tronUsdt';
+  }
+
+  private getConfiguredPair(
+    networkInput: string,
+    assetInput: string,
+    requireAdvertised = true,
+  ): {
+    network: CryptoNetwork;
+    asset: CryptoAsset;
+    address: string;
+    tokenContract: string;
+    rpc: string;
+  } {
+    const network = networkInput.trim().toLowerCase() as CryptoNetwork;
+    const asset = assetInput.trim().toUpperCase() as CryptoAsset;
+
+    if (!SUPPORTED_NETWORKS.includes(network)) {
+      throw new BadRequestException('Unsupported crypto network');
+    }
+
+    if (!SUPPORTED_ASSETS.includes(asset)) {
+      throw new BadRequestException('Unsupported crypto asset');
+    }
+
+    if (network === 'tron' && asset === 'USDC') {
+      throw new BadRequestException('USDC is not supported on the Tron network');
+    }
+
+    const rpc = String(
+      this.config.get<string>('commerce.payment.cryptoRpc.' + network) || '',
+    ).trim();
+    const wallets =
+      this.config.get<Record<string, string>>('commerce.payment.cryptoWallets', {}) || {};
+    const tokens =
+      this.config.get<Record<string, string>>('commerce.payment.cryptoTokens', {}) || {};
+
+    const address = String(wallets[this.getWalletKey(network, asset)] || '').trim();
+    const tokenContract = String(tokens[this.getTokenKey(network, asset)] || '').trim();
+
+    if (!rpc) {
+      throw new BadRequestException(
+        `Crypto RPC is not configured for ${network}`,
+      );
+    }
+
+    if (!address) {
+      throw new BadRequestException(
+        `Crypto wallet is not configured for ${asset} on ${network}`,
+      );
+    }
+
+    if (!tokenContract) {
+      throw new BadRequestException(
+        `Crypto token contract is not configured for ${asset} on ${network}`,
+      );
+    }
+
+    if (requireAdvertised && !this.getConfiguredPaymentOptions().some(
+      (option) => option.network === network && option.asset === asset,
+    )) {
+      throw new BadRequestException(
+        `Crypto payment option ${asset} on ${network} is not configured`,
+      );
+    }
+
+    return { network, asset, address, tokenContract, rpc };
+  }
+}
 }
 
