@@ -84,14 +84,16 @@ export function SupportChat() {
     const result = await sendSupportChatMessage(trimmed);
 
     if (result.success && result.data) {
+      const createdMessage = result.data;
+
       setChat((current) => {
         if (!current) return current;
 
         return {
           ...current,
           status: 'OPEN',
-          lastMessageAt: result.data?.createdAt ?? current.lastMessageAt,
-          messages: [...current.messages, result.data],
+          lastMessageAt: createdMessage.createdAt,
+          messages: [...current.messages, createdMessage],
         };
       });
       setMessage('');
