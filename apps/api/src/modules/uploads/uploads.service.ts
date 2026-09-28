@@ -78,15 +78,6 @@ export class UploadsService {
     );
   }
 
-  private signedPrivateFileUrl(
-    customRequestId: string,
-    filename: string,
-  ): string {
-    const expiresAt = Math.floor(Date.now() / 1000) + PRIVATE_FILE_URL_TTL_SECONDS;
-    const signature = createPrivateFileSignature(customRequestId, filename, expiresAt);
-    return `${this.publicApiUrl()}/api/v1/custom-requests/${encodeURIComponent(customRequestId)}/files/${encodeURIComponent(filename)}?expires=${expiresAt}&signature=${signature}`;
-  }
-
   async saveHeroImage(file: Express.Multer.File) {
     const extension = await this.validateImageFile(file);
 
