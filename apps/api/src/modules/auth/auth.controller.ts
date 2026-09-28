@@ -9,6 +9,7 @@ import {
   Get,
   Patch,
   Res,
+  Throttle,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -40,6 +41,7 @@ export class AuthController {
 
   /** POST /api/v1/auth/register */
   @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async register(@Body() dto: RegisterDto, @Req() req: Request) {
     return this.auth.register(dto, {
       ipAddress: req.ip,
@@ -49,6 +51,7 @@ export class AuthController {
 
   /** POST /api/v1/auth/login */
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   async login(
     @Body() dto: LoginDto,
