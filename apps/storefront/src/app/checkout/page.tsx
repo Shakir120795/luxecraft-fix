@@ -880,6 +880,12 @@ export default function CheckoutPage() {
                               </p>
                             </div>
 
+                            <div className="rounded-md border border-[#e6c98a] bg-[#fff8e8] px-4 py-3 text-sm text-[#6f5520]">
+                              <p className="font-semibold">Important payment notice</p>
+                              <p className="mt-1">
+                                Please send an amount equal to or greater than the amount shown above. Payments below the required amount will not be confirmed.
+                              </p>
+                            </div>
 
                             <div>
                               <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
