@@ -209,7 +209,10 @@ export class PaymentsController {
 
     const order = req.user?.id
       ? await this.orders.findOneForUser(body.orderId, req.user.id)
-      : await this.orders.findOneForGuest(body.orderId, body.accessToken || '');
+      : await this.orders.findOneForGuest(
+          body.orderId,
+          req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
+        );
 
     if (order.paymentStatus !== PaymentStatus.PENDING) {
       throw new BadRequestException('This order is no longer awaiting payment');
