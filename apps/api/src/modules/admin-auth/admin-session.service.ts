@@ -26,20 +26,43 @@ export class AdminSessionService {
     oldToken: string,
     meta: { ipAddress?: string; userAgent?: string },
   ): Promise<{ adminId: string; newRefreshToken: string } | null> {
-    const session = await this.prisma.adminSession.findUnique({
-      where: { refreshToken: oldToken },
-    });
-    if (!session || session.revokedAt || session.expiresAt < new Date()) {
-      return null;
-    }
-    await this.prisma.adminSession.update({
-      where: { id: session.id },
-      data: { revokedAt: new Date() },
-    });
-    const newRefreshToken = await this.create(session.adminId, meta);
-    return { adminId: session.adminId, newRefreshToken };
-  }
+    const now = new Date();
+    const newRefreshToken = crypto.randomBytes(48).toString('hex');
+    const expiresAt = new Date(now.getTime() + this.TTL_MS);
 
+    return this.prisma.$transaction(async (tx) => {
+      // Atomically claim the old token. Exactly one concurrent refresh can win.
+      const revoked = await tx.adminSession.updateMany({
+        where: {
+          refreshToken: oldToken,
+          revokedAt: null,
+          expiresAt: { gt: now },
+        },
+        data: { revokedAt: now },
+      });
+
+      if (revoked.count !== 1) return null;
+
+      const session = await tx.adminSession.findUnique({
+        where: { refreshToken: oldToken },
+        select: { adminId: true },
+      });
+
+      if (!session) return null;
+
+      await tx.adminSession.create({
+        data: {
+          adminId: session.adminId,
+          refreshToken: newRefreshToken,
+          ipAddress: meta.ipAddress,
+          userAgent: meta.userAgent,
+          expiresAt,
+        },
+      });
+
+      return { adminId: session.adminId, newRefreshToken };
+    });
+  }
   async revoke(refreshToken: string): Promise<void> {
     await this.prisma.adminSession.updateMany({
       where: { refreshToken },
