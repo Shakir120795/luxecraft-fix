@@ -122,8 +122,11 @@ export class AdminOrdersService {
             sku:
               variant?.sku ??
               product?.sku ??
-              (typeof variantSnapshot.sku === 'string' ? variantSnapshot.sku : '') ??
-              (typeof snapshot.sku === 'string' ? snapshot.sku : ''),
+              (typeof variantSnapshot.sku === 'string'
+                ? variantSnapshot.sku
+                : typeof snapshot.sku === 'string'
+                  ? snapshot.sku
+                  : ''),
             images: currentImages.length
               ? currentImages
               : productImages.length
