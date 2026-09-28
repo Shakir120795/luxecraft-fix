@@ -230,7 +230,7 @@ export class CheckoutService {
     }
 
     // 3. Create order with reserved stock
-    let order, payment, clientSecret, approveUrl, publicKey;
+    let order, payment, clientSecret, approveUrl, publicKey, cryptoPaymentDetails;
 
     try {
       order = await this.orders.create({
@@ -265,6 +265,7 @@ export class CheckoutService {
       });
 
       payment = paymentResult.payment;
+      cryptoPaymentDetails = paymentResult.crypto;
       approveUrl = paymentResult.approveUrl;
       publicKey = paymentResult.publicKey;
 
@@ -299,7 +300,7 @@ export class CheckoutService {
       approveUrl,
       paymentProvider: payment?.provider,
       discountAmount,
-      ...(payment?.provider === 'crypto' && paymentResult.crypto ? { crypto: paymentResult.crypto } : {}),
+      ...(payment?.provider === 'crypto' && cryptoPaymentDetails ? { crypto: cryptoPaymentDetails } : {}),
       ...(!input.userId ? { guestAccessToken: this.orders.createGuestAccessToken(order) } : {}),
     };
   }
