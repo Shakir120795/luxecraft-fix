@@ -162,11 +162,14 @@ export default function OrdersPage() {
                       {items.length > 0 && (
                         <div className="mt-5 border-l-2 border-[#c99545] bg-[#faf9f7] px-4 py-3">
                           <p className="truncate font-serif text-base text-[#302b35]">
-                            {items[0]?.productSnapshot?.name || 'Product'}
+                            {items[0]?.product?.name || items[0]?.productSnapshot?.name || 'Product'}
                             {items.length > 1 ? ` + ${items.length - 1} more` : ''}
                           </p>
                           <p className="mt-1 text-xs text-[#8a837c]">
                             Qty {items.reduce((sum: number, item: any) => sum + Number(item.quantity || 0), 0)}
+                            {items[0]?.product?.variant?.name ? ` • Size: ${items[0].product.variant.name}` : ''}
+                            {items[0]?.product?.color ? ` • Color: ${items[0].product.color}` : ''}
+                            {items[0]?.product?.sku ? ` • SKU: ${items[0].product.sku}` : ''}
                           </p>
                         </div>
                       )}
