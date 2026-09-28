@@ -85,8 +85,54 @@ export class CheckoutService {
     const persistedItems = await this.prisma.cartItem.findMany({
       where: { cartId: cart.id },
       include: {
-        product: { select: { id: true, name: true, slug: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, taxRate: true } },
-        variant: { select: { id: true, name: true, sku: true, regularPrice: true, salePrice: true, weightKg: true, trackInventory: true, stockQty: true, reservedQty: true, allowBackorder: true } },
+        product: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            sku: true,
+            color: true,
+            material: true,
+            style: true,
+            collection: true,
+            origin: true,
+            productNote: true,
+            regularPrice: true,
+            salePrice: true,
+            weightKg: true,
+            lengthCm: true,
+            widthCm: true,
+            heightCm: true,
+            taxRate: true,
+            media: {
+              where: { type: 'IMAGE' },
+              orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+              select: { url: true, altText: true, isMain: true, sortOrder: true },
+            },
+          },
+        },
+        variant: {
+          select: {
+            id: true,
+            name: true,
+            sku: true,
+            regularPrice: true,
+            salePrice: true,
+            weightKg: true,
+            lengthCm: true,
+            widthCm: true,
+            heightCm: true,
+            trackInventory: true,
+            stockQty: true,
+            reservedQty: true,
+            allowBackorder: true,
+            media: {
+              where: { type: 'IMAGE' },
+              orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+              select: { url: true, altText: true, isMain: true, sortOrder: true },
+            },
+          },
+        },
       },
     });
 
