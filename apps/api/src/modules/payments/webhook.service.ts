@@ -399,25 +399,23 @@ export class WebhookService {
       throw new BadRequestException('Refund amount must be greater than zero');
     }
 
-    // Provider refund webhooks report the cumulative refunded amount.
-    // Ignore duplicate/stale callbacks so inventory is never restocked twice.
-    if (reportedRefundedAmount <= currentRefundedAmount + 0.01) {
-      this.logger.log(
-        `Refund webhook already reflected for payment ${payment.id}; skipping duplicate callback`,
-      );
-      return;
-    }
-
     const originalAmount = Number(payment.amount);
     if (reportedRefundedAmount > originalAmount + 0.01) {
       throw new BadRequestException('Refund amount exceeds the payment amount');
     }
 
     const isFullRefund = reportedRefundedAmount >= originalAmount - 0.01;
+    let processed = false;
 
     await this.prisma.$transaction(async (tx) => {
-      await tx.payment.update({
-        where: { id: payment.id },
+      // Atomic compare-and-set: only the first webhook that advances the
+      // cumulative refunded amount is allowed to change the payment.
+      // This prevents duplicate/concurrent refund events from restocking twice.
+      const refundUpdate = await tx.payment.updateMany({
+        where: {
+          id: payment.id,
+          refundedAmount: { lt: reportedRefundedAmount },
+        },
         data: {
           refundedAmount: isFullRefund ? originalAmount : reportedRefundedAmount,
           status: isFullRefund
@@ -426,6 +424,15 @@ export class WebhookService {
           refundedAt: new Date(),
         },
       });
+
+      if (refundUpdate.count === 0) {
+        this.logger.log(
+          `Refund webhook already reflected for payment ${payment.id}; skipping duplicate/stale callback`,
+        );
+        return;
+      }
+
+      processed = true;
 
       if (!isFullRefund) return;
 
@@ -470,6 +477,8 @@ export class WebhookService {
         );
       }
     });
+
+    if (!processed) return;
 
     this.logger.log(
       `Refund reconciled for payment ${payment.id}: ${reportedRefundedAmount} ${data.currency}`,
