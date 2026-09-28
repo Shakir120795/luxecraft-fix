@@ -12,7 +12,7 @@ import { AdminRolesGuard } from '../admin-auth/guards/admin-roles.guard';
 import { AdminRole } from '@prisma/client';
 import { UploadsService } from './uploads.service';
 
-const ADMIN_IMAGE_MAX_SIZE = 5 * 1024 * 1024;
+const ADMIN_IMAGE_MAX_SIZE = 10 * 1024 * 1024;
 @Controller('admin/uploads')
 @UseGuards(AdminJwtAuthGuard, AdminRolesGuard)
 export class UploadsController {
