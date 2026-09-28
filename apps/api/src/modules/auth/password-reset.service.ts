@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import * as crypto from 'crypto';
+import { hashOpaqueToken } from '../../common/utils/token-hash.util';
 
 // Token TTL: 1 hour
 const TTL_MS = 60 * 60 * 1000;
@@ -41,7 +42,7 @@ export class PasswordResetService {
     const expiresAt = new Date(Date.now() + TTL_MS);
 
     await this.prisma.passwordResetToken.create({
-      data: { userId: user.id, token, expiresAt },
+      data: { userId: user.id, tokenHash: hashOpaqueToken(token), expiresAt },
     });
 
     return token;
@@ -49,8 +50,9 @@ export class PasswordResetService {
 
   /** Validate a token without consuming it. Returns userId if valid. */
   async validateToken(token: string): Promise<string> {
+    const tokenHash = hashOpaqueToken(token);
     const record = await this.prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { tokenHash },
     });
 
     if (!record || record.used || record.expiresAt < new Date()) {
@@ -69,7 +71,7 @@ export class PasswordResetService {
     await this.users.updatePassword(userId, newPassword);
 
     await this.prisma.passwordResetToken.update({
-      where: { token },
+      where: { tokenHash: hashOpaqueToken(token) },
       data: { used: true, usedAt: new Date() },
     });
 
