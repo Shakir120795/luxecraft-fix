@@ -15,6 +15,9 @@ import { LoginAttemptService } from './login-attempt.service';
 import { User, OtpPurpose, UserStatus } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { EmailService } from '../email/email.service';
+import * as bcrypt from 'bcrypt';
+
+const DUMMY_PASSWORD_HASH = '$2b$12$PjFGb4R2ZsGoGdN5NlnhaO/rhab96Xx9anmLIlZRhapRdIkz//Zzu';
 
 export interface JwtPayload {
   sub: string;       // userId
@@ -56,7 +59,11 @@ export class AuthService {
       'If this email is eligible for registration, your request has been received. Please check your email for a verification code.';
 
     const existing = await this.users.findByEmail(dto.email);
-    if (existing) return { message };
+    if (existing) {
+      // Match the password-hashing work of a real registration to reduce timing leaks.
+      await bcrypt.hash(dto.password, 12);
+      return { message };
+    }
 
     let user: User;
     try {
@@ -96,10 +103,9 @@ export class AuthService {
     }
 
     const user = await this.users.findByEmail(normalEmail);
-    const validPassword =
-      user && user.passwordHash
-        ? await this.users.verifyPassword(user, password)
-        : false;
+    const validPassword = user
+      ? await this.users.verifyPassword(user, password)
+      : await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
 
     if (!user) {
       await this.loginAttempts.record({
