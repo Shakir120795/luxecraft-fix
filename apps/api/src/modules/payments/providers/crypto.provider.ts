@@ -375,5 +375,3 @@ export class CryptoProvider {
     return { network, asset, address, tokenContract, rpc };
   }
 }
-}
-
