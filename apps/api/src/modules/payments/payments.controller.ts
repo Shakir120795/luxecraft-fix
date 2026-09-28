@@ -3,6 +3,7 @@ import { Request } from 'express';
 import { PaymentProviderService } from './payment-provider.service';
 import { PaymentsService } from './payments.service';
 import { OrdersService } from '../orders/orders.service';
+import { getGuestOrderAccessCookieName } from '../orders/guest-order-access';
 import { CryptoProvider } from './providers/crypto.provider';
 import { WebhookService } from './webhook.service';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
@@ -91,7 +92,7 @@ export class PaymentsController {
   @UseGuards(OptionalJwtAuthGuard)
   @Post('razorpay/verify')
   async verifyRazorpayPayment(
-    @Body() body: { orderId: string; razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; accessToken?: string },
+    @Body() body: { orderId: string; razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string },
     @Req() req: Request & { user?: { id: string } },
   ) {
     if (!body.orderId || !body.razorpayOrderId || !body.razorpayPaymentId || !body.razorpaySignature) {
@@ -100,7 +101,10 @@ export class PaymentsController {
 
     const order = req.user?.id
       ? await this.orders.findOneForUser(body.orderId, req.user.id)
-      : await this.orders.findOneForGuest(body.orderId, body.accessToken || '');
+      : await this.orders.findOneForGuest(
+          body.orderId,
+          req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
+        );
 
     if (order.paymentStatus !== PaymentStatus.PENDING) {
       throw new BadRequestException('This order is no longer awaiting payment');
@@ -196,7 +200,7 @@ export class PaymentsController {
   @UseGuards(OptionalJwtAuthGuard)
   @Post('paypal/capture')
   async capturePayPalPayment(
-    @Body() body: { orderId: string; paypalOrderId: string; accessToken?: string },
+    @Body() body: { orderId: string; paypalOrderId: string },
     @Req() req: Request & { user?: { id: string } },
   ) {
     if (!body.orderId || !body.paypalOrderId) {
@@ -303,9 +307,14 @@ export class PaymentsController {
   }
   @UseGuards(OptionalJwtAuthGuard)
   @Post('crypto/verify')
-  async verifyCryptoPayment(@Body() body: { orderId: string; txHash: string; network: string; asset: string; accessToken?: string }, @Req() req: Request & { user?: { id: string } }) {
+  async verifyCryptoPayment(@Body() body: { orderId: string; txHash: string; network: string; asset: string }, @Req() req: Request & { user?: { id: string } }) {
     if (!body.orderId || !body.txHash || !body.network || !body.asset) throw new BadRequestException('orderId, txHash, network and asset are required');
-    const order = req.user?.id ? await this.orders.findOneForUser(body.orderId, req.user.id) : await this.orders.findOneForGuest(body.orderId, body.accessToken || '');
+    const order = req.user?.id
+      ? await this.orders.findOneForUser(body.orderId, req.user.id)
+      : await this.orders.findOneForGuest(
+          body.orderId,
+          req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
+        );
     if (order.paymentStatus !== PaymentStatus.PENDING) {
       throw new BadRequestException('This order is no longer awaiting payment');
     }
