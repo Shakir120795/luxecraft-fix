@@ -20,6 +20,7 @@ import {
   verifyRazorpayPayment,
   capturePayPalPayment,
   verifyCryptoPayment,
+  resumePayment,
   Cart,
   Address,
   ShippingMethod,
@@ -149,6 +150,29 @@ export default function CheckoutPage() {
       }
       setPaymentConfigured(paymentConfig.currencySupported && (paymentConfig.configured || (paymentConfig.providers || []).length > 0));
       setPaymentPublicKey(paymentConfig.publicKey);
+
+      // Restore an unfinished crypto payment after a refresh/navigation.
+      const savedCryptoOrderId = localStorage.getItem('wolhomes:cryptoPaymentOrderId');
+      if (savedCryptoOrderId) {
+        const resumed = await resumePayment(savedCryptoOrderId);
+        if (resumed.success && resumed.crypto) {
+          setPaymentProvider('crypto');
+          setPaymentOrderId(resumed.orderId || savedCryptoOrderId);
+          setPaymentProviderOrderId(resumed.providerOrderId || null);
+          setCryptoPayment({
+            ...resumed.crypto,
+            network: String(resumed.crypto.network),
+            asset: String(resumed.crypto.asset),
+            address: String(resumed.crypto.address),
+            amount: Number(resumed.crypto.amount),
+            currency: String(resumed.crypto.currency),
+            instructions: String(resumed.crypto.instructions ?? ''),
+            qrPayload: String(resumed.crypto.qrPayload ?? ''),
+          });
+        } else {
+          localStorage.removeItem('wolhomes:cryptoPaymentOrderId');
+        }
+      }
 
       // Check authentication
       const authenticated = isAuthenticated();
@@ -288,6 +312,7 @@ export default function CheckoutPage() {
         }
 
         await clearCart();
+        localStorage.removeItem('wolhomes:cryptoPaymentOrderId');
         const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
         router.push(`/order-confirmation?${confirmationQuery.toString()}`);
         return;
@@ -364,6 +389,7 @@ export default function CheckoutPage() {
       setPaymentClientSecret(result.data.clientSecret || null);
 
       if (paymentProvider === 'crypto' && result.data.crypto) {
+        localStorage.setItem('wolhomes:cryptoPaymentOrderId', result.data.order.id);
         setCryptoPayment({
           ...result.data.crypto,
           network: String(result.data.crypto.network),
@@ -881,9 +907,12 @@ export default function CheckoutPage() {
                             </div>
 
                             <div className="rounded-md border border-[#e6c98a] bg-[#fff8e8] px-4 py-3 text-sm text-[#6f5520]">
-                              <p className="font-semibold">Important payment notice</p>
+                              <p className="font-semibold">Important payment instructions</p>
                               <p className="mt-1">
-                                Please send an amount equal to or greater than the amount shown above. Payments below the required amount will not be confirmed.
+                                Send exactly the shown amount on the selected network. After sending, do not close or refresh this page until you submit the transaction hash.
+                              </p>
+                              <p className="mt-2">
+                                If you have already paid but the order is not confirmed, <strong>do not pay again</strong>. Keep your TX Hash and submit it for verification. If the payment cannot be matched or confirmed, eligible refunds are reviewed and processed within 1 day.
                               </p>
                             </div>
 
