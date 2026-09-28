@@ -384,4 +384,10 @@ export class PaymentsService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async findCryptoPaymentByTransactionHash(txHash: string): Promise<Payment | null> {
+    return this.prisma.payment.findUnique({
+      where: { cryptoTransactionHash: txHash },
+    });
+  }
 }
