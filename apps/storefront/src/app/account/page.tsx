@@ -9,6 +9,7 @@ export default function AccountPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function AccountPage() {
       setUser(userData);
 
       const orders = await getOrders();
+      setTotalOrders(orders.length);
       setRecentOrders(orders.slice(0, 5));
     } catch (error) {
       console.error('Failed to load account data:', error);
@@ -99,7 +101,7 @@ export default function AccountPage() {
             {/* Account Overview Cards */}
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               <Link href="/account/orders" className="rounded-lg border border-[#bf4e48] bg-[#bf4e48] p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#a9443e] hover:bg-[#a9443e]">
-                <div className="mb-4 text-4xl font-serif text-white">{recentOrders.length}</div>
+                <div className="mb-4 text-4xl font-serif text-white">{totalOrders}</div>
                 <h3 className="mb-2 font-serif text-lg text-white">Orders</h3>
                 <p className="text-sm text-white/80">View order history</p>
               </Link>
