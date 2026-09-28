@@ -75,7 +75,7 @@ export class OrdersService {
                 heightCm: item.product.heightCm,
                 weightKg: item.product.weightKg,
               },
-              images: item.product.media.map((media: any) => ({
+              images: (item.product.media ?? []).map((media: any) => ({
                 url: media.url,
                 altText: media.altText,
                 isMain: media.isMain,
@@ -93,7 +93,7 @@ export class OrdersService {
                     heightCm: item.variant.heightCm,
                     weightKg: item.variant.weightKg,
                   },
-                  images: item.variant.media.map((media: any) => ({
+                  images: (item.variant.media ?? []).map((media: any) => ({
                     url: media.url,
                     altText: media.altText,
                     isMain: media.isMain,
