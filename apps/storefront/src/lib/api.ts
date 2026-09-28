@@ -1236,6 +1236,7 @@ export async function getPaymentConfiguration(currency: string = 'USD'): Promise
   publicKey?: string;
   cryptoNetworks?: string[];
   cryptoSupportedAssets?: string[];
+  cryptoPaymentOptions?: Array<{ network: string; asset: string }>;
 }> {
   try {
     const res = await apiFetch(`${API_URL}/payments/configuration?currency=${currency}`, {
