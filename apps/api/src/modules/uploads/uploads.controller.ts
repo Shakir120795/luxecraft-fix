@@ -55,7 +55,7 @@ export class UploadsController {
     FileInterceptor('file', {
       storage: undefined,
       limits: {
-        fileSize: 10 * 1024 * 1024,
+        fileSize: ADMIN_IMAGE_MAX_SIZE,
       },
     }),
   )
