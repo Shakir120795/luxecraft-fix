@@ -1,8 +1,12 @@
 import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { SupportChatStatus, SenderType } from '@prisma/client';
+import { Prisma, SupportChatStatus, SenderType } from '@prisma/client';
 
 const MAX_MESSAGE_LENGTH = 2000;
+
+type UserSupportConversation = Prisma.SupportConversationGetPayload<{
+  include: { messages: true };
+}>;
 
 @Injectable()
 export class SupportChatService {
@@ -10,7 +14,7 @@ export class SupportChatService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getOrCreateForUser(userId: string) {
+  async getOrCreateForUser(userId: string): Promise<UserSupportConversation> {
     const conversation = await this.prisma.supportConversation.upsert({
       where: { userId },
       create: { userId, status: SupportChatStatus.OPEN },
@@ -35,7 +39,7 @@ export class SupportChatService {
     return this.getUserConversation(userId);
   }
 
-  async getUserConversation(userId: string) {
+  async getUserConversation(userId: string): Promise<UserSupportConversation> {
     const conversation = await this.prisma.supportConversation.findUnique({
       where: { userId },
       include: {
