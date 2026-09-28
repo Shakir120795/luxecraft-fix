@@ -55,7 +55,7 @@ export default function CustomDesignPage() {
     'pdf', 'doc', 'docx', 'xls', 'xlsx', 'txt',
   ]);
   const maxFiles = 8;
-  const maxFileSize = 10 * 1024 * 1024;
+  const maxFileSize = 4 * 1024 * 1024;
 
   function addFiles(incoming: File[]) {
     setError(null);
@@ -78,7 +78,7 @@ export default function CustomDesignPage() {
       if (unique.some(file => !allowedExtensions.has(file.name.split('.').pop()?.toLowerCase() || ''))) {
         setError('Unsupported file type. Please use JPG, JPEG, PNG, WEBP, GIF, AVIF, PDF, DOC, DOCX, XLS, XLSX or TXT.');
       } else if (unique.some(file => file.size > maxFileSize)) {
-        setError('Each reference file must be 10 MB or smaller.');
+        setError('Each reference file must be 4 MB or smaller.');
       }
 
       if (valid.length > maxFiles) {
@@ -452,7 +452,7 @@ export default function CustomDesignPage() {
                   Choose files from PC or drag & drop
                 </p>
                 <p className="text-sm text-luxury-brown mt-2">
-                  Up to 8 files ? 10 MB per file
+                  Up to 8 files • 4 MB per file
                 </p>
                 <p className="text-xs text-luxury-brown/70 mt-1">
                   JPG, JPEG, PNG, WEBP, GIF, AVIF, PDF, DOC, DOCX, XLS, XLSX, TXT
