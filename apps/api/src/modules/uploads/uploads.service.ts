@@ -15,7 +15,7 @@ import {
   verifyPrivateFileSignature,
 } from '../../common/utils/upload-security.util';
 
-const MAX_ADMIN_IMAGE_SIZE = 5 * 1024 * 1024;
+const MAX_ADMIN_IMAGE_SIZE = 10 * 1024 * 1024;
 const MAX_CUSTOM_REQUEST_FILE_SIZE = 4 * 1024 * 1024;
 const PRIVATE_FILE_URL_TTL_SECONDS = 24 * 60 * 60;
 
@@ -38,7 +38,7 @@ export class UploadsService {
   private async validateImageFile(file: Express.Multer.File): Promise<string> {
     if (!file?.buffer) throw new BadRequestException('Image file is required.');
     if (file.size > MAX_ADMIN_IMAGE_SIZE) {
-      throw new BadRequestException('Image size must be 5 MB or smaller.');
+      throw new BadRequestException('Image size must be 10 MB or smaller.');
     }
 
     const extension = extname(file.originalname).toLowerCase();
