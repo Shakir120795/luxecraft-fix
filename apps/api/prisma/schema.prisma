@@ -41,6 +41,7 @@ model User {
   sessions        Session[]
   wishlists       Wishlist?
   contactMessages ContactMessage[]
+  supportConversation SupportConversation?
 
   @@index([email])
   @@index([status])
@@ -673,6 +674,45 @@ model CustomMessage {
   @@index([senderId])
   @@index([isRead])
   @@map("custom_messages")
+}
+
+/// Customer support chat conversation. One persistent conversation per authenticated customer.
+model SupportConversation {
+  id             String            @id @default(cuid())
+  userId         String            @unique
+  status         SupportChatStatus @default(OPEN)
+  lastMessageAt  DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages       SupportMessage[]
+
+  @@index([status, lastMessageAt])
+  @@map("support_conversations")
+}
+
+/// Customer/admin support chat message.
+model SupportMessage {
+  id             String              @id @default(cuid())
+  conversationId String
+  senderId       String
+  senderType     SenderType          @default(CUSTOMER)
+  message        String
+  isRead         Boolean              @default(false)
+  readAt         DateTime?
+  createdAt      DateTime             @default(now())
+  conversation   SupportConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@index([senderType, isRead])
+  @@index([senderId])
+  @@map("support_messages")
+}
+
+/// Support chat lifecycle.
+enum SupportChatStatus {
+  OPEN
+  CLOSED
 }
 
 /// Custom quote. Pricing proposal for custom work.
