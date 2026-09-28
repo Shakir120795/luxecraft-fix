@@ -81,7 +81,6 @@ export default function CheckoutPage() {
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
   const [paymentProviderOrderId, setPaymentProviderOrderId] = useState<string | null>(null);
-  const [paymentGuestAccessToken, setPaymentGuestAccessToken] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
 
@@ -257,8 +256,6 @@ export default function CheckoutPage() {
     setSubmitting(true);
 
     try {
-      const accessToken = paymentGuestAccessToken || undefined;
-
       if (paymentProvider === 'crypto' && cryptoPayment && paymentOrderId) {
         if (!cryptoTxHash.trim()) {
           setError('Please enter the transaction hash after sending the payment.');
@@ -271,7 +268,6 @@ export default function CheckoutPage() {
           txHash: cryptoTxHash.trim(),
           network: cryptoPayment.network,
           asset: cryptoPayment.asset,
-          accessToken,
         });
 
         if (!verification.success) {
@@ -282,7 +278,6 @@ export default function CheckoutPage() {
 
         await clearCart();
         const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
-        if (accessToken) confirmationQuery.set('access', accessToken);
         router.push(`/order-confirmation?${confirmationQuery.toString()}`);
         return;
       }
@@ -291,7 +286,6 @@ export default function CheckoutPage() {
         const capture = await capturePayPalPayment({
           orderId: paymentOrderId,
           paypalOrderId: paymentProviderOrderId,
-          accessToken,
         });
 
         if (!capture.success) {
@@ -302,7 +296,6 @@ export default function CheckoutPage() {
 
         await clearCart();
         const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
-        if (accessToken) confirmationQuery.set('access', accessToken);
         router.push(`/order-confirmation?${confirmationQuery.toString()}`);
         return;
       }
@@ -357,7 +350,6 @@ export default function CheckoutPage() {
 
       setPaymentOrderId(result.data.order.id);
       setPaymentProviderOrderId(result.data.providerOrderId || null);
-      setPaymentGuestAccessToken(result.data.guestAccessToken || null);
       setPaymentClientSecret(result.data.clientSecret || null);
 
       if (paymentProvider === 'crypto' && result.data.crypto) {
@@ -423,7 +415,6 @@ export default function CheckoutPage() {
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
-              accessToken: result.data!.guestAccessToken || undefined,
             });
 
             if (!verification.success) {
@@ -434,9 +425,6 @@ export default function CheckoutPage() {
 
             await clearCart();
             const confirmationQuery = new URLSearchParams({ orderId: result.data!.order.id });
-            if (result.data!.guestAccessToken) {
-              confirmationQuery.set('access', result.data!.guestAccessToken);
-            }
             router.push(`/order-confirmation?${confirmationQuery.toString()}`);
           },
         });
@@ -731,7 +719,7 @@ export default function CheckoutPage() {
                               setPaymentProvider(method.id as 'razorpay' | 'paypal' | 'crypto');
                               setPaymentOrderId(null);
                               setPaymentProviderOrderId(null);
-                              setPaymentGuestAccessToken(null);
+                              
                               setPaymentClientSecret(null);
                               setCryptoPayment(null);
                               setCryptoTxHash('');
