@@ -29,11 +29,12 @@ export class UsersService {
     lastName?: string;
   }): Promise<User> {
     const email = data.email.toLowerCase().trim();
+    // Hash before checking existence so duplicate-registration timing is less revealing.
+    const passwordHash = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     const existing = await this.findByEmail(email);
     if (existing) {
       throw new ConflictException('An account with this email already exists.');
     }
-    const passwordHash = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
     return this.prisma.user.create({
       data: {
         email,
