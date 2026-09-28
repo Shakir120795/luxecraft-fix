@@ -299,7 +299,7 @@ export class CheckoutService {
       approveUrl,
       paymentProvider: payment?.provider,
       discountAmount,
-      ...(payment?.provider === 'crypto' && payment.metadata && typeof payment.metadata === 'object' && !Array.isArray(payment.metadata) ? { crypto: { network: (payment.metadata as Record<string, unknown>).network, asset: (payment.metadata as Record<string, unknown>).asset, address: (payment.metadata as Record<string, unknown>).receivingAddress, amount: (payment.metadata as Record<string, unknown>).expectedAmount, currency: (payment.metadata as Record<string, unknown>).settlementCurrency } } : {}),
+      ...(payment?.provider === 'crypto' && paymentResult.crypto ? { crypto: paymentResult.crypto } : {}),
       ...(!input.userId ? { guestAccessToken: this.orders.createGuestAccessToken(order) } : {}),
     };
   }
