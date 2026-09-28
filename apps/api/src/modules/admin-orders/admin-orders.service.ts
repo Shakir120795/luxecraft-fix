@@ -42,7 +42,7 @@ export class AdminOrdersService {
   async findOne(id: string): Promise<any> {
     const order = await this.prisma.order.findUnique({
       where: { id },
-      include: { user: true, items: true, payments: true },
+      include: { user: { select: { id: true, email: true, firstName: true, lastName: true } }, items: true, payments: true },
     });
     if (!order) throw new NotFoundException(`Order ${id} not found.`);
     return order;
