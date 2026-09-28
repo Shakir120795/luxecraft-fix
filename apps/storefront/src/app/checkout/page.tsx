@@ -364,7 +364,16 @@ export default function CheckoutPage() {
       setPaymentClientSecret(result.data.clientSecret || null);
 
       if (paymentProvider === 'crypto' && result.data.crypto) {
-        setCryptoPayment(result.data.crypto);
+        setCryptoPayment({
+          ...result.data.crypto,
+          network: String(result.data.crypto.network),
+          asset: String(result.data.crypto.asset),
+          address: String(result.data.crypto.address),
+          amount: Number(result.data.crypto.amount),
+          currency: String(result.data.crypto.currency),
+          instructions: String(result.data.crypto.instructions ?? ''),
+          qrPayload: String(result.data.crypto.qrPayload ?? ''),
+        });
         setSubmitting(false);
         return;
       }
@@ -837,7 +846,7 @@ export default function CheckoutPage() {
                                 Send exactly
                               </p>
                               <p className="font-serif text-2xl text-luxury-charcoal">
-                                {cryptoPayment.amount.toFixed(6)} {cryptoPayment.asset}
+                                {Number(cryptoPayment.amount).toFixed(6)} {cryptoPayment.asset}
                               </p>
                               <p className="mt-3 text-xs text-luxury-brown">
                                 {cryptoPayment.network} network
