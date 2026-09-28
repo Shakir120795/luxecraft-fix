@@ -12,16 +12,18 @@ export class OtpService {
   private readonly codeLength: number;
   private readonly maxAttempts = 5;
 
+  private readonly otpHashSecret: string;
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
+    config: ConfigService,
   ) {
     this.ttlMinutes = config.get<number>('OTP_EXPIRES_MINUTES', 10);
     this.codeLength = config.get<number>('OTP_LENGTH', 6);
-    this.otpHashSecret = config.get<string>('jwt.secret')!;
+    const secret = config.get<string>('jwt.secret');
+    if (!secret) throw new Error('JWT secret is required for OTP hashing.');
+    this.otpHashSecret = secret;
   }
-
-  private readonly otpHashSecret: string;
 
   /** Generate and persist a new OTP code for an email + purpose. */
   async generate(
