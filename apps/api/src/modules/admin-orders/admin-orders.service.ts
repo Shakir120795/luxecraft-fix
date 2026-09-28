@@ -36,7 +36,7 @@ export class AdminOrdersService {
       this.prisma.order.count({ where }),
     ]);
 
-    return { items, total };
+    return { items: await this.attachProductDetails(items), total };
   }
 
   async findOne(id: string): Promise<any> {
@@ -45,7 +45,94 @@ export class AdminOrdersService {
       include: { user: { select: { id: true, email: true, firstName: true, lastName: true } }, items: true, payments: true },
     });
     if (!order) throw new NotFoundException(`Order ${id} not found.`);
-    return order;
+    return (await this.attachProductDetails([order]))[0];
+  }
+
+  private async attachProductDetails<T extends { items?: any[] }>(orders: T[]): Promise<T[]> {
+    const productIds = Array.from(
+      new Set(
+        orders.flatMap((order) =>
+          (order.items ?? [])
+            .map((item: any) => item.productId)
+            .filter((id: any): id is string => typeof id === 'string' && id.length > 0),
+        ),
+      ),
+    );
+
+    if (productIds.length === 0) return orders;
+
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        media: {
+          where: { type: 'IMAGE' },
+          orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+          select: { url: true, isMain: true },
+        },
+        variants: {
+          select: {
+            id: true,
+            sku: true,
+            media: {
+              where: { type: 'IMAGE' },
+              orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+              select: { url: true, isMain: true },
+            },
+          },
+        },
+      },
+    });
+
+    const productMap = new Map(products.map((product) => [product.id, product]));
+
+    return orders.map((order) => ({
+      ...order,
+      items: (order.items ?? []).map((item: any) => {
+        const snapshot =
+          item.productSnapshot &&
+          typeof item.productSnapshot === 'object' &&
+          !Array.isArray(item.productSnapshot)
+            ? (item.productSnapshot as Record<string, unknown>)
+            : {};
+        const variantSnapshot =
+          item.variantSnapshot &&
+          typeof item.variantSnapshot === 'object' &&
+          !Array.isArray(item.variantSnapshot)
+            ? (item.variantSnapshot as Record<string, unknown>)
+            : {};
+        const product = item.productId ? productMap.get(item.productId) : undefined;
+        const variant = product?.variants.find((entry) => entry.id === item.variantId);
+
+        const snapshotImages = Array.isArray(snapshot.images)
+          ? snapshot.images.filter((value): value is string => typeof value === 'string')
+          : [];
+        const currentImages = variant?.media?.map((media) => media.url) ?? [];
+        const productImages = product?.media?.map((media) => media.url) ?? [];
+
+        return {
+          ...item,
+          product: {
+            id: product?.id ?? item.productId ?? '',
+            name:
+              product?.name ??
+              (typeof snapshot.name === 'string' ? snapshot.name : 'Product'),
+            sku:
+              variant?.sku ??
+              product?.sku ??
+              (typeof variantSnapshot.sku === 'string' ? variantSnapshot.sku : '') ??
+              (typeof snapshot.sku === 'string' ? snapshot.sku : ''),
+            images: currentImages.length
+              ? currentImages
+              : productImages.length
+                ? productImages
+                : snapshotImages,
+          },
+        };
+      }),
+    }));
   }
 
   async updateStatus(
