@@ -4,6 +4,7 @@ import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
   getFreshCurrentUser,
+  closeSupportChat,
   getSupportChat,
   sendSupportChatMessage,
   SupportConversation,
@@ -75,6 +76,19 @@ export function SupportChat() {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat?.messages.length, open]);
 
+  async function handleCloseChat() {
+    if (!loggedIn || chat?.status === 'CLOSED') return;
+
+    const result = await closeSupportChat();
+    if (!result.success) {
+      window.alert(result.message || 'Failed to close chat');
+      return;
+    }
+
+    setChat((current) => (current ? { ...current, status: 'CLOSED' } : current));
+    setOpen(false);
+  }
+
   async function handleSend(event: FormEvent) {
     event.preventDefault();
     const trimmed = message.trim();
@@ -143,9 +157,20 @@ export function SupportChat() {
               </p>
               <h2 className="mt-0.5 font-serif text-xl">Customer Support</h2>
             </div>
-            <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-wider">
-              Chat
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] uppercase tracking-wider">
+                {chat?.status === 'CLOSED' ? 'Closed' : 'Chat'}
+              </span>
+              {chat?.status !== 'CLOSED' && (
+                <button
+                  type="button"
+                  onClick={() => void handleCloseChat()}
+                  className="rounded-md border border-white/25 bg-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider transition hover:bg-white/20"
+                >
+                  Close
+                </button>
+              )}
+            </div>
           </div>
 
           {!authChecked || loading ? (
