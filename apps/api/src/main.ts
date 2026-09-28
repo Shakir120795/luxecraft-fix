@@ -18,6 +18,9 @@ async function bootstrap() {
     rawBody: true, // Enable raw body for webhook signature verification
   });
 
+  // Trust the single reverse proxy so req.ip and IP-based throttling use the client IP.
+  app.set('trust proxy', 1);
+
   // ----- Security headers --------------------------
   app.use(
     helmet({
