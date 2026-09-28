@@ -64,6 +64,7 @@ import { SettingsModule } from './modules/settings/settings.module';
 import { CurrencyModule } from './modules/currency/currency.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ContactModule } from './modules/contact/contact.module';
+import { SupportChatModule } from './modules/support-chat/support-chat.module';
 
 // Phase 8 - Analytics & SEO
 import { AnalyticsModule } from './modules/analytics/analytics.module';
