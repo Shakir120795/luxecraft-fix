@@ -392,7 +392,6 @@ export class WebhookService {
       throw new BadRequestException('Refund currency does not match the payment');
     }
 
-    const currentRefundedAmount = Number(payment.refundedAmount);
     const reportedRefundedAmount = Number(data.refundAmount);
 
     if (!Number.isFinite(reportedRefundedAmount) || reportedRefundedAmount <= 0) {
