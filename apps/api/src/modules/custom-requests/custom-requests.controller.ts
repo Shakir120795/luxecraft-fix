@@ -4,10 +4,14 @@ import {
   Get,
   Param,
   Post,
+  Get,
+  Query,
+  Res,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CustomRequestsService } from './custom-requests.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -40,6 +44,27 @@ export class CustomRequestsController {
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     return this.svc.findOneForUser(id, user.id);
+  }
+
+  @Get(':id/files/:filename')
+  async downloadFile(
+    @Param('id') id: string,
+    @Param('filename') filename: string,
+    @Query('expires') expires: string,
+    @Query('signature') signature: string,
+    @Res() res: Response,
+  ) {
+    const file = await this.uploads.openPrivateCustomRequestFile(
+      id,
+      filename,
+      Number(expires),
+      signature,
+    );
+    res.setHeader('Content-Type', file.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    res.setHeader('Cache-Control', 'private, max-age=60, no-store');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    file.stream.pipe(res);
   }
 
   @Post(':id/files')
