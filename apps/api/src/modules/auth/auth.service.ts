@@ -95,7 +95,7 @@ export class AuthService {
     const normalEmail = email.toLowerCase().trim();
 
     // Check rate-limit lockout
-    const blocked = await this.loginAttempts.isBlocked(normalEmail);
+    const blocked = await this.loginAttempts.isBlocked(normalEmail, meta.ipAddress);
     if (blocked) {
       throw new ForbiddenException(
         'Too many failed login attempts. Please try again in 15 minutes.',
