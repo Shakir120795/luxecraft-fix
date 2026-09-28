@@ -1861,6 +1861,26 @@ export async function getSupportChat(): Promise<SupportConversation | null> {
   }
 }
 
+export async function closeSupportChat(): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiFetch(`${API_URL}/support-chat/close`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...await getAuthHeaders(),
+      },
+      cache: 'no-store',
+    });
+
+    const json = await res.json().catch(() => null);
+    return res.ok && json?.success
+      ? { success: true }
+      : { success: false, message: json?.message || 'Failed to close chat' };
+  } catch {
+    return { success: false, message: 'Failed to close chat' };
+  }
+}
+
 export async function sendSupportChatMessage(
   message: string,
 ): Promise<{ success: boolean; data?: SupportChatMessage; message?: string }> {
