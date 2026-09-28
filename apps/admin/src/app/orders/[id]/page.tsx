@@ -122,9 +122,9 @@ export default function OrderDetailPage() {
               <h2 className="text-xl font-serif text-[var(--color-primary)] mb-4">
                 Order Items
               </h2>
-              
+
               {order.items && order.items.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-5">
                   {order.items.map((item) => (
                     <div key={item.id} className="border-b border-[var(--color-border)] pb-5 last:border-0 last:pb-0">
                       <div className="flex flex-col gap-4 sm:flex-row">
@@ -147,21 +147,36 @@ export default function OrderDetailPage() {
 
                           <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-[var(--color-muted)] sm:grid-cols-2">
                             <div><strong className="text-[var(--color-text)]">SKU:</strong> {item.product?.sku || 'N/A'}</div>
-                            {item.product?.variant?.name && <div><strong className="text-[var(--color-text)]">Size / Variant:</strong> {item.product.variant.name}</div>}
-                            {item.product?.color && <div><strong className="text-[var(--color-text)]">Color:</strong> {item.product.color}</div>}
-                            {item.product?.material && <div><strong className="text-[var(--color-text)]">Material:</strong> {item.product.material}</div>}
-                            {item.product?.style && <div><strong className="text-[var(--color-text)]">Style:</strong> {item.product.style}</div>}
-                            {item.product?.collection && <div><strong className="text-[var(--color-text)]">Collection:</strong> {item.product.collection}</div>}
-                            {item.product?.origin && <div><strong className="text-[var(--color-text)]">Origin:</strong> {item.product.origin}</div>}
+                            {item.product?.variant?.name && (
+                              <div><strong className="text-[var(--color-text)]">Size / Variant:</strong> {item.product.variant.name}</div>
+                            )}
+                            {item.product?.variant?.sku && (
+                              <div><strong className="text-[var(--color-text)]">Variant SKU:</strong> {item.product.variant.sku}</div>
+                            )}
+                            {item.product?.color && (
+                              <div><strong className="text-[var(--color-text)]">Color:</strong> {item.product.color}</div>
+                            )}
+                            {item.product?.material && (
+                              <div><strong className="text-[var(--color-text)]">Material:</strong> {item.product.material}</div>
+                            )}
+                            {item.product?.style && (
+                              <div><strong className="text-[var(--color-text)]">Style:</strong> {item.product.style}</div>
+                            )}
+                            {item.product?.collection && (
+                              <div><strong className="text-[var(--color-text)]">Collection:</strong> {item.product.collection}</div>
+                            )}
+                            {item.product?.origin && (
+                              <div><strong className="text-[var(--color-text)]">Origin:</strong> {item.product.origin}</div>
+                            )}
                             <div><strong className="text-[var(--color-text)]">Quantity:</strong> {item.quantity}</div>
                           </div>
 
                           {item.product?.dimensions && (
                             <div className="mt-3 border-t border-[var(--color-border)] pt-3 text-xs text-[var(--color-muted)]">
-                              {item.product.dimensions.lengthCm && <span className="mr-4">L {item.product.dimensions.lengthCm} cm</span>}
-                              {item.product.dimensions.widthCm && <span className="mr-4">W {item.product.dimensions.widthCm} cm</span>}
-                              {item.product.dimensions.heightCm && <span className="mr-4">H {item.product.dimensions.heightCm} cm</span>}
-                              {item.product.dimensions.weightKg && <span>Weight {item.product.dimensions.weightKg} kg</span>}
+                              {item.product.dimensions.lengthCm != null && <span className="mr-4">L {item.product.dimensions.lengthCm} cm</span>}
+                              {item.product.dimensions.widthCm != null && <span className="mr-4">W {item.product.dimensions.widthCm} cm</span>}
+                              {item.product.dimensions.heightCm != null && <span className="mr-4">H {item.product.dimensions.heightCm} cm</span>}
+                              {item.product.dimensions.weightKg != null && <span>Weight {item.product.dimensions.weightKg} kg</span>}
                             </div>
                           )}
 
@@ -190,35 +205,11 @@ export default function OrderDetailPage() {
                       </div>
                     </div>
                   ))}
-              ) : (
-                        <div className="w-20 h-20 bg-[var(--color-border)] flex items-center justify-center">
-                          
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="font-medium text-[var(--color-text)]">
-                          {item.product?.name || 'Product'}
-                        </div>
-                        <div className="text-sm text-[var(--color-muted)]">
-                          SKU: {item.product?.sku || 'N/A'}
-                        </div>
-                        <div className="text-sm text-[var(--color-muted)] mt-1">
-                          Quantity: {item.quantity}  ${Number(item.price).toFixed(2)}
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium text-[var(--color-text)]">
-                          ${Number(item.total).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               ) : (
                 <p className="text-[var(--color-muted)]">No items in this order</p>
               )}
 
-              {/* Order Summary */}
               <div className="mt-6 pt-6 border-t border-[var(--color-border)] space-y-2">
                 <div className="flex justify-between text-[var(--color-text)]">
                   <span>Subtotal</span>
