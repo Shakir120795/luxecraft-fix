@@ -20,12 +20,14 @@ export class LoginAttemptService {
     await this.prisma.loginAttempt.create({ data: params });
   }
 
-  /** Returns true if the email is temporarily blocked due to too many failures. */
-  async isBlocked(email: string): Promise<boolean> {
+  /** Block repeated failures for the same email + source IP, not the account globally. */
+  async isBlocked(email: string, ipAddress?: string): Promise<boolean> {
+    if (!ipAddress) return false;
     const since = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000);
     const count = await this.prisma.loginAttempt.count({
       where: {
         email: email.toLowerCase(),
+        ipAddress,
         success: false,
         createdAt: { gte: since },
       },
