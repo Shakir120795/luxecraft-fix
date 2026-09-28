@@ -9,7 +9,6 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
-  Throttle,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FilesInterceptor } from '@nestjs/platform-express';
