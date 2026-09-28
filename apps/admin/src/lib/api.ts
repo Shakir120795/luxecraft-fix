@@ -539,9 +539,13 @@ function mapCategory(category: any): Category {
 }
 
 function mapOrder(order: any): Order {
+  const rawOrderStatus = String(order?.orderStatus ?? order?.status ?? '');
+  const normalizedOrderStatus =
+    rawOrderStatus.toUpperCase() === 'PAYMENT_CONFIRMED' ? 'PENDING' : rawOrderStatus;
+
   return {
     ...order,
-    status: order.orderStatus,
+    status: normalizedOrderStatus,
     tax: Number(order.taxAmount ?? 0),
     shippingAddressId: order.shippingAddressId ?? null,
     billingAddressId: order.billingAddressId ?? null,
