@@ -1631,3 +1631,62 @@ export async function updateHomepageVideos(
 ): Promise<HomepageVideoSetting[]> {
   return adminApi.put<HomepageVideoSetting[]>('/admin/settings/homepage-videos', videos);
 }
+
+
+export interface SupportChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderType: 'CUSTOMER' | 'ADMIN' | 'SYSTEM';
+  message: string;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface SupportConversation {
+  id: string;
+  userId: string;
+  status: 'OPEN' | 'CLOSED';
+  lastMessageAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  };
+  messages: SupportChatMessage[];
+  unreadCount?: number;
+}
+
+export async function getSupportConversations(
+  status: 'OPEN' | 'CLOSED' = 'OPEN',
+): Promise<SupportConversation[]> {
+  return adminApi.get<SupportConversation[]>(`/admin/support-chat?status=${status}`);
+}
+
+export async function getSupportConversation(id: string): Promise<SupportConversation> {
+  return adminApi.get<SupportConversation>(`/admin/support-chat/${id}`);
+}
+
+export async function sendSupportReply(
+  conversationId: string,
+  message: string,
+): Promise<SupportChatMessage> {
+  return adminApi.post<SupportChatMessage>(
+    `/admin/support-chat/${conversationId}/messages`,
+    { message },
+  );
+}
+
+export async function updateSupportConversationStatus(
+  conversationId: string,
+  status: 'OPEN' | 'CLOSED',
+): Promise<SupportConversation> {
+  return adminApi.patch<SupportConversation>(
+    `/admin/support-chat/${conversationId}/status`,
+    { status },
+  );
+}
