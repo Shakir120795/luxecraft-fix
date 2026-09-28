@@ -15,9 +15,10 @@
   --luxecraft-red: 196 80 75;
   --luxecraft-page: 1400px;
 
-  --font-heading-family: var(--font-cormorant), "Cormorant Garamond", serif;
-  --font-editorial-family: var(--font-playfair), "Playfair Display", serif;
-  --font-body-family: var(--font-inter), Inter, Arial, sans-serif;
+  /* Keep storefront builds independent of external font downloads. */
+  --font-heading-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-editorial-family: "Playfair Display", Georgia, "Times New Roman", serif;
+  --font-body-family: Inter, Arial, sans-serif;
 }
 
 @layer base {
