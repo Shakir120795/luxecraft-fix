@@ -73,7 +73,7 @@ export class CryptoProvider {
     expectedAmount: number;
     receivingAddress: string;
   }): Promise<{ verified: boolean; amountReceived: number; tokenContract: string }> {
-    const pair = this.getConfiguredPair(data.network, data.asset);
+    const pair = this.getConfiguredPair(data.network, data.asset, false, false);
     const network = pair.network;
     const asset = pair.asset;
     const rpc = pair.rpc;
@@ -312,6 +312,7 @@ export class CryptoProvider {
     networkInput: string,
     assetInput: string,
     requireAdvertised = true,
+    requireWallet = true,
   ): {
     network: CryptoNetwork;
     asset: CryptoAsset;
@@ -351,7 +352,7 @@ export class CryptoProvider {
       );
     }
 
-    if (!address) {
+    if (requireWallet && !address) {
       throw new BadRequestException(
         `Crypto wallet is not configured for ${asset} on ${network}`,
       );
