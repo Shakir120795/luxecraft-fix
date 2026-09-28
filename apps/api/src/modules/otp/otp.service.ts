@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { OtpPurpose } from '@prisma/client';
 import * as crypto from 'crypto';
+import { hashOtpCode, safeEqualHex } from '../../common/utils/token-hash.util';
 
 @Injectable()
 export class OtpService {
@@ -17,7 +18,10 @@ export class OtpService {
   ) {
     this.ttlMinutes = config.get<number>('OTP_EXPIRES_MINUTES', 10);
     this.codeLength = config.get<number>('OTP_LENGTH', 6);
+    this.otpHashSecret = config.get<string>('jwt.secret')!;
   }
+
+  private readonly otpHashSecret: string;
 
   /** Generate and persist a new OTP code for an email + purpose. */
   async generate(
@@ -37,7 +41,7 @@ export class OtpService {
     await this.prisma.otpCode.create({
       data: {
         email: email.toLowerCase(),
-        code,
+        codeHash: hashOtpCode(this.otpHashSecret, email, purpose, code),
         purpose,
         userId,
         expiresAt,
@@ -85,7 +89,8 @@ export class OtpService {
       );
     }
 
-    if (record.code !== code) {
+    const candidateHash = hashOtpCode(this.otpHashSecret, email, purpose, code);
+    if (!safeEqualHex(record.codeHash, candidateHash)) {
       throw new BadRequestException('Invalid verification code.');
     }
 
