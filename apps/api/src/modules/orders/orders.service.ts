@@ -30,10 +30,14 @@ export class OrdersService {
     total: number;
     currency: string;
   }): Promise<Order> {
-    const orderNumber = await this.generateOrderNumber();
+    let order: Order | undefined;
 
-    const order = await this.prisma.order.create({
-      data: {
+    for (let attempt = 0; attempt < 10 && !order; attempt += 1) {
+      const orderNumber = await this.generateOrderNumber();
+
+      try {
+        order = await this.prisma.order.create({
+          data: {
         orderNumber,
         userId: data.userId,
         guestEmail: data.guestEmail,
@@ -69,9 +73,27 @@ export class OrdersService {
             totalPrice: Number(item.priceSnapshot) * item.quantity,
           })),
         },
-      },
-      include: { items: true },
-    });
+          },
+          include: { items: true },
+        });
+      } catch (error) {
+        const isOrderNumberConflict =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002';
+
+        if (!isOrderNumberConflict || attempt === 9) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Order number collision detected; retrying order creation (attempt ${attempt + 2}/10)`,
+        );
+      }
+    }
+
+    if (!order) {
+      throw new BadRequestException('Unable to generate a unique order number. Please try again.');
+    }
 
     const admin = await this.prisma.adminUser.findFirst({
       where: { status: 'ACTIVE' },
