@@ -35,11 +35,12 @@ export default function OrdersPage() {
 
   const filteredOrders = filter === 'all'
     ? orders
-    : orders.filter(o =>
-        filter === 'failed'
-          ? o.paymentStatus.toUpperCase() === 'FAILED' || o.status.toLowerCase() === 'failed'
-          : o.status.toLowerCase() === filter.toLowerCase(),
-      );
+    : orders.filter(o => {
+        const orderStatus = (o.orderStatus || o.status || '').toLowerCase();
+        return filter === 'failed'
+          ? o.paymentStatus.toUpperCase() === 'FAILED' || orderStatus === 'failed'
+          : orderStatus === filter.toLowerCase();
+      });
 
   if (loading) {
     return (
@@ -170,7 +171,7 @@ export default function OrdersPage() {
                         </Link>
                       )}
 
-                      {(order.paymentStatus === 'FAILED' || order.status === 'Failed') && (
+                      {(order.paymentStatus === 'FAILED' || order.orderStatus === 'FAILED') && (
                         <Link
                           href={`/checkout?retryOrderId=${order.id}`}
                           className="border border-luxury-gold bg-luxury-gold/10 px-6 py-2 text-sm text-luxury-charcoal hover:bg-luxury-gold/20 transition-colors"
@@ -179,7 +180,7 @@ export default function OrdersPage() {
                         </Link>
                       )}
 
-                      {order.status === 'Delivered' && (
+                      {order.orderStatus === 'DELIVERED' && (
                         <button className="border border-luxury-sand bg-luxury-cream px-6 py-2 text-sm text-luxury-brown hover:border-luxury-gold transition-colors">
                           Reorder
                         </button>
