@@ -347,36 +347,81 @@ export default function OrderDetailPage() {
               <h2 className="text-2xl font-serif text-[#302b35] mb-6">Order Items</h2>
               
               <div className="space-y-6">
-                {order.items.map((item: any, idx: number) => (
-                  <div key={idx} className="flex gap-4 pb-6 border-b border-[#e0dbd6] last:border-0 last:pb-0">
-                    <div className="h-24 w-24 shrink-0 overflow-hidden border border-[#e0dbd6] bg-[#f7f3ef]">
-                      {item.productSnapshot?.media?.[0]?.url ? (
-                        <img
-                          src={item.productSnapshot.media[0].url}
-                          alt={item.productSnapshot.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-[#faf9f7] text-[#c99545] font-serif text-xl" />
-                      )}
+                {order.items.map((item: any, idx: number) => {
+                  const product = item.product ?? {};
+                  const variant = product.variant ?? item.variantSnapshot ?? null;
+                  const customization = item.customization && typeof item.customization === 'object'
+                    ? Object.entries(item.customization)
+                    : [];
+                  const dimensions = product.dimensions ?? {};
+
+                  return (
+                    <div key={idx} className="border-b border-[#e0dbd6] pb-6 last:border-0 last:pb-0">
+                      <div className="flex flex-col gap-5 sm:flex-row">
+                        <div className="h-28 w-28 shrink-0 overflow-hidden border border-[#e0dbd6] bg-[#f7f3ef]">
+                          {product.images?.[0] ? (
+                            <img
+                              src={product.images[0]}
+                              alt={product.name || 'Product'}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-[#faf9f7] text-[#c99545] font-serif text-xl">
+                              W
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-serif text-xl text-[#302b35]">{product.name || 'Product'}</h3>
+
+                          <div className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2 text-sm text-[#67625c] sm:grid-cols-2">
+                            <p><strong className="text-[#302b35]">SKU:</strong> {product.sku || 'N/A'}</p>
+                            {variant?.name && <p><strong className="text-[#302b35]">Size / Variant:</strong> {variant.name}</p>}
+                            {product.color && <p><strong className="text-[#302b35]">Color:</strong> {product.color}</p>}
+                            {product.material && <p><strong className="text-[#302b35]">Material:</strong> {product.material}</p>}
+                            {product.style && <p><strong className="text-[#302b35]">Style:</strong> {product.style}</p>}
+                            {product.collection && <p><strong className="text-[#302b35]">Collection:</strong> {product.collection}</p>}
+                            {product.origin && <p><strong className="text-[#302b35]">Origin:</strong> {product.origin}</p>}
+                            <p><strong className="text-[#302b35]">Quantity:</strong> {item.quantity}</p>
+                          </div>
+
+                          {(dimensions.lengthCm || dimensions.widthCm || dimensions.heightCm || dimensions.weightKg) && (
+                            <div className="mt-4 border-t border-[#eee8e2] pt-3 text-xs text-[#8a837c]">
+                              {dimensions.lengthCm && <span className="mr-4">L {dimensions.lengthCm} cm</span>}
+                              {dimensions.widthCm && <span className="mr-4">W {dimensions.widthCm} cm</span>}
+                              {dimensions.heightCm && <span className="mr-4">H {dimensions.heightCm} cm</span>}
+                              {dimensions.weightKg && <span>Weight {dimensions.weightKg} kg</span>}
+                            </div>
+                          )}
+
+                          {customization.length > 0 && (
+                            <div className="mt-4 border-l-2 border-[#c99545] bg-[#faf9f7] px-4 py-3">
+                              <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#8a837c]">Selected Options</p>
+                              <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-[#67625c] sm:grid-cols-2">
+                                {customization.map(([key, value]) => (
+                                  <p key={key}>
+                                    <strong className="text-[#302b35]">{String(key)}:</strong>{' '}
+                                    {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {product.productNote && (
+                            <p className="mt-3 text-xs leading-5 text-[#8a837c]">{product.productNote}</p>
+                          )}
+                        </div>
+
+                        <div className="text-left sm:w-32 sm:text-right">
+                          <p className="font-serif text-xl text-[#302b35]">${Number(item.totalPrice).toFixed(2)}</p>
+                          <p className="mt-1 text-sm text-[#67625c]">${Number(item.unitPrice).toFixed(2)} each</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-serif text-lg text-[#302b35] mb-1">
-                        {item.productSnapshot?.name || 'Product'}
-                      </h3>
-                      {item.variantSnapshot && (
-                        <p className="text-sm text-[#67625c] mb-2">
-                          Variant: {item.variantSnapshot.name}
-                        </p>
-                      )}
-                      <p className="text-sm text-[#67625c]">Quantity: {item.quantity}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-serif text-xl text-[#302b35]">${item.totalPrice.toFixed(2)}</p>
-                      <p className="text-sm text-[#67625c] mt-1">${item.unitPrice.toFixed(2)} each</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -384,6 +429,11 @@ export default function OrderDetailPage() {
             {order.shippingAddress && (
               <div className="border border-[#e0dbd6] bg-white p-6 shadow-[0_8px_30px_rgba(48,43,53,0.04)] sm:p-8">
                 <h2 className="text-2xl font-serif text-[#302b35] mb-6">Shipping Address</h2>
+                {order.shippingMethodName && (
+                  <p className="mb-3 text-xs uppercase tracking-[0.14em] text-[#8a837c]">
+                    Shipping: {order.shippingMethodName}
+                  </p>
+                )}
                 <div className="text-[#67625c] space-y-1">
                   <p className="font-medium text-[#302b35]">
                     {order.shippingAddress.firstName} {order.shippingAddress.lastName}
@@ -391,7 +441,7 @@ export default function OrderDetailPage() {
                   <p>{order.shippingAddress.addressLine1}</p>
                   {order.shippingAddress.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
                   <p>
-                    {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}
+                    {order.shippingAddress.city}, {order.shippingAddress.stateProvince || order.shippingAddress.state || ''} {order.shippingAddress.postalCode}
                   </p>
                   <p>{order.shippingAddress.country}</p>
                   <p className="pt-2">{order.shippingAddress.phone}</p>
