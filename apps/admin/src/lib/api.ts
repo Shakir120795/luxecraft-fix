@@ -554,16 +554,23 @@ function mapOrder(order: any): Order {
           ...item,
           price: Number(item.unitPrice ?? 0),
           total: Number(item.totalPrice ?? 0),
-          product: item.productSnapshot
+          product: item.product
             ? {
-                id: item.productId ?? '',
-                name: item.productSnapshot.name ?? 'Product',
-                sku: item.productSnapshot.sku ?? '',
-                images: Array.isArray(item.productSnapshot.images)
-                  ? item.productSnapshot.images
-                  : [],
+                id: item.product.id ?? item.productId ?? '',
+                name: item.product.name ?? 'Product',
+                sku: item.product.sku ?? '',
+                images: Array.isArray(item.product.images) ? item.product.images : [],
               }
-            : undefined,
+            : item.productSnapshot
+              ? {
+                  id: item.productId ?? '',
+                  name: item.productSnapshot.name ?? 'Product',
+                  sku: item.productSnapshot.sku ?? '',
+                  images: Array.isArray(item.productSnapshot.images)
+                    ? item.productSnapshot.images
+                    : [],
+                }
+              : undefined,
         }))
       : [],
   };
