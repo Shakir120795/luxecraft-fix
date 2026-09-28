@@ -606,6 +606,7 @@ model Payment {
   orderId           String
   provider          String
   providerPaymentId String?
+  cryptoTransactionHash String? @unique
   amount            Decimal       @db.Decimal(12, 2)
   currency          String        @default("USD")
   status            PaymentStatus @default(PENDING)
