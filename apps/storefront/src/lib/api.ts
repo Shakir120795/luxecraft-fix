@@ -1162,6 +1162,7 @@ export interface Order {
   discountAmount: number;
   total: number;
   currency: string;
+  shippingMethodName?: string | null;
   shippingAddress: any;
   billingAddress: any;
   items: any[];
