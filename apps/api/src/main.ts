@@ -42,11 +42,19 @@ async function bootstrap() {
   // ----- Cookie parser -----------------------------
   app.use(cookieParser());
 
-  // ----- Static uploads ----------------------------
-  app.use(
-    '/uploads',
-    express.static(join(process.cwd(), 'uploads')),
-  );
+  // ----- Public static uploads ----------------------
+  // Only catalog/marketing images are public. Customer custom-request files
+  // live under a private directory and are served only through signed URLs.
+  const uploadRoot = join(process.cwd(), 'uploads');
+  for (const folder of ['products', 'categories', 'hero']) {
+    app.use(
+      `/uploads/${folder}`,
+      express.static(join(uploadRoot, folder), {
+        index: false,
+        dotfiles: 'deny',
+      }),
+    );
+  }
 
   // ----- Global prefix and API versioning ----------
   app.setGlobalPrefix('api');
