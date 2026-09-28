@@ -50,7 +50,7 @@ model User {
 model Session {
   id           String    @id @default(cuid())
   userId       String
-  refreshToken String    @unique
+  refreshTokenHash String  @unique
   userAgent    String?
   ipAddress    String?
   expiresAt    DateTime
@@ -59,7 +59,7 @@ model Session {
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([refreshToken])
+  @@index([refreshTokenHash])
   @@index([expiresAt])
   @@map("sessions")
 }
@@ -68,7 +68,7 @@ model OtpCode {
   id        String     @id @default(cuid())
   userId    String?
   email     String
-  code      String
+  codeHash  String
   purpose   OtpPurpose
   used      Boolean    @default(false)
   attempts  Int        @default(0)
@@ -86,14 +86,14 @@ model OtpCode {
 model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String
-  token     String    @unique
+  tokenHash  String    @unique
   used      Boolean   @default(false)
   expiresAt DateTime
   createdAt DateTime  @default(now())
   usedAt    DateTime?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([token])
+  @@index([tokenHash])
   @@index([userId])
   @@map("password_reset_tokens")
 }
@@ -145,7 +145,7 @@ model AdminUser {
 model AdminSession {
   id           String    @id @default(cuid())
   adminId      String
-  refreshToken String    @unique
+  refreshTokenHash String  @unique
   userAgent    String?
   ipAddress    String?
   expiresAt    DateTime
@@ -154,7 +154,7 @@ model AdminSession {
   admin        AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId])
-  @@index([refreshToken])
+  @@index([refreshTokenHash])
   @@map("admin_sessions")
 }
 
