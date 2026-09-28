@@ -1153,6 +1153,7 @@ export interface Order {
   guestEmail: string | null;
   orderType: 'STANDARD' | 'CUSTOM';
   status: string;
+  orderStatus: string;
   paymentStatus: string;
   fulfillmentStatus: string;
   subtotal: number;
@@ -1314,7 +1315,8 @@ export async function createOrder(params: {
 function normalizeOrder(order: any): Order {
   return {
     ...order,
-    status: String(order?.status ?? order?.orderStatus ?? ''),
+    status: String(order?.orderStatus ?? order?.status ?? ''),
+    orderStatus: String(order?.orderStatus ?? order?.status ?? ''),
     fulfillmentStatus: String(order?.fulfillmentStatus ?? ''),
     paymentStatus: String(order?.paymentStatus ?? ''),
     subtotal: Number(order?.subtotal ?? 0),
