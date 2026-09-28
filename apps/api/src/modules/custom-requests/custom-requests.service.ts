@@ -25,10 +25,14 @@ export class CustomRequestsService {
     productId?: string;
     categoryId?: string;
   }): Promise<CustomRequest> {
-    const customRequestNumber = await this.generateCustomRequestNumber();
+    let customRequest: CustomRequest | undefined;
 
-    const customRequest = await this.prisma.customRequest.create({
-      data: {
+    for (let attempt = 0; attempt < 10 && !customRequest; attempt += 1) {
+      const customRequestNumber = await this.generateCustomRequestNumber();
+
+      try {
+        customRequest = await this.prisma.customRequest.create({
+          data: {
         customRequestNumber,
         userId: data.userId,
         title: data.title,
@@ -42,9 +46,27 @@ export class CustomRequestsService {
         productId: data.productId,
         categoryId: data.categoryId,
         status: CustomRequestStatus.SUBMITTED,
-      },
-      include: { messages: true, quotes: true, designs: true },
-    });
+          },
+          include: { messages: true, quotes: true, designs: true },
+        });
+      } catch (error) {
+        const isNumberConflict =
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002';
+
+        if (!isNumberConflict || attempt === 9) {
+          throw error;
+        }
+
+        this.logger.warn(
+          `Custom request number collision detected; retrying creation (attempt ${attempt + 2}/10)`,
+        );
+      }
+    }
+
+    if (!customRequest) {
+      throw new Error('Unable to generate a unique custom request number.');
+    }
 
     const admin = await this.prisma.adminUser.findFirst({
       where: { status: 'ACTIVE' },
