@@ -83,6 +83,16 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
+      <div className="min-h-screen bg-[#f7f3ef] flex items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-3 w-3 animate-pulse rounded-full bg-[#c99545]" />
+          <p className="font-serif text-lg text-[#302b35]">Loading orders...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
     <main className="min-h-screen bg-[#f7f3ef] text-[#161616]">
       <section className="border-b border-[#e0dbd6] bg-white">
         <div className="mx-auto max-w-[1400px] px-5 py-10 sm:px-8 lg:px-10 lg:py-14">
