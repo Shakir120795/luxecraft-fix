@@ -14,6 +14,11 @@ export class SupportChatController {
     return this.chat.getOrCreateForUser(user.id);
   }
 
+  @Post('close')
+  closeChat(@CurrentUser() user: { id: string }) {
+    return this.chat.closeUserConversation(user.id);
+  }
+
   @Post('messages')
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   sendMessage(
