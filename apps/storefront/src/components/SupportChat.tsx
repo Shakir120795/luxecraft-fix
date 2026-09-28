@@ -21,6 +21,12 @@ export function SupportChat() {
   const endRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    const handleOpenSupportChat = () => setOpen(true);
+    window.addEventListener('wolhomes:open-support-chat', handleOpenSupportChat);
+    return () => window.removeEventListener('wolhomes:open-support-chat', handleOpenSupportChat);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
 
     let cancelled = false;
