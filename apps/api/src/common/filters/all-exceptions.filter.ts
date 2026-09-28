@@ -28,6 +28,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
+
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
@@ -35,15 +36,25 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = (resp['message'] as string | string[]) ?? exception.message;
         error = (resp['error'] as string) ?? exception.name;
       }
-    } else if (exception instanceof Error) {
-      message = exception.message;
-      error = exception.name;
     }
 
+    // Never expose internal exception details for 5xx responses.
     if (status >= 500) {
-      this.logger.error(`${request.method} ${request.url}  ${status}`, exception instanceof Error ? exception.stack : String(exception));
+      message = 'Internal server error';
+      error = 'InternalServerError';
+    }
+
+    // Use request.path so query-string values are not reflected in the
+    // response or application logs.
+    const safePath = request.path || request.url.split('?')[0];
+
+    if (status >= 500) {
+      this.logger.error(
+        `${request.method} ${safePath}  ${status}`,
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     } else {
-      this.logger.warn(`${request.method} ${request.url}  ${status}: ${message}`);
+      this.logger.warn(`${request.method} ${safePath}  ${status}: ${message}`);
     }
 
     response.status(status).json({
@@ -51,7 +62,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       statusCode: status,
       error,
       message,
-      path: request.url,
+      path: safePath,
       timestamp: new Date().toISOString(),
     });
   }
