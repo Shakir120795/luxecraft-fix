@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
+import { SupportChat } from '@/components/SupportChat';
 import { Cormorant_Garamond, Playfair_Display, Inter } from 'next/font/google';
 
 const cormorant = Cormorant_Garamond({
@@ -100,6 +101,7 @@ export default function RootLayout({
         <SiteHeader />
         {children}
         <SiteFooter />
+        <SupportChat />
       </body>
     </html>
   );
