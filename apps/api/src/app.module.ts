@@ -141,6 +141,7 @@ import { HealthModule } from './modules/health/health.module';
     SettingsModule,
     ReviewsModule,
     ContactModule,
+    SupportChatModule,
 
     // ----- Phase 8 - Analytics & SEO ----------------------
     AnalyticsModule,
