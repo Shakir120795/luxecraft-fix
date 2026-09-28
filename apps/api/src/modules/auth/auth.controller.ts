@@ -9,7 +9,6 @@ import {
   Get,
   Patch,
   Res,
-  Throttle,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
@@ -24,6 +23,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 
 const REFRESH_COOKIE = 'wolhomes_refresh_token';
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
