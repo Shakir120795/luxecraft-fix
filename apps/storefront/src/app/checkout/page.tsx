@@ -71,6 +71,7 @@ export default function CheckoutPage() {
   const [availablePaymentProviders, setAvailablePaymentProviders] = useState<string[]>([]);
   const [cryptoNetworks, setCryptoNetworks] = useState<string[]>([]);
   const [cryptoAssets, setCryptoAssets] = useState<string[]>([]);
+  const [cryptoPaymentOptions, setCryptoPaymentOptions] = useState<Array<{ network: string; asset: string }>>([]);
   const [selectedCryptoNetwork, setSelectedCryptoNetwork] = useState('ethereum');
   const [selectedCryptoAsset, setSelectedCryptoAsset] = useState('USDT');
   const [cryptoPayment, setCryptoPayment] = useState<{ network: string; asset: string; address: string; amount: number; currency: string; instructions: string; qrPayload: string } | null>(null);
@@ -136,6 +137,16 @@ export default function CheckoutPage() {
       setAvailablePaymentProviders(paymentConfig.providers || []);
       setCryptoNetworks(paymentConfig.cryptoNetworks || []);
       setCryptoAssets(paymentConfig.cryptoSupportedAssets || []);
+      const configuredCryptoOptions = paymentConfig.cryptoPaymentOptions || [];
+      setCryptoPaymentOptions(configuredCryptoOptions);
+      if (configuredCryptoOptions.length > 0) {
+        const preferred =
+          configuredCryptoOptions.find(
+            (option) => option.network === 'ethereum' && option.asset === 'USDT',
+          ) || configuredCryptoOptions[0];
+        setSelectedCryptoNetwork(preferred.network);
+        setSelectedCryptoAsset(preferred.asset);
+      }
       setPaymentConfigured(paymentConfig.currencySupported && (paymentConfig.configured || (paymentConfig.providers || []).length > 0));
       setPaymentPublicKey(paymentConfig.publicKey);
 
@@ -477,6 +488,22 @@ export default function CheckoutPage() {
   const selectedShippingMethod = shippingMethod;
   const shippingCost = selectedShippingMethod?.rate ?? 0;
   const total = subtotal + shippingCost;
+
+  const availableCryptoNetworks = cryptoPaymentOptions.length
+    ? Array.from(new Set(cryptoPaymentOptions.map((option) => option.network)))
+    : (cryptoNetworks.length ? cryptoNetworks : ['ethereum', 'solana', 'tron']);
+
+  const availableCryptoAssets = cryptoPaymentOptions.length
+    ? Array.from(
+        new Set(
+          cryptoPaymentOptions
+            .filter((option) => option.network === selectedCryptoNetwork)
+            .map((option) => option.asset),
+        ),
+      )
+    : (cryptoAssets.length ? cryptoAssets : ['USDT', 'USDC']).filter(
+        (asset) => !(selectedCryptoNetwork === 'tron' && asset === 'USDC'),
+      );
 
   return (
     <main className="min-h-screen bg-[#f8f6f2] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
