@@ -1176,7 +1176,6 @@ export async function verifyRazorpayPayment(params: {
   razorpayOrderId: string;
   razorpayPaymentId: string;
   razorpaySignature: string;
-  accessToken?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
     const res = await apiFetch(`${API_URL}/payments/razorpay/verify`, {
@@ -1195,7 +1194,6 @@ export async function verifyRazorpayPayment(params: {
 export async function capturePayPalPayment(params: {
   orderId: string;
   paypalOrderId: string;
-  accessToken?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
     const res = await apiFetch(`${API_URL}/payments/paypal/capture`, {
@@ -1216,7 +1214,6 @@ export async function verifyCryptoPayment(params: {
   txHash: string;
   network: string;
   asset: string;
-  accessToken?: string;
 }): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
     const res = await apiFetch(`${API_URL}/payments/crypto/verify`, {
@@ -1283,7 +1280,6 @@ export async function createOrder(params: {
       instructions: string;
       qrPayload: string;
     };
-    guestAccessToken?: string 
   }; 
   message?: string 
 }> {
@@ -1413,11 +1409,10 @@ export async function cancelOrder(orderId: string): Promise<{ success: boolean; 
   }
 }
 
-export async function getOrder(orderId: string, guestAccessToken?: string): Promise<Order | null> {
+export async function getOrder(orderId: string): Promise<Order | null> {
   try {
     const headers = await getAuthHeaders();
     const url = new URL(`${API_URL}/orders/${orderId}`);
-    if (guestAccessToken) url.searchParams.set('access', guestAccessToken);
     const res = await apiFetch(url.toString(), {
       headers,
       cache: 'no-store',
