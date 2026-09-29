@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getOrder, getFreshCurrentUser, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder, createProductReview } from '@/lib/api';
+import { getOrder, getFreshCurrentUser, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder, createProductReview, getProductReviews } from '@/lib/api';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -254,6 +254,24 @@ export default function OrderDetailPage() {
       
       if (data) {
         setOrder(data);
+
+        const productIds = Array.from(
+          new Set(
+            (data.items ?? [])
+              .map((item: any) => item.productId || item.product?.id)
+              .filter((id: any): id is string => typeof id === 'string' && id.length > 0),
+          ),
+        );
+
+        const reviewLists = await Promise.all(
+          productIds.map((productId) => getProductReviews(productId)),
+        );
+        setReviewSubmittedProductIds(
+          reviewLists
+            .flat()
+            .filter((review) => review.isMine)
+            .map((review) => review.productId),
+        );
       } else {
         setError('Order not found');
       }
@@ -483,7 +501,7 @@ export default function OrderDetailPage() {
                             )
                           )}
                           {reviewSubmittedProductIds.includes(String(product.id)) && (
-                            <p className="text-xs text-[#2f6b36]">Review submitted. It will appear after admin approval.</p>
+                            <p className="text-xs text-[#2f6b36]">Review published successfully.</p>
                           )}
                         </div>
                       </div>
