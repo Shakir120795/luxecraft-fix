@@ -541,26 +541,23 @@ export default function CheckoutPage() {
       );
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(201,149,69,0.08),transparent_36%),#f8f6f2] px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
-      <div className="mx-auto max-w-[1280px]">
+    <main className="min-h-screen bg-[#f8f6f2] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+      <div className="mx-auto max-w-[1200px]">
         {/* Header */}
         <div className="mb-10 text-center">
-          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-luxury-brown/55">Secure Wolhomes Checkout</p>
-          <h1 className="mb-2 font-serif text-4xl font-light tracking-[-0.03em] text-luxury-charcoal sm:text-5xl">Checkout</h1>
-          <p className="mb-6 text-sm text-luxury-brown/70">Complete your order in three simple steps.</p>
-          <div className="flex items-center justify-center gap-2 text-sm sm:gap-3">
+          <h1 className="mb-5 font-serif text-4xl font-light text-luxury-charcoal sm:text-5xl">Checkout</h1>
+          <div className="flex items-center justify-center gap-3 text-sm">
             <StepIndicator step={1} label="Customer" current={currentStep === 'customer'} completed={['address', 'payment'].includes(currentStep)} />
-            <div className="h-px w-8 bg-luxury-sand sm:w-12" />
+            <div className="w-12 h-px bg-luxury-sand" />
             <StepIndicator step={2} label="Address" current={currentStep === 'address'} completed={currentStep === 'payment'} />
-            <div className="h-px w-8 bg-luxury-sand sm:w-12" />
+            <div className="w-12 h-px bg-luxury-sand" />
             <StepIndicator step={3} label="Shipping & Payment" current={currentStep === 'payment'} completed={false} />
           </div>
         </div>
 
         {error && (
-          <div className="mx-auto mb-8 flex max-w-2xl items-start gap-3 rounded-xl border border-luxury-terracotta/30 bg-white/90 px-5 py-4 text-sm text-luxury-charcoal shadow-sm backdrop-blur-sm">
-            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-luxury-terracotta/10 text-luxury-terracotta">!</span>
-            <span>{error}</span>
+          <div className="mb-8 border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-6 py-4 text-luxury-charcoal max-w-2xl mx-auto">
+            {error}
           </div>
         )}
 
@@ -569,11 +566,8 @@ export default function CheckoutPage() {
           <div className="min-w-0">
             {/* Customer Info Step */}
             {currentStep === 'customer' && (
-              <div className="overflow-hidden rounded-2xl border border-black/8 bg-white/95 p-5 shadow-[0_18px_45px_rgba(48,43,53,0.06)] backdrop-blur sm:p-8">
-                <div className="mb-7 flex items-end justify-between gap-4">
-                  <div><p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-brown/55">Step 1</p><h2 className="font-serif text-2xl font-normal text-luxury-charcoal sm:text-3xl">Contact Information</h2></div>
-                  <span className="rounded-full border border-luxury-gold/25 bg-luxury-gold/8 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.14em] text-luxury-brown">Secure</span>
-                </div>
+              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
+                <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Contact Information</h2>
                 <form onSubmit={handleCustomerInfoSubmit} className="space-y-5">
                   <div>
                     <label className="block text-sm font-serif text-luxury-charcoal mb-2">Email *</label>
@@ -582,7 +576,7 @@ export default function CheckoutPage() {
                       value={guestEmail}
                       onChange={(e) => setGuestEmail(e.target.value)}
                       required
-                      className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10"
+                      className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]"
                       placeholder="you@example.com"
                     />
                   </div>
@@ -595,7 +589,7 @@ export default function CheckoutPage() {
                         value={guestFirstName}
                         onChange={(e) => setGuestFirstName(e.target.value)}
                         required
-                        className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10"
+                        className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]"
                         placeholder="John"
                       />
                     </div>
@@ -606,13 +600,13 @@ export default function CheckoutPage() {
                         value={guestLastName}
                         onChange={(e) => setGuestLastName(e.target.value)}
                         required
-                        className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10"
+                        className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]"
                         placeholder="Doe"
                       />
                     </div>
                   </div>
 
-                  <button type="submit" className="w-full rounded-xl bg-[#302b35] px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#211e24] hover:shadow-lg disabled:opacity-50">
+                  <button type="submit" className="w-full rounded-md bg-[#302b35] px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24]">
                     Continue to Address -&gt;
                   </button>
                 </form>
@@ -621,8 +615,8 @@ export default function CheckoutPage() {
 
             {/* Address Step */}
             {currentStep === 'address' && (
-              <div className="overflow-hidden rounded-2xl border border-black/8 bg-white/95 p-5 shadow-[0_18px_45px_rgba(48,43,53,0.06)] backdrop-blur sm:p-8">
-                <div className="mb-7"><p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-brown/55">Step 2</p><h2 className="font-serif text-2xl font-normal text-luxury-charcoal sm:text-3xl">Shipping Address</h2></div>
+              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
+                <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Shipping Address</h2>
                 <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-6">
                   {isGuest ? (
                     <AddressForm
@@ -634,14 +628,14 @@ export default function CheckoutPage() {
                   ) : addresses.length > 0 ? (
                     <div className="space-y-3">
                       {addresses.map(addr => (
-                        <label key={addr.id} className="group flex cursor-pointer items-start gap-3 rounded-xl border border-black/8 bg-luxury-cream/20 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-luxury-gold/50 hover:bg-white hover:shadow-md has-[:checked]:border-luxury-gold has-[:checked]:bg-luxury-gold/5">
+                        <label key={addr.id} className="flex items-start gap-3 p-4 border border-black/10 bg-white transition hover:border-black/40 cursor-pointer">
                           <input
                             type="radio"
                             name="shippingAddress"
                             value={addr.id}
                             checked={selectedShippingAddressId === addr.id}
                             onChange={(e) => setSelectedShippingAddressId(e.target.value)}
-                            className="peer mt-1 h-4 w-4 shrink-0 accent-[#c99545]"
+                            className="mt-1"
                           />
                           <div className="flex-1">
                             <p className="font-medium text-luxury-charcoal">{addr.firstName} {addr.lastName}</p>
@@ -664,7 +658,7 @@ export default function CheckoutPage() {
                   {!isGuest && <button
                     type="button"
                     onClick={() => setShowNewAddressForm(!showNewAddressForm)}
-                    className="inline-flex items-center rounded-full border border-luxury-gold/30 bg-luxury-gold/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-luxury-brown transition hover:border-luxury-gold hover:bg-luxury-gold/10"
+                    className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
                   >
                     {showNewAddressForm ? '-- Cancel' : '+ Add New Address'}
                   </button>}
@@ -691,7 +685,7 @@ export default function CheckoutPage() {
                   </div>
 
                   {!sameAsShipping && (
-                    <div className="mt-8 space-y-4 border-t border-black/8 pt-7">
+                    <div className="mt-6 space-y-4 border-t border-[#ded8d0] pt-6">
                       <div>
                         <h3 className="font-serif text-xl text-luxury-charcoal">Billing Address</h3>
                         <p className="mt-1 text-sm text-luxury-brown">
@@ -710,14 +704,14 @@ export default function CheckoutPage() {
                       ) : addresses.length > 0 ? (
                         <div className="space-y-3">
                           {addresses.map((addr) => (
-                            <label key={addr.id} className="group flex cursor-pointer items-start gap-3 rounded-xl border border-black/8 bg-luxury-cream/20 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-luxury-gold/50 hover:bg-white hover:shadow-md has-[:checked]:border-luxury-gold has-[:checked]:bg-luxury-gold/5">
+                            <label key={addr.id} className="flex items-start gap-3 border border-black/10 bg-white p-4 transition hover:border-black/40 cursor-pointer">
                               <input
                                 type="radio"
                                 name="billingAddress"
                                 value={addr.id}
                                 checked={selectedBillingAddressId === addr.id}
                                 onChange={(e) => setSelectedBillingAddressId(e.target.value)}
-                                className="peer mt-1 h-4 w-4 shrink-0 accent-[#c99545]"
+                                className="mt-1"
                               />
                               <div className="flex-1">
                                 <p className="font-medium text-luxury-charcoal">{addr.firstName} {addr.lastName}</p>
@@ -747,9 +741,9 @@ export default function CheckoutPage() {
 
             {/* Payment Step */}
             {currentStep === 'payment' && (
-              <div className="overflow-hidden rounded-2xl border border-black/8 bg-white/95 p-5 shadow-[0_18px_45px_rgba(48,43,53,0.06)] backdrop-blur sm:p-8">
-                <div className="mb-6"><p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-brown/55">Step 3</p><h2 className="font-serif text-2xl font-normal text-luxury-charcoal sm:text-3xl">Shipping & Payment</h2></div>
-                <div className="mb-7 overflow-hidden rounded-2xl border border-luxury-gold/20 bg-[linear-gradient(135deg,rgba(201,149,69,0.06),rgba(255,255,255,0.95))] p-5 shadow-sm sm:p-6">
+              <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
+                <h2 className="mb-3 font-serif text-2xl font-normal text-luxury-charcoal">Shipping & Payment</h2>
+                <div className="mb-7 rounded-lg border border-[#ded8d0] bg-[#faf9f6] p-5">
                   <div className="flex items-start justify-between gap-6">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-luxury-brown/70">Shipping</p>
@@ -768,7 +762,7 @@ export default function CheckoutPage() {
 
                 {availablePaymentProviders.length > 0 && paymentConfigured ? (
                   <div className="space-y-6">
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-3">
                       {[
                         { id: 'razorpay', label: 'Card Payment', description: 'Secure international card payment' },
                         { id: 'paypal', label: 'PayPal', description: 'Pay securely with your PayPal account' },
@@ -793,7 +787,7 @@ export default function CheckoutPage() {
                               setCryptoTxHash('');
                             }}
                             className={
-                              'group rounded-2xl border p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ' +
+                              'rounded-lg border p-5 text-left transition ' +
                               (selected
                                 ? 'border-[#302b35] bg-[#f5f1eb] shadow-sm'
                                 : 'border-[#ded8d0] bg-white hover:border-[#8f8579]') +
@@ -821,7 +815,7 @@ export default function CheckoutPage() {
                     </div>
 
                     {paymentProvider === 'crypto' && (
-                      <div className="space-y-5 rounded-2xl border border-black/8 bg-luxury-cream/25 p-5 sm:p-6">
+                      <div className="space-y-5 rounded-lg border border-[#ded8d0] bg-[#faf9f6] p-5">
                         <div>
                           <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-luxury-brown">
                             Network
@@ -914,7 +908,7 @@ export default function CheckoutPage() {
 
                             <div className="rounded-md border border-[#e6c98a] bg-[#fff8e8] px-4 py-3 text-sm text-[#6f5520]">
                               <p className="font-semibold">Important payment instructions</p>
-                              <p className="peer mt-1 h-4 w-4 shrink-0 accent-[#c99545]">
+                              <p className="mt-1">
                                 Send exactly the shown amount on the selected network. After sending, do not close or refresh this page until you submit the transaction hash.
                               </p>
                               <p className="mt-2">
@@ -944,7 +938,7 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={() => setCurrentStep('address')}
                         disabled={submitting}
-                        className="rounded-xl border border-black/10 bg-white px-7 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#302b35] hover:bg-[#302b35] hover:text-white hover:shadow-md disabled:opacity-50"
+                        className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white disabled:opacity-50"
                       >
                         Back
                       </button>
@@ -953,7 +947,7 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={handlePlaceOrder}
                         disabled={submitting || paymentProvider === 'none'}
-                        className="flex-1 rounded-xl bg-[#302b35] px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#211e24] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex-1 rounded-md bg-[#302b35] px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {submitting
                           ? 'Preparing secure payment...'
@@ -977,7 +971,7 @@ export default function CheckoutPage() {
                     <button
                       type="button"
                       onClick={() => setCurrentStep('address')}
-                      className="rounded-xl border border-black/10 bg-white px-7 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#302b35] hover:bg-[#302b35] hover:text-white hover:shadow-md"
+                      className="rounded-md border border-[#cfc8c0] bg-white px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white"
                     >
                       Back
                     </button>
@@ -988,13 +982,13 @@ export default function CheckoutPage() {
           </div>
           {/* Order Summary */}
           <div className="sticky top-24 min-w-0">
-            <div className="overflow-hidden rounded-2xl border border-black/8 bg-white/95 p-5 shadow-[0_18px_45px_rgba(48,43,53,0.07)] backdrop-blur sm:p-7">
-              <div className="mb-6 flex items-start justify-between gap-3"><div><p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-luxury-brown/55">Your order</p><h2 className="font-serif text-2xl font-normal text-luxury-charcoal sm:text-3xl">Order Summary</h2></div><span className="mt-1 rounded-full border border-luxury-gold/25 bg-luxury-gold/8 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-luxury-brown">Secure</span></div>
+            <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-7 shadow-sm">
+              <h2 className="mb-6 font-serif text-2xl font-normal text-luxury-charcoal">Order Summary</h2>
 
               <div className="space-y-4 mb-6 pb-6 border-b border-luxury-sand">
                 {cart.items.map(item => (
-                  <div key={item.id} className="flex gap-3 rounded-xl p-2 transition-colors hover:bg-luxury-cream/45">
-                    <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-luxury-sand bg-luxury-cream">
+                  <div key={item.id} className="flex gap-3">
+                    <div className="w-16 h-16 border border-luxury-sand bg-luxury-cream shrink-0">
                       {item.product.media?.[0]?.url ? (
                         <img src={item.product.media[0].url} alt={item.product.name} className="w-full h-full object-cover" />
                       ) : (
@@ -1034,7 +1028,7 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
-              <div className="mt-1 flex items-end justify-between gap-4 rounded-xl bg-luxury-cream/55 px-4 py-4 font-serif text-2xl text-luxury-charcoal">
+              <div className="flex justify-between text-2xl font-serif text-luxury-charcoal">
                 <span>Total</span>
                 <span className="text-2xl font-medium text-luxury-charcoal">${Math.max(0, total - couponDiscount).toFixed(2)}</span>
               </div>
@@ -1044,7 +1038,7 @@ export default function CheckoutPage() {
                 <button type="button" onClick={() => setCurrentStep("customer")} className="rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white">
                   Back
                 </button>
-                <button type="submit" form="address-form" className="flex-1 rounded-xl bg-[#302b35] px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.1em] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#211e24] hover:shadow-md">
+                <button type="submit" form="address-form" className="flex-1 rounded-md bg-[#302b35] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#211e24]">
                   Continue to Shipping & Payment →
                 </button>
               </div>
@@ -1057,21 +1051,11 @@ export default function CheckoutPage() {
 }
 function StepIndicator({ step, label, current, completed }: { step: number; label: string; current: boolean; completed: boolean }) {
   return (
-    <button
-      type="button"
-      aria-current={current ? "step" : undefined}
-      className={
-        current
-          ? "group flex min-w-[92px] flex-col items-center rounded-2xl border border-luxury-gold/50 bg-white px-3 py-2.5 shadow-[0_10px_24px_rgba(201,149,69,0.12)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-luxury-gold/30 sm:min-w-[108px]"
-          : completed
-            ? "group flex min-w-[92px] flex-col items-center rounded-2xl border border-luxury-gold/25 bg-luxury-gold/5 px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-luxury-gold sm:min-w-[108px]"
-            : "group flex min-w-[92px] flex-col items-center rounded-2xl border border-black/8 bg-white/80 px-3 py-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:border-luxury-gold hover:shadow-sm sm:min-w-[108px]"
-      }
-    >
-      <div className={`flex h-9 w-9 items-center justify-center rounded-full font-serif text-sm transition-all duration-300 ${current ? "bg-luxury-gold text-white shadow-sm" : completed ? "bg-luxury-gold/75 text-white" : "bg-luxury-sand text-luxury-brown"}`}>
+    <button type="button" aria-current={current ? "step" : undefined} className={current ? "flex min-w-[88px] flex-col items-center rounded-md border border-luxury-gold bg-luxury-gold/10 px-4 py-2 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-luxury-gold/30" : completed ? "flex min-w-[88px] flex-col items-center rounded-md border border-[#d9c79a] bg-[#faf7ef] px-4 py-2 transition-all hover:border-luxury-gold focus:outline-none focus:ring-2 focus:ring-luxury-gold/30" : "flex min-w-[88px] flex-col items-center rounded-md border border-[#ded8d0] bg-white px-4 py-2 transition-all hover:border-luxury-gold hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-luxury-gold/30"}>
+      <div className={`w-10 h-10 rounded-full flex items-center justify-center font-serif transition-colors ${current ? "bg-luxury-gold text-white" : completed ? "bg-luxury-gold/70 text-white" : "bg-luxury-sand text-luxury-brown"}`}>
         {completed ? "✓" : step}
       </div>
-      <span className={`mt-2 text-[10px] font-semibold uppercase tracking-[0.1em] ${current ? "text-luxury-charcoal" : "text-luxury-brown/75"}`}>{label}</span>
+      <span className={`text-xs mt-2 ${current ? "font-semibold text-luxury-charcoal" : "text-luxury-brown"}`}>{label}</span>
     </button>
   );
 }
@@ -1195,31 +1179,31 @@ function AddressForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-black/8 bg-luxury-cream/35 p-5 sm:p-6">
+    <form onSubmit={handleSubmit} className="space-y-4 p-6 border border-luxury-sand bg-luxury-cream">
       <h3 className="font-serif text-lg text-luxury-charcoal mb-4">{title || 'New Address'}</h3>
 
       {error && (
-        <div className="rounded-xl border border-luxury-terracotta/30 bg-white/80 px-4 py-3 text-sm text-luxury-charcoal">
+        <div className="border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-4 py-3 text-luxury-charcoal text-sm">
           {error}
         </div>
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <input name="firstName" placeholder="First Name *" value={formData.firstName} onChange={handleChange} required className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
-        <input name="lastName" placeholder="Last Name *" value={formData.lastName} onChange={handleChange} required className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
+        <input name="firstName" placeholder="First Name *" value={formData.firstName} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+        <input name="lastName" placeholder="Last Name *" value={formData.lastName} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
       </div>
 
-      <input name="company" placeholder="Company (optional)" value={formData.company} onChange={handleChange} className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
-      <input name="addressLine1" placeholder="Address Line 1 *" value={formData.addressLine1} onChange={handleChange} required className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
-      <input name="addressLine2" placeholder="Address Line 2" value={formData.addressLine2} onChange={handleChange} className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
+      <input name="company" placeholder="Company (optional)" value={formData.company} onChange={handleChange} className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+      <input name="addressLine1" placeholder="Address Line 1 *" value={formData.addressLine1} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+      <input name="addressLine2" placeholder="Address Line 2" value={formData.addressLine2} onChange={handleChange} className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
 
       <div className="grid grid-cols-2 gap-3">
-        <input name="city" placeholder="City *" value={formData.city} onChange={handleChange} required className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
-        <input name="stateProvince" placeholder="State" value={formData.stateProvince} onChange={handleChange} className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
+        <input name="city" placeholder="City *" value={formData.city} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+        <input name="stateProvince" placeholder="State" value={formData.stateProvince} onChange={handleChange} className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <input name="postalCode" placeholder="Postal Code *" value={formData.postalCode} onChange={handleChange} required className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
+        <input name="postalCode" placeholder="Postal Code *" value={formData.postalCode} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
         <div>
           <label htmlFor="address-country" className="sr-only">Country</label>
           <select
@@ -1228,7 +1212,7 @@ function AddressForm({
             value={formData.country}
             onChange={handleChange}
             required
-            className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10"
+            className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]"
           >
             <option value="">Select country *</option>
             {COUNTRY_OPTIONS.map((country) => (
@@ -1240,14 +1224,15 @@ function AddressForm({
         </div>
       </div>
 
-      <input name="phone" type="tel" placeholder="Phone *" value={formData.phone} onChange={handleChange} required className="w-full rounded-xl border border-black/10 bg-luxury-cream/40 px-4 py-3.5 text-sm text-luxury-charcoal outline-none transition-all duration-200 placeholder:text-luxury-brown/45 focus:border-luxury-gold focus:bg-white focus:ring-2 focus:ring-luxury-gold/10" />
+      <input name="phone" type="tel" placeholder="Phone *" value={formData.phone} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
 
-      <button type="submit" disabled={submitting} className="btn-luxury w-full rounded-xl px-6 py-3.5 text-sm shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-50">
+      <button type="submit" disabled={submitting} className="btn-luxury w-full px-6 py-3 text-sm disabled:opacity-50">
         {submitting ? 'Saving...' : guestMode ? 'Use This Address' : 'Save Address'}
       </button>
     </form>
   );
 }
+
 
 
 
