@@ -4,12 +4,12 @@ import {
   MaxLength,
   IsOptional,
   Matches,
-  IsUUID,
 } from 'class-validator';
 
 export class CompleteRegistrationDto {
   @IsString()
-  @IsUUID('4', { message: 'Invalid registration verification token.' })
+  @MinLength(20, { message: 'Invalid registration verification token.' })
+  @MaxLength(128, { message: 'Invalid registration verification token.' })
   registrationToken!: string;
 
   @IsString()
