@@ -141,6 +141,26 @@ export default function ProductDetailPage() {
     ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviewCount
     : 0;
 
+  const topReviews = [...reviews]
+    .sort(
+      (a, b) =>
+        Number(Boolean(b.isFeatured)) - Number(Boolean(a.isFeatured)) ||
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    )
+    .slice(0, 5);
+
+  const ratingDistribution = [5, 4, 3, 2, 1].map((rating) => {
+    const count = reviews.filter(
+      (review) => Number(review.rating || 0) === rating,
+    ).length;
+
+    return {
+      rating,
+      count,
+      percentage: reviewCount > 0 ? (count / reviewCount) * 100 : 0,
+    };
+  });
+
   const activeMedia = product.media ?? [];
 
   const fallbackImage =
@@ -492,45 +512,124 @@ export default function ProductDetailPage() {
                </div>
              )}
             {reviewCount > 0 && (
-              <section className="mb-5 border-y border-black/10 py-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-luxury-charcoal">
-                    Customer Reviews
-                  </h2>
-                  <span className="text-[10px] text-luxury-brown">
-                    {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+              <details className="group mb-5 border-y border-black/10">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-luxury-charcoal">
+                        Customer Reviews
+                      </h2>
+                      <span className="text-[10px] text-luxury-brown">
+                        {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm tracking-[0.08em] text-luxury-gold">
+                        {'★'.repeat(Math.max(0, Math.min(5, Math.round(averageRating))))}
+                      </span>
+                      <span className="text-[11px] font-semibold text-luxury-charcoal">
+                        {averageRating.toFixed(1)} / 5
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-luxury-brown/60">
+                        Verified customer feedback
+                      </span>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-xl font-light text-luxury-gold transition-transform duration-300 group-open:rotate-45">
+                    +
                   </span>
-                </div>
-                <div className="space-y-4">
-                  {reviews.slice(0, 6).map((review) => (
-                    <article key={review.id} className="border-b border-black/5 pb-4 last:border-0 last:pb-0">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[12px] tracking-[0.06em] text-luxury-gold">
-                            {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
+                </summary>
+
+                <div className="border-t border-black/5 pb-5 pt-5">
+                  <div className="grid gap-5 rounded-sm bg-luxury-cream/60 p-4 sm:grid-cols-[150px_1fr] sm:p-5">
+                    <div className="text-center sm:border-r sm:border-black/10 sm:pr-5">
+                      <div className="font-serif text-4xl text-luxury-charcoal">
+                        {averageRating.toFixed(1)}
+                      </div>
+                      <div className="mt-1 text-sm tracking-[0.08em] text-luxury-gold">
+                        {'★'.repeat(Math.max(0, Math.min(5, Math.round(averageRating))))}
+                      </div>
+                      <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-luxury-brown/65">
+                        Based on {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      {ratingDistribution.map((item) => (
+                        <div key={item.rating} className="flex items-center gap-3">
+                          <span className="w-7 text-[10px] font-semibold text-luxury-brown">
+                            {item.rating}★
                           </span>
-                          <span className="text-[10px] text-luxury-brown">
-                            {Number(review.rating || 0).toFixed(0)}/5
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/8">
+                            <div
+                              className="h-full rounded-full bg-luxury-gold transition-all duration-500"
+                              style={{ width: `${item.percentage}%` }}
+                            />
+                          </div>
+                          <span className="w-5 text-right text-[10px] text-luxury-brown/70">
+                            {item.count}
                           </span>
                         </div>
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-charcoal">
-                          {review.customerName || 'Customer'}
-                        </span>
-                      </div>
-                      {review.title && (
-                        <h3 className="mt-1.5 text-sm font-semibold text-luxury-charcoal">
-                          {review.title}
-                        </h3>
-                      )}
-                      {review.content && (
-                        <p className="mt-1 text-sm leading-6 text-luxury-brown">
-                          {review.content}
-                        </p>
-                      )}
-                    </article>
-                  ))}
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-0">
+                    {topReviews.map((review) => (
+                      <article
+                        key={review.id}
+                        className="border-b border-black/7 py-4 first:pt-1 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[11px] tracking-[0.06em] text-luxury-gold">
+                                {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
+                              </span>
+                              <span className="text-[10px] text-luxury-brown">
+                                {Number(review.rating || 0).toFixed(0)}/5
+                              </span>
+                              {review.isFeatured && (
+                                <span className="rounded-full border border-luxury-gold/30 bg-luxury-gold/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-luxury-brown">
+                                  Featured
+                                </span>
+                              )}
+                            </div>
+                            {review.title && (
+                              <h3 className="mt-1.5 text-sm font-semibold text-luxury-charcoal">
+                                {review.title}
+                              </h3>
+                            )}
+                            {review.content && (
+                              <p className="mt-1 text-sm leading-6 text-luxury-brown">
+                                {review.content}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="shrink-0 text-right">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-luxury-charcoal">
+                              {review.customerName || 'Customer'}
+                            </p>
+                            <p className="mt-1 text-[9px] uppercase tracking-[0.08em] text-luxury-brown/50">
+                              {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+
+                  {reviewCount > 5 && (
+                    <p className="mt-4 border-t border-black/5 pt-4 text-center text-[10px] uppercase tracking-[0.12em] text-luxury-brown/55">
+                      Showing 5 featured/latest reviews
+                    </p>
+                  )}
                 </div>
-              </section>
+              </details>
             )}
            </div>
 
