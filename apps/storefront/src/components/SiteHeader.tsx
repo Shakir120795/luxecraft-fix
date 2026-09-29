@@ -72,6 +72,7 @@ export function SiteHeader() {
   const [accountOpen, setAccountOpen] = useState(false);
   const [shippingIndex, setShippingIndex] = useState(0);
   const categoryScrollRef = useRef<HTMLDivElement | null>(null);
+  const categoryScrollDirectionRef = useRef<1 | -1>(1);
 
   useEffect(() => {
     loadCartCount();
@@ -97,15 +98,22 @@ export function SiteHeader() {
 
     let animationFrame = 0;
     let lastTime = 0;
+    categoryScrollDirectionRef.current = 1;
 
     const tick = (time: number) => {
       const maxScroll = container.scrollWidth - container.clientWidth;
+
       if (maxScroll > 8) {
-        if (container.scrollLeft >= maxScroll - 2) {
-          container.scrollLeft = 0;
+        const delta = lastTime ? time - lastTime : 16;
+        const step = delta * 0.035;
+        const direction = categoryScrollDirectionRef.current;
+
+        if (direction === 1 && container.scrollLeft >= maxScroll - 2) {
+          categoryScrollDirectionRef.current = -1;
+        } else if (direction === -1 && container.scrollLeft <= 2) {
+          categoryScrollDirectionRef.current = 1;
         } else {
-          const delta = lastTime ? time - lastTime : 16;
-          container.scrollLeft += delta * 0.035;
+          container.scrollLeft += step * direction;
         }
       }
 
