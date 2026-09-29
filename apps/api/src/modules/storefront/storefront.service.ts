@@ -401,11 +401,11 @@ export class StorefrontService {
         customerName:
           [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
       })),
-    };
+    } as Product;
   }
 
   async getFeaturedProducts(take = 8): Promise<Product[]> {
-    return this.prisma.product.findMany({
+    const products = await this.prisma.product.findMany({
       where: {
         status: ProductStatus.ACTIVE,
         deletedAt: null,
@@ -445,16 +445,17 @@ export class StorefrontService {
             },
           },
         },
-      }).then((products: any[]) =>
-      products.map((product) => ({
-        ...product,
-        reviews: (product.reviews ?? []).map((review: any) => ({
-          ...review,
-          customerName:
-            [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
-        })),
+      },
+    });
+
+    return products.map((product: any) => ({
+      ...product,
+      reviews: (product.reviews ?? []).map((review: any) => ({
+        ...review,
+        customerName:
+          [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
       })),
-    );
+    })) as Product[];
   }
 }
 
