@@ -17,6 +17,7 @@ export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [homepageVideos, setHomepageVideos] = useState<HomepageVideo[]>([]);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+  const [activeVideoAspect, setActiveVideoAspect] = useState<'landscape' | 'portrait'>('landscape');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
@@ -65,6 +66,32 @@ export default function HomePage() {
 
     loadData();
   }, []);
+
+  useEffect(() => {
+    const video = homepageVideos[activeVideoIndex];
+
+    if (!video || video.platform !== 'youtube') {
+      setActiveVideoAspect(video?.platform === 'instagram' ? 'portrait' : 'landscape');
+      return;
+    }
+
+    const youtubeMatch = video.url.match(
+      /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([^?&/]+)/
+    );
+
+    if (!youtubeMatch) {
+      setActiveVideoAspect('landscape');
+      return;
+    }
+
+    setActiveVideoAspect('landscape');
+
+    const thumbnail = new window.Image();
+    thumbnail.onload = () => {
+      setActiveVideoAspect(thumbnail.naturalHeight > thumbnail.naturalWidth ? 'portrait' : 'landscape');
+    };
+    thumbnail.src = `https://i.ytimg.com/vi/${youtubeMatch[1]}/maxresdefault.jpg`;
+  }, [activeVideoIndex, homepageVideos]);
 
   useEffect(() => {
     if (loading || categories.length <= 1) return;
@@ -500,7 +527,10 @@ export default function HomePage() {
                 if (index !== activeVideoIndex || !embedUrl) return null;
 
                 return (
-                  <div key={video.id} className="aspect-[9/16] w-full sm:aspect-video">
+                  <div
+                    key={video.id}
+                    className={`w-full transition-[aspect-ratio] duration-300 ${activeVideoAspect === 'portrait' ? 'aspect-[9/16]' : 'aspect-video'}`}
+                  >
                     <iframe
                       src={embedUrl}
                       title={video.title}
