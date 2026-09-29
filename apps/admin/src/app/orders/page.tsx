@@ -37,7 +37,13 @@ export default function OrdersPage() {
     }
   }
 
-  const filteredOrders = orders.filter(order => {
+  const visibleOrders = orders.filter(order => {
+    const status = String(order.status || '').toUpperCase();
+    const paymentStatus = String(order.paymentStatus || '').toUpperCase();
+    return paymentStatus === 'PAID' && status !== 'CANCELLED' && status !== 'REFUNDED';
+  });
+
+  const filteredOrders = visibleOrders.filter(order => {
     const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,7 +98,6 @@ export default function OrdersPage() {
               <option value="PROCESSING">Processing</option>
               <option value="SHIPPED">Shipped</option>
               <option value="DELIVERED">Delivered</option>
-              <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
         </div>
@@ -207,9 +212,9 @@ export default function OrdersPage() {
         {/* Summary */}
         {!loading && filteredOrders.length > 0 && (
           <div className="flex items-center justify-between text-sm text-[var(--color-muted)]">
-            <div>Showing {filteredOrders.length} of {orders.length} orders</div>
+            <div>Showing {filteredOrders.length} of {visibleOrders.length} orders</div>
             <div className="font-medium">
-              Total Revenue: ${orders.reduce((sum, o) => sum + Number(o.total), 0).toFixed(2)}
+              Total Revenue: ${visibleOrders.reduce((sum, o) => sum + Number(o.total), 0).toFixed(2)}
             </div>
           </div>
         )}
