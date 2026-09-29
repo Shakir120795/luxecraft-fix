@@ -275,6 +275,32 @@ export class StorefrontService {
             orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
             take: 1,
           },
+          reviews: {
+            where: { status: { in: ['APPROVED', 'PENDING'] } },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              productId: true,
+              rating: true,
+              title: true,
+              content: true,
+              isFeatured: true,
+              createdAt: true,
+            },
+          },
+          reviews: {
+            where: { status: { in: ['APPROVED', 'PENDING'] } },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              productId: true,
+              rating: true,
+              title: true,
+              content: true,
+              isFeatured: true,
+              createdAt: true,
+            },
+          },
         },
       }),
       this.prisma.product.count({ where }),
@@ -335,6 +361,19 @@ export class StorefrontService {
         media: {
           orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
         },
+          reviews: {
+            where: { status: { in: ['APPROVED', 'PENDING'] } },
+            orderBy: { createdAt: 'desc' },
+            select: {
+              id: true,
+              productId: true,
+              rating: true,
+              title: true,
+              content: true,
+              isFeatured: true,
+              createdAt: true,
+            },
+          },
         customizationOptions: {
           where: { isAvailable: true },
           orderBy: { sortOrder: 'asc' },
