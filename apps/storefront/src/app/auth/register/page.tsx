@@ -107,8 +107,8 @@ function RegisterForm() {
       setEmailVerified(true);
       setSuccess('Email verified successfully. You can now create your Wolhomes account.');
     } else if (result.success) {
-      setEmailVerified(true);
-      setSuccess('Email verified successfully.');
+      setSuccess('Email verified successfully. This email already belongs to an account. Please sign in.');
+      setTimeout(() => router.push(loginHref), 1200);
     } else {
       setError(result.message || 'Verification failed.');
     }
@@ -291,6 +291,7 @@ function RegisterForm() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleChange}
+                      disabled={otpSent || emailVerified}
                       className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
                       placeholder="John"
                       autoComplete="given-name"
@@ -307,6 +308,7 @@ function RegisterForm() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleChange}
+                      disabled={otpSent || emailVerified}
                       className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
                       placeholder="Doe"
                       autoComplete="family-name"
@@ -323,6 +325,7 @@ function RegisterForm() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
+                      disabled={otpSent || emailVerified}
                       className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
                       placeholder="+1 (555) 000-0000"
                       autoComplete="tel"
@@ -341,12 +344,13 @@ function RegisterForm() {
                       name="password"
                       value={formData.password}
                       onChange={handleChange}
+                      disabled={otpSent || emailVerified}
                       required
                       className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
                       autoComplete="new-password"
                     />
                     <p className="mt-1.5 text-[10px] text-[#77716c]">
-                      Minimum 8 characters, including uppercase, lowercase and a number.
+                      Minimum 8 characters, including uppercase, lowercase and a number. Complete these details before sending the OTP.
                     </p>
                   </div>
 
@@ -360,6 +364,7 @@ function RegisterForm() {
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
+                      disabled={otpSent || emailVerified}
                       required
                       className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
                       autoComplete="new-password"
