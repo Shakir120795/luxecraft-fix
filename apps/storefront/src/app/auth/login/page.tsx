@@ -108,6 +108,16 @@ function LoginForm() {
             </button>
           </form>
 
+          <div className="text-center">
+            <p className="mb-4 text-sm text-[#6a636b]">Don't have an account?</p>
+            <Link
+              href={`/auth/register${redirectTo !== '/account' ? `?redirect=${redirectTo}` : ''}`}
+              className="inline-block w-full rounded-md border border-[#302b35] bg-white px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:bg-[#302b35] hover:text-white"
+            >
+              Create Account
+            </Link>
+          </div>
+
           <div className="relative my-8">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-[#ded8d0]" />
