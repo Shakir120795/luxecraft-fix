@@ -18,10 +18,18 @@ export class ReviewsService {
         isFeatured: true,
         createdAt: true,
         userId: true,
+        user: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
     }).then((reviews) =>
-      reviews.map(({ userId: reviewUserId, ...review }) => ({
+      reviews.map(({ userId: reviewUserId, user: reviewer, ...review }) => ({
         ...review,
+        customerName:
+          [reviewer?.firstName, reviewer?.lastName].filter(Boolean).join(' ') || 'Customer',
         isMine: Boolean(userId && reviewUserId === userId),
       })),
     );
