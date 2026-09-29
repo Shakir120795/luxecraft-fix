@@ -23,7 +23,7 @@ function RegisterForm() {
   });
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [phoneCountryCode, setPhoneCountryCode] = useState('+91');
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+1');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [registrationToken, setRegistrationToken] = useState('');
@@ -325,8 +325,8 @@ function RegisterForm() {
                       className="w-[96px] shrink-0 border border-[#d8cfc5] bg-white px-3 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
                       aria-label="Country code"
                     >
+                      <option value="+1">+1 US/CA</option>
                       <option value="+91">+91 IN</option>
-                      <option value="+1">+1 US</option>
                       <option value="+44">+44 UK</option>
                       <option value="+61">+61 AU</option>
                       <option value="+64">+64 NZ</option>
