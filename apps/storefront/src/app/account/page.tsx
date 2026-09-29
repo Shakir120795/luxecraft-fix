@@ -13,18 +13,29 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/auth/login?redirect=/account');
-      return;
-    }
-
     loadAccountData();
   }, []);
 
   async function loadAccountData() {
     try {
       setLoading(true);
+
       const userData = await getFreshCurrentUser();
+
+      if (!userData) {
+        setUser(null);
+        router.replace('/auth/login?redirect=/account');
+        return;
+      }
+
+      if (!userData.emailVerified) {
+        await logout();
+        router.replace(
+          '/auth/verify-email?email=' + encodeURIComponent(userData.email),
+        );
+        return;
+      }
+
       setUser(userData);
 
       const orders = await getOrders();
