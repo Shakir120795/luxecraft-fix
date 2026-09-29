@@ -78,7 +78,10 @@ export function SiteHeader() {
     loadCartCount();
     loadCategories();
     loadProductFilters();
-    setIsAuth(isAuthenticated());
+
+    const syncAuth = () => setIsAuth(isAuthenticated());
+    syncAuth();
+    window.addEventListener('storage', syncAuth);
 
     const interval = setInterval(loadCartCount, 5000);
     const handleCartUpdated = () => {
@@ -89,6 +92,7 @@ export function SiteHeader() {
     return () => {
       clearInterval(interval);
       window.removeEventListener('wolhomes:cart-updated', handleCartUpdated);
+      window.removeEventListener('storage', syncAuth);
     };
   }, []);
 
