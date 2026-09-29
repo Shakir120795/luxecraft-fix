@@ -130,6 +130,24 @@ export default function HomePage() {
 
 
 
+  function collectionFilterHref(category: Category) {
+    const name = category.name.trim().toLowerCase();
+
+    if (name.includes('hand knotted')) {
+      return '/products?filter_weave-type=hand-knotted';
+    }
+
+    if (name.includes('hand tufted')) {
+      return '/products?filter_weave-type=hand-tufted';
+    }
+
+    if (name.includes('flat weave')) {
+      return '/products?filter_weave-type=flat-weave-rugs';
+    }
+
+    return '/products?category=' + encodeURIComponent(category.id);
+  }
+
   const heroCategory = categories[0];
   const heroImage = hero?.imageUrl || heroCategory?.imageUrl || products[0]?.media?.find((media) => media.isMain)?.url || products[0]?.media?.[0]?.url || '';
   const sideCategoryTwo = categories[2];
@@ -305,7 +323,7 @@ export default function HomePage() {
               {categories.map((category, index) => (
                 <Link
                   key={category.id}
-                  href="/products"
+                  href={collectionFilterHref(category)}
                   className="group relative min-w-[76vw] snap-start overflow-hidden rounded-2xl bg-[#eee9e3] shadow-sm transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.14)] sm:min-w-[360px] lg:min-w-[390px]"
                 >
                   <div className="relative aspect-[1.18] overflow-hidden">
