@@ -77,7 +77,8 @@ export class AdminOrdersService {
           (order) =>
             order.paymentStatus === PaymentStatus.PAID ||
             (order.orderStatus === OrderStatus.CANCELLED &&
-              customerCancelledIds.has(order.id)),
+              (customerCancelledIds.has(order.id) ||
+                (order.customerNotes ?? '').toLowerCase().includes('cancelled by customer'))),
         );
       }
     }
