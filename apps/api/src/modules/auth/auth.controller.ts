@@ -20,6 +20,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { SendVerificationDto } from './dto/send-verification.dto';
+import { CompleteRegistrationDto } from './dto/complete-registration.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { User } from '@prisma/client';
@@ -110,6 +112,14 @@ export class AuthController {
     return { message: 'All sessions revoked.' };
   }
 
+  /** POST /api/v1/auth/send-verification */
+  @Post('send-verification')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @HttpCode(HttpStatus.OK)
+  async sendVerification(@Body() dto: SendVerificationDto) {
+    return this.auth.sendVerificationCode(dto.email);
+  }
+
   /** POST /api/v1/auth/verify-email */
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
@@ -120,8 +130,13 @@ export class AuthController {
   /** POST /api/v1/auth/register/complete */
   @Post('register/complete')
   @HttpCode(HttpStatus.OK)
-  async completeRegistration(@Body('registrationToken') registrationToken: string) {
-    return this.auth.completeRegistration(registrationToken);
+  async completeRegistration(@Body() dto: CompleteRegistrationDto) {
+    return this.auth.completeRegistration(dto.registrationToken, {
+      password: dto.password,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      phone: dto.phone,
+    });
   }
 
   /** POST /api/v1/auth/resend-verification */
