@@ -6,7 +6,19 @@ export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listForProduct(productId: string) {
-    return this.prisma.review.findMany({ where: { productId, status: 'APPROVED' }, orderBy: { createdAt: 'desc' } });
+    return this.prisma.review.findMany({
+      where: { productId, status: { in: ['APPROVED', 'PENDING'] } },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        productId: true,
+        rating: true,
+        title: true,
+        content: true,
+        isFeatured: true,
+        createdAt: true,
+      },
+    });
   }
 
   async create(userId: string, productId: string, rating: number, title?: string, content?: string) {
@@ -50,7 +62,7 @@ export class ReviewsService {
         rating,
         title: title?.trim() || null,
         content: content?.trim() || null,
-        status: 'PENDING',
+        status: 'APPROVED',
       },
     });
   }
