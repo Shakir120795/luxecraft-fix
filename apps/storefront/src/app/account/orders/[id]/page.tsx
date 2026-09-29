@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getOrder, getFreshCurrentUser, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder } from '@/lib/api';
+import { getOrder, getFreshCurrentUser, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder, createProductReview } from '@/lib/api';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -422,6 +422,62 @@ export default function OrderDetailPage() {
                         <div className="text-left sm:w-32 sm:text-right">
                           <p className="font-serif text-xl text-[#302b35]">${Number(item.totalPrice).toFixed(2)}</p>
                           <p className="mt-1 text-sm text-[#67625c]">${Number(item.unitPrice).toFixed(2)} each</p>
+                        </div>
+
+                        <div className="mt-5 border-t border-[#eee8e2] pt-4">
+                          {normalizedStatus === 'DELIVERED' && order.paymentStatus === 'PAID' && product.id && !reviewSubmittedProductIds.includes(String(product.id)) && (
+                            reviewProductId === String(product.id) ? (
+                              <div className="rounded-lg border border-[#e0dbd6] bg-[#faf9f7] p-4">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-sm font-semibold text-[#302b35]">Review this product</p>
+                                  <button type="button" onClick={() => { setReviewProductId(null); setReviewMessage(null); }} className="text-xs text-[#8a837c] hover:text-[#302b35]">Close</button>
+                                </div>
+                                <div className="mt-3 flex items-center gap-1" aria-label="Rating">
+                                  {[1, 2, 3, 4, 5].map((rating) => (
+                                    <button key={rating} type="button" onClick={() => setReviewRating(rating)} aria-label={'Rate ' + rating + ' out of 5'} className={rating <= reviewRating ? 'text-[#c99545] text-xl' : 'text-[#cfc8c0] text-xl'}>★</button>
+                                  ))}
+                                </div>
+                                <input value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} placeholder="Review title (optional)" maxLength={120} className="mt-3 w-full rounded-md border border-[#ded8d0] bg-white px-3 py-2.5 text-sm text-[#302b35] outline-none focus:border-[#302b35]" />
+                                <textarea value={reviewContent} onChange={(e) => setReviewContent(e.target.value)} placeholder="Share your experience (optional)" maxLength={1000} rows={4} className="mt-3 w-full resize-y rounded-md border border-[#ded8d0] bg-white px-3 py-2.5 text-sm text-[#302b35] outline-none focus:border-[#302b35]" />
+                                {reviewMessage && <p className="mt-3 text-xs leading-5 text-[#67625c]">{reviewMessage}</p>}
+                                <button
+                                  type="button"
+                                  disabled={reviewSubmitting}
+                                  onClick={async () => {
+                                    setReviewSubmitting(true);
+                                    setReviewMessage(null);
+                                    const result = await createProductReview({
+                                      productId: String(product.id),
+                                      rating: reviewRating,
+                                      title: reviewTitle,
+                                      content: reviewContent,
+                                    });
+                                    if (result.success) {
+                                      setReviewSubmittedProductIds((current) => [...current, String(product.id)]);
+                                      setReviewProductId(null);
+                                      setReviewTitle('');
+                                      setReviewContent('');
+                                      setReviewRating(5);
+                                      setReviewMessage(result.message || 'Review submitted successfully.');
+                                    } else {
+                                      setReviewMessage(result.message || 'Unable to submit review.');
+                                    }
+                                    setReviewSubmitting(false);
+                                  }}
+                                  className="mt-3 btn-luxury px-5 py-2.5 text-xs disabled:opacity-50"
+                                >
+                                  {reviewSubmitting ? 'Submitting…' : 'Submit Review'}
+                                </button>
+                              </div>
+                            ) : (
+                              <button type="button" onClick={() => { setReviewProductId(String(product.id)); setReviewRating(5); setReviewTitle(''); setReviewContent(''); setReviewMessage(null); }} className="border border-[#c99545] bg-[#c99545]/10 px-4 py-2.5 text-xs font-medium uppercase tracking-[0.12em] text-[#7a5a2c] transition hover:bg-[#c99545]/20">
+                                Leave a Review
+                              </button>
+                            )
+                          )}
+                          {reviewSubmittedProductIds.includes(String(product.id)) && (
+                            <p className="text-xs text-[#2f6b36]">Review submitted. It will appear after admin approval.</p>
+                          )}
                         </div>
                       </div>
                     </div>
