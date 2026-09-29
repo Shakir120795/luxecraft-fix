@@ -286,6 +286,12 @@ export class StorefrontService {
               content: true,
               isFeatured: true,
               createdAt: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
             },
           },
         },
@@ -293,7 +299,17 @@ export class StorefrontService {
       this.prisma.product.count({ where }),
     ]);
 
-    return { items, total };
+    return {
+      items: items.map((product: any) => ({
+        ...product,
+        reviews: (product.reviews ?? []).map((review: any) => ({
+          ...review,
+          customerName:
+            [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
+        })),
+      })),
+      total,
+    };
   }
 
   async getSitemapData(): Promise<{
@@ -359,6 +375,12 @@ export class StorefrontService {
               content: true,
               isFeatured: true,
               createdAt: true,
+              user: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                },
+              },
             },
           },
         customizationOptions: {
@@ -411,7 +433,16 @@ export class StorefrontService {
           },
         },
       },
-    });
+    }).then((products: any[]) =>
+      products.map((product) => ({
+        ...product,
+        reviews: (product.reviews ?? []).map((review: any) => ({
+          ...review,
+          customerName:
+            [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
+        })),
+      })),
+    );
   }
 }
 
