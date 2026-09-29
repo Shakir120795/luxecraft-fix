@@ -73,6 +73,63 @@ export class UsersService {
     });
   }
 
+  /** Create a customer whose email was verified before account creation. */
+  async createVerified(data: {
+    email: string;
+    password: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }): Promise<User> {
+    const email = data.email.toLowerCase().trim();
+    const passwordHash = await bcrypt.hash(data.password, BCRYPT_ROUNDS);
+    const existing = await this.findByEmail(email);
+
+    if (existing) {
+      throw new ConflictException('An account with this email already exists.');
+    }
+
+    return this.prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+    });
+  }
+
+  /** Create a verified customer from an already-hashed password. */
+  async createVerifiedWithPasswordHash(data: {
+    email: string;
+    passwordHash: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }): Promise<User> {
+    const email = data.email.toLowerCase().trim();
+    const existing = await this.findByEmail(email);
+
+    if (existing) {
+      throw new ConflictException('An account with this email already exists.');
+    }
+
+    return this.prisma.user.create({
+      data: {
+        email,
+        passwordHash: data.passwordHash,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+      },
+    });
+  }
+
   /** Verify a plain-text password against the stored hash. */
   async verifyPassword(user: User, password: string): Promise<boolean> {
     if (!user.passwordHash) return false;
