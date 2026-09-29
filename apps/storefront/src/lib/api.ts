@@ -728,7 +728,7 @@ export async function register(params: {
   firstName?: string;
   lastName?: string;
   phone?: string;
-}): Promise<AuthResponse> {
+}): Promise<{ success: boolean; message?: string }> {
   try {
     const res = await apiFetch(`${API_URL}/auth/register`, {
       method: 'POST',
@@ -737,18 +737,22 @@ export async function register(params: {
     });
 
     const data = await res.json();
-    
-    if (res.ok && data.success && data.data) {
-      accessToken = data.data.accessToken;
-      refreshBlocked = false;
-      localStorage.setItem('user', JSON.stringify(data.data.user));
-      return { success: true, data: data.data };
+    const payload = data?.data ?? data;
+
+    if (res.ok && data.success) {
+      return {
+        success: true,
+        message: payload?.message || data.message || 'Verification code sent.',
+      };
     }
 
-    return { success: false, message: data.message || 'Registration failed' };
+    return {
+      success: false,
+      message: data.message || 'Unable to start registration.',
+    };
   } catch (error) {
     console.error('Registration error:', error);
-    return { success: false, message: 'Registration failed' };
+    return { success: false, message: 'Unable to start registration.' };
   }
 }
 
