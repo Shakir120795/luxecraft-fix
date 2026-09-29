@@ -27,6 +27,7 @@ export class UsersService {
     password: string;
     firstName?: string;
     lastName?: string;
+    phone?: string;
   }): Promise<User> {
     const email = data.email.toLowerCase().trim();
     // Hash before checking existence so duplicate-registration timing is less revealing.
@@ -41,6 +42,33 @@ export class UsersService {
         passwordHash,
         firstName: data.firstName,
         lastName: data.lastName,
+        phone: data.phone,
+      },
+    });
+  }
+
+  /** Create a customer from an already-hashed password. */
+  async createWithPasswordHash(data: {
+    email: string;
+    passwordHash: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  }): Promise<User> {
+    const email = data.email.toLowerCase().trim();
+    const existing = await this.findByEmail(email);
+
+    if (existing) {
+      throw new ConflictException('An account with this email already exists.');
+    }
+
+    return this.prisma.user.create({
+      data: {
+        email,
+        passwordHash: data.passwordHash,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
       },
     });
   }
