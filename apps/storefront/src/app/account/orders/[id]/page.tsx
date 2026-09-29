@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getOrder, isAuthenticated, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder } from '@/lib/api';
+import { getOrder, getFreshCurrentUser, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder } from '@/lib/api';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -30,14 +30,19 @@ export default function OrderDetailPage() {
   const [resumeCryptoQr, setResumeCryptoQr] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/auth/login?redirect=/account/orders');
-      return;
+    async function loadAuthenticatedOrder() {
+      const user = await getFreshCurrentUser();
+      if (!user) {
+        router.push('/auth/login?redirect=/account/orders');
+        return;
+      }
+
+      if (orderId) {
+        await loadOrder();
+      }
     }
 
-    if (orderId) {
-      loadOrder();
-    }
+    void loadAuthenticatedOrder();
   }, [orderId]);
 
   useEffect(() => {
