@@ -166,17 +166,31 @@ export class StorefrontService {
       }
 
       if (slug === 'size') {
-        fallbackConditions.push({
-          variants: {
-            some: {
-              deletedAt: null,
-              name: {
-                contains: displayValue,
-                mode: 'insensitive',
+        const sizeWithSpaces = normalizedValue.replace(
+          /^(\\d+)x(\\d+)$/,
+          '$1 x $2',
+        );
+        const sizeCandidates = Array.from(
+          new Set([
+            displayValue,
+            sizeWithSpaces,
+            sizeWithSpaces + ' ft',
+          ]),
+        );
+
+        for (const candidate of sizeCandidates) {
+          fallbackConditions.push({
+            variants: {
+              some: {
+                deletedAt: null,
+                name: {
+                  contains: candidate,
+                  mode: 'insensitive',
+                },
               },
             },
-          },
-        });
+          });
+        }
       }
 
       if (slug === 'weave-type' || slug === 'shape') {
