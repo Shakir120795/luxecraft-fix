@@ -196,8 +196,9 @@ export default function CheckoutPage() {
 
         setCurrentStep('address');
       } else if (!isGuest) {
-        // Only require login when the authenticated session could not be refreshed.
-        router.push(`/auth/login?redirect=/checkout`);
+        // Preserve the full checkout URL so retry/resume flows survive the login redirect.
+        const redirectTarget = `${window.location.pathname}${window.location.search}`;
+        router.push(`/auth/login?redirect=${encodeURIComponent(redirectTarget)}`);
         return;
       } else {
         setCurrentStep('customer');
