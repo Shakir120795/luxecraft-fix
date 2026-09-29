@@ -23,6 +23,8 @@ function RegisterForm() {
   });
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [phoneCountryCode, setPhoneCountryCode] = useState('+91');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [emailVerified, setEmailVerified] = useState(false);
   const [registrationToken, setRegistrationToken] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,11 +35,29 @@ function RegisterForm() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target;
-    if (name === 'email' && (otpSent || emailVerified)) return;
+    if (name === 'email' && emailVerified) return;
 
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+  }
+
+  function handlePhoneNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 15);
+    setPhoneNumber(digits);
+    setFormData((prev) => ({
+      ...prev,
+      phone: digits ? phoneCountryCode + digits : '',
+    }));
+  }
+
+  function handleCountryCodeChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const code = e.target.value;
+    setPhoneCountryCode(code);
+    setFormData((prev) => ({
+      ...prev,
+      phone: phoneNumber ? code + phoneNumber : '',
     }));
   }
 
@@ -240,6 +260,12 @@ function RegisterForm() {
                   </div>
                 )}
 
+                {otpSent && !emailVerified && (
+                  <p className="mt-2 text-[10px] leading-5 text-[#77716c]">
+                    Didn&apos;t find the OTP in your inbox? Please check your <span className="font-semibold text-[#302b35]">Spam or Junk</span> folder.
+                  </p>
+                )}
+
                 <div className="mt-2 flex items-center justify-between gap-3 text-[10px] text-[#77716c]">
                   <span>
                     {emailVerified
@@ -265,7 +291,6 @@ function RegisterForm() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     placeholder="John"
                     autoComplete="given-name"
@@ -282,7 +307,6 @@ function RegisterForm() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     placeholder="Doe"
                     autoComplete="family-name"
@@ -299,7 +323,6 @@ function RegisterForm() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     placeholder="+1 (555) 000-0000"
                     autoComplete="tel"
@@ -319,7 +342,6 @@ function RegisterForm() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     autoComplete="new-password"
                   />
@@ -339,7 +361,6 @@ function RegisterForm() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     autoComplete="new-password"
                   />
