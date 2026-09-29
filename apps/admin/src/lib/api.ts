@@ -294,6 +294,7 @@ export interface Order {
   orderNumber: string;
   userId: string;
   status: string;
+  paymentStatus?: string;
   total: number;
   subtotal: number;
   tax: number;
