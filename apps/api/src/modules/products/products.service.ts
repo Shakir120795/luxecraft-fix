@@ -38,6 +38,7 @@ export class ProductsService {
       data: {
         categoryId: dto.categoryId,
         material: dto.material,
+        filterData: dto.filterData,
         style: dto.style,
         collection: dto.collection,
         color: dto.color,
@@ -102,6 +103,7 @@ export class ProductsService {
       data: {
         ...(dto.categoryId !== undefined && { categoryId: dto.categoryId }),
         ...(dto.material !== undefined && { material: dto.material }),
+        ...(dto.filterData !== undefined && { filterData: dto.filterData }),
         ...(dto.style !== undefined && { style: dto.style }),
         ...(dto.collection !== undefined && { collection: dto.collection }),
         ...(dto.color !== undefined && { color: dto.color }),
