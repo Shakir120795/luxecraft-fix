@@ -824,7 +824,7 @@ export async function verifyEmail(params: {
   code: string;
 }): Promise<{ success: boolean; message?: string; registrationToken?: string }> {
   try {
-    const res = await apiFetch(\`${API_URL}/auth/verify-email\`, {
+    const res = await apiFetch(`${API_URL}/auth/verify-email`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
@@ -852,7 +852,7 @@ export async function completeRegistration(
   registrationToken: string,
 ): Promise<{ success: boolean; message?: string }> {
   try {
-    const res = await apiFetch(\`${API_URL}/auth/register/complete\`, {
+    const res = await apiFetch(`${API_URL}/auth/register/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ registrationToken }),
