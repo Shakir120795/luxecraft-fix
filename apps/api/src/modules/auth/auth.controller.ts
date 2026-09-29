@@ -114,8 +114,14 @@ export class AuthController {
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   async verifyEmail(@Body() dto: VerifyEmailDto) {
-    await this.auth.verifyEmail(dto.email, dto.code);
-    return { message: 'Email verified successfully.' };
+    return this.auth.verifyEmail(dto.email, dto.code);
+  }
+
+  /** POST /api/v1/auth/register/complete */
+  @Post('register/complete')
+  @HttpCode(HttpStatus.OK)
+  async completeRegistration(@Body('registrationToken') registrationToken: string) {
+    return this.auth.completeRegistration(registrationToken);
   }
 
   /** POST /api/v1/auth/resend-verification */
