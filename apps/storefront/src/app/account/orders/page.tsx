@@ -39,8 +39,8 @@ export default function OrdersPage() {
 
   const statusLabel = (status: string) => {
     const labels: Record<string, string> = {
-      PENDING: 'Payment Pending',
-      PAYMENT_CONFIRMED: 'Payment Confirmed',
+      PENDING: 'Placed',
+      PAYMENT_CONFIRMED: 'Placed',
       PROCESSING: 'Processing',
       SHIPPED: 'Shipped',
       DELIVERED: 'Delivered',
@@ -68,21 +68,39 @@ export default function OrdersPage() {
 
   const filteredOrders = filter === 'all'
     ? orders
-    : orders.filter(o => {
-        const orderStatus = (o.orderStatus || o.status || '').toLowerCase();
-        return filter === 'failed'
-          ? o.paymentStatus.toUpperCase() === 'FAILED' || orderStatus === 'failed'
-          : orderStatus === filter.toLowerCase();
+    : orders.filter((order) => {
+        const status = (order.orderStatus || order.status || '').toUpperCase();
+        if (filter === 'placed') {
+          return order.paymentStatus.toUpperCase() === 'PAID' &&
+            ['PENDING', 'PAYMENT_CONFIRMED'].includes(status);
+        }
+        if (filter === 'processing') {
+          return ['PROCESSING', 'READY_TO_SHIP'].includes(status);
+        }
+        if (filter === 'shipped') {
+          return ['SHIPPED', 'OUT_FOR_DELIVERY'].includes(status);
+        }
+        return status === filter.toUpperCase();
       });
 
   const counts = {
     all: orders.length,
-    pending: orders.filter(o => (o.orderStatus || o.status || '').toUpperCase() === 'PENDING').length,
-    processing: orders.filter(o => (o.orderStatus || o.status || '').toUpperCase() === 'PROCESSING').length,
-    shipped: orders.filter(o => (o.orderStatus || o.status || '').toUpperCase() === 'SHIPPED').length,
-    delivered: orders.filter(o => (o.orderStatus || o.status || '').toUpperCase() === 'DELIVERED').length,
-    cancelled: orders.filter(o => (o.orderStatus || o.status || '').toUpperCase() === 'CANCELLED').length,
-    failed: orders.filter(o => o.paymentStatus.toUpperCase() === 'FAILED' || (o.orderStatus || o.status || '').toUpperCase() === 'FAILED').length,
+    placed: orders.filter((order) =>
+      order.paymentStatus.toUpperCase() === 'PAID' &&
+      ['PENDING', 'PAYMENT_CONFIRMED'].includes((order.orderStatus || order.status || '').toUpperCase()),
+    ).length,
+    processing: orders.filter((order) =>
+      ['PROCESSING', 'READY_TO_SHIP'].includes((order.orderStatus || order.status || '').toUpperCase()),
+    ).length,
+    shipped: orders.filter((order) =>
+      ['SHIPPED', 'OUT_FOR_DELIVERY'].includes((order.orderStatus || order.status || '').toUpperCase()),
+    ).length,
+    delivered: orders.filter((order) =>
+      (order.orderStatus || order.status || '').toUpperCase() === 'DELIVERED',
+    ).length,
+    cancelled: orders.filter((order) =>
+      (order.orderStatus || order.status || '').toUpperCase() === 'CANCELLED',
+    ).length,
   };
 
   if (loading) {
@@ -114,8 +132,7 @@ export default function OrdersPage() {
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {[
               ['all', 'All', counts.all],
-              ['pending', 'Pending', counts.pending],
-              ['failed', 'Failed', counts.failed],
+              ['placed', 'Placed', counts.placed],
               ['processing', 'Processing', counts.processing],
               ['shipped', 'Shipped', counts.shipped],
               ['delivered', 'Delivered', counts.delivered],
