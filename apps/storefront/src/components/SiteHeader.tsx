@@ -95,19 +95,27 @@ export function SiteHeader() {
     const container = categoryScrollRef.current;
     if (!container || openFilter) return;
 
-    const interval = window.setInterval(() => {
-      const maxScroll = container.scrollWidth - container.clientWidth;
-      if (maxScroll <= 8) return;
+    let animationFrame = 0;
+    let lastTime = 0;
 
-      if (container.scrollLeft >= maxScroll - 2) {
-        container.scrollLeft = 0;
-        return;
+    const tick = (time: number) => {
+      const maxScroll = container.scrollWidth - container.clientWidth;
+      if (maxScroll > 8) {
+        if (container.scrollLeft >= maxScroll - 2) {
+          container.scrollLeft = 0;
+        } else {
+          const delta = lastTime ? time - lastTime : 16;
+          container.scrollLeft += delta * 0.035;
+        }
       }
 
-      container.scrollLeft += 1;
-    }, 28);
+      lastTime = time;
+      animationFrame = window.requestAnimationFrame(tick);
+    };
 
-    return () => window.clearInterval(interval);
+    animationFrame = window.requestAnimationFrame(tick);
+
+    return () => window.cancelAnimationFrame(animationFrame);
   }, [openFilter]);
 
   useEffect(() => {
@@ -379,7 +387,7 @@ export function SiteHeader() {
         >
           <div
             ref={categoryScrollRef}
-            className="luxecraft-category-scroll mx-auto flex max-w-[1400px] items-stretch overflow-x-auto scroll-smooth px-4 sm:px-6 lg:px-8"
+            className="luxecraft-category-scroll mx-auto flex max-w-[1400px] items-stretch overflow-x-auto scroll-auto px-4 sm:px-6 lg:px-8"
           >
             <nav
               className="flex shrink-0 items-stretch whitespace-nowrap"
