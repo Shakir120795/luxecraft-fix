@@ -59,32 +59,34 @@ export class AuthService {
     dto: RegisterDto,
     _meta: { ipAddress?: string; userAgent?: string },
   ): Promise<{ message: string }> {
-    const message =
-      'Verification code sent. Verify your email before creating your Wolhomes account.';
-
     const email = dto.email.toLowerCase().trim();
     const existing = await this.users.findByEmail(email);
 
     if (existing) {
-      await bcrypt.hash(dto.password, 12);
-
-      if (!existing.emailVerified) {
-        try {
-          const code = await this.otp.generate(
-            existing.email,
-            OtpPurpose.EMAIL_VERIFICATION,
-            existing.id,
-          );
-          await this.email.sendVerificationCode(existing.email, code);
-        } catch (error) {
-          this.logger.error('Failed to send verification email to ' + email, error);
-          throw new BadRequestException(
-            'Unable to send the verification code right now. Please try again.',
-          );
-        }
+      if (existing.emailVerified) {
+        throw new ConflictException(
+          'An account with this email already exists. Please sign in.',
+        );
       }
 
-      return { message };
+      try {
+        const code = await this.otp.generate(
+          existing.email,
+          OtpPurpose.EMAIL_VERIFICATION,
+          existing.id,
+        );
+        await this.email.sendVerificationCode(existing.email, code);
+      } catch (error) {
+        this.logger.error('Failed to send verification email to ' + email, error);
+        throw new BadRequestException(
+          'Unable to send the verification code right now. Please try again.',
+        );
+      }
+
+      return {
+        message:
+          'Verification code sent. Verify your email before creating your Wolhomes account.',
+      };
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -118,7 +120,40 @@ export class AuthService {
       );
     }
 
-    return { message };
+    return {
+      message:
+        'Verification code sent. Verify your email before creating your Wolhomes account.',
+    };
+  }
+
+  async sendVerificationCode(email: string): Promise<{ message: string }> {
+    const normalizedEmail = email.toLowerCase().trim();
+    const existing = await this.users.findByEmail(normalizedEmail);
+
+    if (existing?.emailVerified) {
+      throw new ConflictException(
+        'An account with this email already exists. Please sign in.',
+      );
+    }
+
+    try {
+      const code = await this.otp.generate(
+        normalizedEmail,
+        OtpPurpose.EMAIL_VERIFICATION,
+        existing?.id,
+      );
+      await this.email.sendVerificationCode(normalizedEmail, code);
+    } catch (error) {
+      this.logger.error(
+        'Failed to send verification email to ' + normalizedEmail,
+        error,
+      );
+      throw new BadRequestException(
+        'Unable to send the verification code right now. Please check the email service configuration and try again.',
+      );
+    }
+
+    return { message: 'Verification code sent. Check your email.' };
   }
 
   // ----------------------------------------------------------------
