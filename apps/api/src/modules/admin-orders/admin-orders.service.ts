@@ -23,21 +23,26 @@ export class AdminOrdersService {
       }),
     };
 
+    if (
+      params.paymentStatus &&
+      params.paymentStatus !== PaymentStatus.PAID
+    ) {
+      return { items: [], total: 0 };
+    }
+
+    if (params.orderStatus === OrderStatus.CANCELLED) {
+      return { items: [], total: 0 };
+    }
+
     const where: Prisma.OrderWhereInput = {
       ...baseWhere,
+      paymentStatus: PaymentStatus.PAID,
       ...(params.orderStatus
         ? { orderStatus: params.orderStatus as any }
-        : params.paymentStatus
-          ? { paymentStatus: params.paymentStatus as any }
-          : {
-              OR: [
-                { paymentStatus: PaymentStatus.PAID },
-                { orderStatus: OrderStatus.CANCELLED },
-              ],
-            }),
+        : { orderStatus: { not: OrderStatus.CANCELLED } }),
     };
 
-    const [items, rawTotal] = await Promise.all([
+    const [items, total] = await Promise.all([
       this.prisma.order.findMany({
         where,
         skip: params.skip || 0,
@@ -52,40 +57,9 @@ export class AdminOrdersService {
       this.prisma.order.count({ where }),
     ]);
 
-    let orders = items;
-    if (!params.orderStatus && !params.paymentStatus) {
-      const cancelledIds = orders
-        .filter((order) => order.orderStatus === OrderStatus.CANCELLED)
-        .map((order) => order.id);
-
-      if (cancelledIds.length > 0) {
-        const customerCancellationLogs = await this.prisma.inventoryLog.findMany({
-          where: {
-            reference: { in: cancelledIds },
-            reason: { contains: 'Customer cancelled', mode: 'insensitive' },
-          },
-          select: { reference: true },
-        });
-
-        const customerCancelledIds = new Set(
-          customerCancellationLogs
-            .map((entry) => entry.reference)
-            .filter((reference): reference is string => Boolean(reference)),
-        );
-
-        orders = orders.filter(
-          (order) =>
-            order.paymentStatus === PaymentStatus.PAID ||
-            (order.orderStatus === OrderStatus.CANCELLED &&
-              (customerCancelledIds.has(order.id) ||
-                (order.customerNotes ?? '').toLowerCase().includes('cancelled by customer'))),
-        );
-      }
-    }
-
     return {
-      items: await this.attachProductDetails(orders),
-      total: params.orderStatus || params.paymentStatus ? rawTotal : orders.length,
+      items: await this.attachProductDetails(items),
+      total,
     };
   }
   async findOne(id: string): Promise<any> {
