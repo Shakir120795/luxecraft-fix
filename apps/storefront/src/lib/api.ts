@@ -722,6 +722,34 @@ export interface AuthResponse {
   message?: string;
 }
 
+export async function sendEmailVerification(email: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiFetch(`${API_URL}/auth/send-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await res.json();
+    const payload = data?.data ?? data;
+
+    if (res.ok && data.success) {
+      return {
+        success: true,
+        message: payload?.message || data.message || 'Verification code sent.',
+      };
+    }
+
+    return {
+      success: false,
+      message: data.message || 'Unable to send verification code.',
+    };
+  } catch (error) {
+    console.error('Send verification error:', error);
+    return { success: false, message: 'Unable to send verification code.' };
+  }
+}
+
 export async function register(params: {
   email: string;
   password: string;
@@ -755,6 +783,7 @@ export async function register(params: {
     return { success: false, message: 'Unable to start registration.' };
   }
 }
+
 
 export async function login(params: {
   email: string;
@@ -850,12 +879,21 @@ export async function verifyEmail(params: {
 
 export async function completeRegistration(
   registrationToken: string,
+  params?: {
+    password: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+  },
 ): Promise<{ success: boolean; message?: string }> {
   try {
     const res = await apiFetch(`${API_URL}/auth/register/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ registrationToken }),
+      body: JSON.stringify({
+        registrationToken,
+        ...(params || {}),
+      }),
     });
 
     const data = await res.json();
@@ -874,6 +912,7 @@ export async function completeRegistration(
     return { success: false, message: 'Unable to create your account.' };
   }
 }
+
 
 export async function resendVerificationCode(email: string): Promise<{ success: boolean; message?: string }> {
   try {
