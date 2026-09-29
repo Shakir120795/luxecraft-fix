@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getFreshCurrentUser, getOrders, isAuthenticated, logout, User, Order } from '@/lib/api';
+import { getFreshCurrentUser, getOrders, logout, User, Order } from '@/lib/api';
 
 export default function AccountPage() {
   const router = useRouter();
