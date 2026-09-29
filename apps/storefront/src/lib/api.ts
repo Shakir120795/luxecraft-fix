@@ -66,6 +66,7 @@ export interface ProductReview {
   status?: string;
   isFeatured?: boolean;
   createdAt: string;
+  isMine?: boolean;
 }
 
 export interface ProductMedia {
@@ -1347,7 +1348,7 @@ export async function createProductReview(params: {
         success: true,
         message:
           data?.message ||
-          'Review submitted successfully. It will appear after approval.',
+          'Review published successfully.',
       };
     }
 
@@ -1361,6 +1362,20 @@ export async function createProductReview(params: {
   }
 }
 
+export async function getProductReviews(productId: string): Promise<ProductReview[]> {
+  try {
+    const res = await apiFetch(`${API_URL}/reviews/products/${encodeURIComponent(productId)}`, {
+      headers: await getAuthHeaders(),
+      cache: 'no-store',
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+  } catch (error) {
+    console.error('Failed to fetch product reviews:', error);
+    return [];
+  }
+}
 export async function getPaymentConfiguration(currency: string = 'USD'): Promise<{
   provider: string;
   providers: string[];
