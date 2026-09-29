@@ -492,6 +492,43 @@ export default function ProductDetailPage() {
                </div>
              )}
            </div>
+            {reviewCount > 0 && (
+              <section className="mb-5 border-y border-black/10 py-4">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-luxury-charcoal">
+                    Customer Reviews
+                  </h2>
+                  <span className="text-[10px] text-luxury-brown">
+                    {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                  </span>
+                </div>
+                <div className="space-y-4">
+                  {reviews.slice(0, 6).map((review) => (
+                    <article key={review.id} className="border-b border-black/5 pb-4 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12px] tracking-[0.06em] text-luxury-gold">
+                          {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
+                        </span>
+                        <span className="text-[10px] text-luxury-brown">
+                          {Number(review.rating || 0).toFixed(0)}/5
+                        </span>
+                      </div>
+                      {review.title && (
+                        <h3 className="mt-1.5 text-sm font-semibold text-luxury-charcoal">
+                          {review.title}
+                        </h3>
+                      )}
+                      {review.content && (
+                        <p className="mt-1 text-sm leading-6 text-luxury-brown">
+                          {review.content}
+                        </p>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            )}
+
 
           {/* Details */}
           <div className="lg:max-w-[560px]">
@@ -531,42 +568,6 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            {reviewCount > 0 && (
-              <section className="mb-5 border-y border-black/10 py-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-luxury-charcoal">
-                    Customer Reviews
-                  </h2>
-                  <span className="text-[10px] text-luxury-brown">
-                    {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
-                  </span>
-                </div>
-                <div className="space-y-4">
-                  {reviews.slice(0, 6).map((review) => (
-                    <article key={review.id} className="border-b border-black/5 pb-4 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] tracking-[0.06em] text-luxury-gold">
-                          {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
-                        </span>
-                        <span className="text-[10px] text-luxury-brown">
-                          {Number(review.rating || 0).toFixed(0)}/5
-                        </span>
-                      </div>
-                      {review.title && (
-                        <h3 className="mt-1.5 text-sm font-semibold text-luxury-charcoal">
-                          {review.title}
-                        </h3>
-                      )}
-                      {review.content && (
-                        <p className="mt-1 text-sm leading-6 text-luxury-brown">
-                          {review.content}
-                        </p>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              </section>
-            )}
 
             <div className="mb-3 flex items-baseline gap-3 pb-2">
               <span className="font-serif text-3xl font-bold text-luxury-gold">
