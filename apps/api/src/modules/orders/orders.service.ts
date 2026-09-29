@@ -262,6 +262,7 @@ export class OrdersService {
         data: {
           orderStatus: OrderStatus.CANCELLED,
           paymentStatus: order.paymentStatus === PaymentStatus.FAILED ? PaymentStatus.FAILED : PaymentStatus.CANCELLED,
+          customerNotes: 'Cancelled by customer',
           cancelledAt: new Date(),
         },
       });
