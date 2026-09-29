@@ -370,10 +370,8 @@ export class AuthService {
       return { message: 'Your existing account has been verified successfully.' };
     }
 
-    let createdUser: User;
-
     if (verified.passwordHash) {
-      createdUser = await this.users.createWithPasswordHash({
+      await this.users.createVerifiedWithPasswordHash({
         email: verified.email,
         passwordHash: verified.passwordHash,
         firstName: verified.firstName ?? undefined,
@@ -387,7 +385,7 @@ export class AuthService {
         );
       }
 
-      createdUser = await this.users.create({
+      await this.users.createVerified({
         email: verified.email,
         password: data.password,
         firstName: data.firstName,
@@ -395,9 +393,6 @@ export class AuthService {
         phone: data.phone,
       });
     }
-
-    // The account is created only after OTP verification, so persist that verified state.
-    await this.users.markEmailVerified(createdUser.id);
 
     await this.redis.del(key);
     return { message: 'Account created successfully. You can now sign in.' };
