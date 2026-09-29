@@ -302,35 +302,55 @@ export class AuthService {
     }
 
     const user = await this.users.findByEmail(normalizedEmail);
-    if (user && !user.emailVerified) {
-      await this.users.markEmailVerified(user.id);
+    if (user) {
+      if (!user.emailVerified) {
+        await this.users.markEmailVerified(user.id);
+      }
+
+      return { message: 'Email verified successfully. Please sign in.' };
     }
 
-    return { message: 'Email verified successfully.' };
+    const registrationToken = randomBytes(32).toString('base64url');
+    await this.redis.set(
+      this.verifiedRegistrationKey(registrationToken),
+      JSON.stringify({ email: normalizedEmail }),
+      15 * 60,
+    );
+
+    return {
+      message: 'Email verified. You can now create your Wolhomes account.',
+      registrationToken,
+    };
   }
 
   async completeRegistration(
     registrationToken: string,
+    data?: {
+      password: string;
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+    },
   ): Promise<{ message: string }> {
     const key = this.verifiedRegistrationKey(registrationToken);
-    const pendingRaw = await this.redis.get(key);
+    const verifiedRaw = await this.redis.get(key);
 
-    if (!pendingRaw) {
+    if (!verifiedRaw) {
       throw new BadRequestException(
         'Registration verification expired. Please verify your email again.',
       );
     }
 
-    let pending: {
+    let verified: {
       email: string;
-      passwordHash: string;
-      firstName: string | null;
-      lastName: string | null;
-      phone: string | null;
+      passwordHash?: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      phone?: string | null;
     };
 
     try {
-      pending = JSON.parse(pendingRaw);
+      verified = JSON.parse(verifiedRaw);
     } catch {
       await this.redis.del(key);
       throw new BadRequestException(
@@ -338,7 +358,7 @@ export class AuthService {
       );
     }
 
-    const existing = await this.users.findByEmail(pending.email);
+    const existing = await this.users.findByEmail(verified.email);
     if (existing) {
       await this.redis.del(key);
 
@@ -350,13 +370,29 @@ export class AuthService {
       return { message: 'Your existing account has been verified successfully.' };
     }
 
-    await this.users.createWithPasswordHash({
-      email: pending.email,
-      passwordHash: pending.passwordHash,
-      firstName: pending.firstName ?? undefined,
-      lastName: pending.lastName ?? undefined,
-      phone: pending.phone ?? undefined,
-    });
+    if (verified.passwordHash) {
+      await this.users.createWithPasswordHash({
+        email: verified.email,
+        passwordHash: verified.passwordHash,
+        firstName: verified.firstName ?? undefined,
+        lastName: verified.lastName ?? undefined,
+        phone: verified.phone ?? undefined,
+      });
+    } else {
+      if (!data?.password) {
+        throw new BadRequestException(
+          'Please provide your registration details to create the account.',
+        );
+      }
+
+      await this.users.create({
+        email: verified.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+      });
+    }
 
     await this.redis.del(key);
     return { message: 'Account created successfully. You can now sign in.' };
