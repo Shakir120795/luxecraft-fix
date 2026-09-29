@@ -316,7 +316,8 @@ export class OrdersService {
       (order) =>
         order.paymentStatus === PaymentStatus.PAID ||
         (order.orderStatus === OrderStatus.CANCELLED &&
-          customerCancelledOrderIds.has(order.id)),
+          (customerCancelledOrderIds.has(order.id) ||
+            (order.customerNotes ?? '').toLowerCase().includes('cancelled by customer'))),
     );
 
     return this.attachProductDetails(visibleOrders);
