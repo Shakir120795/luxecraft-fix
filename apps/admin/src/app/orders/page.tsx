@@ -182,7 +182,10 @@ export default function OrdersPage() {
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-block px-2 py-1 text-xs font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>
-                          {order.status}
+                          {String(order.paymentStatus).toUpperCase() === 'PAID' &&
+                          ['PENDING', 'PAYMENT_CONFIRMED'].includes(String(order.status).toUpperCase())
+                            ? 'PLACED'
+                            : order.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
