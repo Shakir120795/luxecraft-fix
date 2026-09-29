@@ -117,15 +117,6 @@ function LoginForm() {
             </div>
           </div>
 
-          <div className="text-center">
-            <p className="mb-4 text-sm text-[#6a636b]">Don't have an account?</p>
-            <Link
-              href={`/auth/register${redirectTo !== '/account' ? `?redirect=${redirectTo}` : ''}`}
-              className="inline-block w-full rounded-md border border-[#302b35] bg-white px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.14em] text-[#302b35] transition hover:bg-[#302b35] hover:text-white"
-            >
-              Create Account
-            </Link>
-          </div>
         </div>
 
         {redirectTo.includes('checkout') && (
