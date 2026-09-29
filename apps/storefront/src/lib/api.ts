@@ -818,24 +818,56 @@ export async function logout(): Promise<{ success: boolean }> {
 export async function verifyEmail(params: {
   email: string;
   code: string;
-}): Promise<{ success: boolean; message?: string }> {
+}): Promise<{ success: boolean; message?: string; registrationToken?: string }> {
   try {
-    const res = await apiFetch(`${API_URL}/auth/verify-email`, {
+    const res = await apiFetch(\`${API_URL}/auth/verify-email\`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(params),
     });
 
     const data = await res.json();
-    
+    const payload = data?.data ?? data;
+
     if (res.ok && data.success) {
-      return { success: true };
+      return {
+        success: true,
+        message: payload?.message || data.message,
+        registrationToken: payload?.registrationToken,
+      };
     }
 
     return { success: false, message: data.message || 'Verification failed' };
   } catch (error) {
     console.error('Email verification error:', error);
     return { success: false, message: 'Verification failed' };
+  }
+}
+
+export async function completeRegistration(
+  registrationToken: string,
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiFetch(\`${API_URL}/auth/register/complete\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ registrationToken }),
+    });
+
+    const data = await res.json();
+    const payload = data?.data ?? data;
+
+    if (res.ok && data.success) {
+      return { success: true, message: payload?.message || data.message };
+    }
+
+    return {
+      success: false,
+      message: data.message || 'Unable to create your account.',
+    };
+  } catch (error) {
+    console.error('Registration completion error:', error);
+    return { success: false, message: 'Unable to create your account.' };
   }
 }
 
