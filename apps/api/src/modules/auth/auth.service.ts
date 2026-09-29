@@ -315,11 +315,12 @@ export class AuthService {
       return { message: 'Your existing account has been verified successfully.' };
     }
 
-    await this.users.create({
+    await this.users.createWithPasswordHash({
       email: pending.email,
-      password: pending.passwordHash,
+      passwordHash: pending.passwordHash,
       firstName: pending.firstName ?? undefined,
       lastName: pending.lastName ?? undefined,
+      phone: pending.phone ?? undefined,
     });
 
     await this.redis.del(key);
