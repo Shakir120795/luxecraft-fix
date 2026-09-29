@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { verifyEmail, resendVerificationCode } from '@/lib/api';
+import { completeRegistration, verifyEmail, resendVerificationCode } from '@/lib/api';
 
 function VerifyEmailForm() {
   const router = useRouter();
@@ -26,10 +26,23 @@ function VerifyEmailForm() {
     const result = await verifyEmail({ email, code });
 
     if (result.success) {
-      setSuccess('Email verified successfully! Redirecting...');
+      if (result.registrationToken) {
+        const completion = await completeRegistration(result.registrationToken);
+        if (!completion.success) {
+          setError(completion.message || 'Unable to create your account.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      setSuccess(
+        result.registrationToken
+          ? 'Email verified and account created successfully. Redirecting...'
+          : 'Email verified successfully! Redirecting...',
+      );
       setTimeout(() => {
         router.push('/account');
-      }, 2000);
+      }, 1500);
     } else {
       setError(result.message || 'Verification failed');
       setLoading(false);
