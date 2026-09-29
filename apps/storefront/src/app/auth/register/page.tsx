@@ -317,16 +317,47 @@ function RegisterForm() {
                   <label htmlFor="phone" className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6d655e]">
                     Phone number
                   </label>
-                  <input
-                    id="phone"
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
-                    placeholder="+1 (555) 000-0000"
-                    autoComplete="tel"
-                  />
+                  <div className="flex gap-2">
+                    <select
+                      id="phoneCountryCode"
+                      value={phoneCountryCode}
+                      onChange={handleCountryCodeChange}
+                      className="w-[96px] shrink-0 border border-[#d8cfc5] bg-white px-3 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
+                      aria-label="Country code"
+                    >
+                      <option value="+91">+91 IN</option>
+                      <option value="+1">+1 US</option>
+                      <option value="+44">+44 UK</option>
+                      <option value="+61">+61 AU</option>
+                      <option value="+64">+64 NZ</option>
+                      <option value="+971">+971 AE</option>
+                      <option value="+974">+974 QA</option>
+                      <option value="+966">+966 SA</option>
+                      <option value="+65">+65 SG</option>
+                      <option value="+60">+60 MY</option>
+                      <option value="+86">+86 CN</option>
+                      <option value="+81">+81 JP</option>
+                      <option value="+82">+82 KR</option>
+                      <option value="+49">+49 DE</option>
+                      <option value="+33">+33 FR</option>
+                      <option value="+39">+39 IT</option>
+                      <option value="+31">+31 NL</option>
+                      <option value="+34">+34 ES</option>
+                      <option value="+41">+41 CH</option>
+                      <option value="+27">+27 ZA</option>
+                    </select>
+                    <input
+                      id="phone"
+                      type="tel"
+                      name="phone"
+                      value={phoneNumber}
+                      onChange={handlePhoneNumberChange}
+                      className="min-w-0 flex-1 border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36]"
+                      placeholder="Mobile number"
+                      autoComplete="tel"
+                      inputMode="tel"
+                    />
+                  </div>
                 </div>
 
                 <div className="hidden sm:block" />
