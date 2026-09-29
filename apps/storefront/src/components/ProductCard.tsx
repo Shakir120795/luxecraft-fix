@@ -50,6 +50,19 @@ export function ProductCard({ product }: { product: Product }) {
             </p>
           )}
 
+          {(product.reviews?.length ?? 0) > 0 && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-[13px] tracking-[0.06em] text-[#c99545]">★★★★★</span>
+              <span className="text-[10px] text-[#6d665f]">
+                {(
+                  product.reviews!.reduce((sum, review) => sum + Number(review.rating || 0), 0) /
+                  product.reviews!.length
+                ).toFixed(1)}
+                {' '}({product.reviews!.length})
+              </span>
+            </div>
+          )}
+
           <div className="flex items-baseline gap-2">
             <span className="font-serif text-[19px] font-semibold text-black">
               ${displayPrice.toFixed(2)}
