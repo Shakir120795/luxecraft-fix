@@ -491,7 +491,6 @@ export default function ProductDetailPage() {
 
                </div>
              )}
-           </div>
             {reviewCount > 0 && (
               <section className="mb-5 border-y border-black/10 py-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -505,12 +504,17 @@ export default function ProductDetailPage() {
                 <div className="space-y-4">
                   {reviews.slice(0, 6).map((review) => (
                     <article key={review.id} className="border-b border-black/5 pb-4 last:border-0 last:pb-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[12px] tracking-[0.06em] text-luxury-gold">
-                          {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
-                        </span>
-                        <span className="text-[10px] text-luxury-brown">
-                          {Number(review.rating || 0).toFixed(0)}/5
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] tracking-[0.06em] text-luxury-gold">
+                            {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
+                          </span>
+                          <span className="text-[10px] text-luxury-brown">
+                            {Number(review.rating || 0).toFixed(0)}/5
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-luxury-charcoal">
+                          {review.customerName || 'Customer'}
                         </span>
                       </div>
                       {review.title && (
@@ -528,7 +532,7 @@ export default function ProductDetailPage() {
                 </div>
               </section>
             )}
-
+           </div>
 
           {/* Details */}
           <div className="lg:max-w-[560px]">
@@ -552,9 +556,9 @@ export default function ProductDetailPage() {
                   </span>
                 ))}
               </div>
-              <span className="text-[11px] font-semibold tracking-[0.05em] text-luxury-charcoal">
+              <span className="rounded-full border border-[#c99545]/40 bg-[#c99545]/10 px-3 py-1.5 text-[11px] font-bold tracking-[0.06em] text-[#7a5a2c] shadow-sm">
                 {reviewCount > 0
-                  ? averageRating.toFixed(1) + ' - ' + reviewCount + ' ' + (reviewCount === 1 ? 'Review' : 'Reviews')
+                  ? averageRating.toFixed(1) + ' · ' + reviewCount + ' ' + (reviewCount === 1 ? 'Review' : 'Reviews')
                   : 'No Reviews Yet'}
               </span>
 
