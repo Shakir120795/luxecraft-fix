@@ -28,6 +28,13 @@ export default function OrderDetailPage() {
   } | null>(null);
   const [resumeCryptoTxHash, setResumeCryptoTxHash] = useState('');
   const [resumeCryptoQr, setResumeCryptoQr] = useState<string | null>(null);
+  const [reviewProductId, setReviewProductId] = useState<string | null>(null);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewContent, setReviewContent] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState<string | null>(null);
+  const [reviewSubmittedProductIds, setReviewSubmittedProductIds] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadAuthenticatedOrder() {
