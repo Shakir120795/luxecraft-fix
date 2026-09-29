@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listForProduct(productId: string) {
+  async listForProduct(productId: string, userId?: string) {
     return this.prisma.review.findMany({
       where: { productId, status: { in: ['APPROVED', 'PENDING'] } },
       orderBy: { createdAt: 'desc' },
@@ -17,8 +17,14 @@ export class ReviewsService {
         content: true,
         isFeatured: true,
         createdAt: true,
+        userId: true,
       },
-    });
+    }).then((reviews) =>
+      reviews.map(({ userId: reviewUserId, ...review }) => ({
+        ...review,
+        isMine: Boolean(userId && reviewUserId === userId),
+      })),
+    );
   }
 
   async create(userId: string, productId: string, rating: number, title?: string, content?: string) {
