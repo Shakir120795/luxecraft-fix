@@ -36,23 +36,82 @@ export class EmailService {
       'Wolhomes',
     );
 
-    if (provider !== 'smtp') {
-      this.logger.warn(`Email provider "${provider}" is not implemented yet.`);
+    const subject = 'Verify your Wolhomes account';
+    const html =
+      '<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:32px;background:#f4f0eb;color:#28231f;">' +
+      '<div style="font-size:26px;font-weight:700;margin-bottom:24px;">WOLHOMES</div>' +
+      '<div style="background:#ffffff;border:1px solid #e3d8ca;padding:28px;">' +
+      '<div style="font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:#2f6b36;">Email verification</div>' +
+      '<h1 style="font-family:Georgia,serif;font-size:28px;font-weight:400;margin:10px 0 18px;">Verify your email</h1>' +
+      '<p style="font-size:15px;line-height:1.6;">Use the verification code below to continue creating your Wolhomes account.</p>' +
+      '<div style="font-size:34px;letter-spacing:.3em;font-weight:700;text-align:center;padding:18px 12px;margin:22px 0;background:#f4f0eb;">' +
+      code +
+      '</div>' +
+      '<p style="font-size:12px;color:#6d655e;">This code expires in 10 minutes. If you did not request this, you can ignore this email.</p>' +
+      '</div></div>';
+
+    const text =
+      'Your Wolhomes verification code is ' +
+      code +
+      '. It expires in 10 minutes. Enter it on the Wolhomes registration page to continue.';
+
+    if (provider === 'smtp') {
+      if (!from) {
+        throw new Error('SMTP verification email requires EMAIL_FROM.');
+      }
+
+      const transporter = this.createTransporter();
+
+      await transporter.sendMail({
+        from: '"' + fromName + '" <' + from + '>',
+        to,
+        subject,
+        text,
+        html,
+      });
+
+      this.logger.log('Verification email sent via SMTP to ' + to);
       return;
     }
 
-    const transporter = this.createTransporter();
+    if (provider === 'resend') {
+      const apiKey = this.config.get<string>('commerce.email.resendApiKey');
+      if (!apiKey || !from) {
+        throw new Error(
+          'Resend verification email requires RESEND_API_KEY and EMAIL_FROM.',
+        );
+      }
 
-    await transporter.sendMail({
-      from: `"${fromName}" <${from}>`,
-      to,
-      subject: 'Verify your Wolhomes account',
-      text: `Your Wolhomes verification code is ${code}. It expires soon.`,
-    });
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + apiKey,
+        },
+        body: JSON.stringify({
+          from: '"' + fromName + '" <' + from + '>',
+          to: [to],
+          subject,
+          text,
+          html,
+        }),
+      });
 
-    this.logger.log(`Verification email sent to ${to}`);
+      if (!response.ok) {
+        const details = await response.text().catch(() => '');
+        throw new Error(
+          'Resend email failed (' + response.status + '): ' + details,
+        );
+      }
+
+      this.logger.log('Verification email sent via Resend to ' + to);
+      return;
+    }
+
+    throw new Error(
+      'Email verification is not configured. Set EMAIL_PROVIDER to smtp or resend.',
+    );
   }
-
   async sendPasswordResetEmail(to: string, token: string): Promise<void> {
     const provider = this.config.get<string>(
       'commerce.email.provider',
