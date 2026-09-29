@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { completeRegistration, register, verifyEmail } from '@/lib/api';
+import { completeRegistration, sendEmailVerification, verifyEmail } from '@/lib/api';
 
 function RegisterForm() {
   const router = useRouter();
@@ -41,11 +41,17 @@ function RegisterForm() {
     }));
   }
 
-  function validateRegistrationFields() {
-    if (!formData.email) {
-      setError('Please enter your email address.');
+  function validateEmail() {
+    if (!formData.email || !/^\S+@\S+\.\S+$/.test(formData.email)) {
+      setError('Please enter a valid email address.');
       return false;
     }
+
+    return true;
+  }
+
+  function validateRegistrationFields() {
+    if (!validateEmail()) return false;
 
     if (!formData.password || formData.password.length < 8) {
       setError('Password must be at least 8 characters.');
@@ -64,21 +70,17 @@ function RegisterForm() {
     setError(null);
     setSuccess(null);
 
-    if (!validateRegistrationFields()) return;
+    if (!validateEmail()) return;
 
     setSendingOtp(true);
 
-    const result = await register({
-      email: formData.email,
-      password: formData.password,
-      firstName: formData.firstName || undefined,
-      lastName: formData.lastName || undefined,
-      phone: formData.phone || undefined,
-    });
+    const result = await sendEmailVerification(formData.email);
 
     if (result.success) {
       setOtpSent(true);
-      setSuccess('Verification code sent. Check your email and enter the 6-digit code below.');
+      setSuccess(
+        'Verification code sent. Check your email and enter the 6-digit code below.',
+      );
     } else {
       setError(result.message || 'Unable to send verification code.');
     }
@@ -128,7 +130,12 @@ function RegisterForm() {
 
     setLoading(true);
 
-    const result = await completeRegistration(registrationToken);
+    const result = await completeRegistration(registrationToken, {
+      password: formData.password,
+      firstName: formData.firstName || undefined,
+      lastName: formData.lastName || undefined,
+      phone: formData.phone || undefined,
+    });
 
     if (result.success) {
       const nextUrl = loginHref + (loginHref.includes('?') ? '&' : '?') + 'registered=1';
@@ -192,7 +199,7 @@ function RegisterForm() {
                     value={formData.email}
                     onChange={handleChange}
                     required
-                    disabled={otpSent || emailVerified}
+                    disabled={emailVerified}
                     className="min-w-0 flex-1 border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     placeholder="you@example.com"
                     autoComplete="email"
@@ -202,7 +209,7 @@ function RegisterForm() {
                     type="button"
                     onClick={handleSendOtp}
                     disabled={sendingOtp || emailVerified}
-                    className="shrink-0 border border-[#d4a556] bg-[#d4a556] px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.16em] text-black transition hover:bg-[#28231f] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                    className="shrink-0 bg-[#302b35] px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     {sendingOtp ? 'Sending...' : otpSent ? 'Resend OTP' : 'Send OTP'}
                   </button>
@@ -226,7 +233,7 @@ function RegisterForm() {
                       type="button"
                       onClick={handleVerifyOtp}
                       disabled={verifyingOtp || otp.length !== 6}
-                      className="shrink-0 bg-[#2f6b36] px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#28231f] disabled:cursor-not-allowed disabled:opacity-45"
+                      className="shrink-0 bg-[#302b35] px-5 py-3.5 text-[10px] font-bold uppercase tracking-[0.16em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       {verifyingOtp ? 'Verifying...' : 'Verify Email'}
                     </button>
@@ -258,7 +265,7 @@ function RegisterForm() {
                     name="firstName"
                     value={formData.firstName}
                     onChange={handleChange}
-                    disabled={otpSent || emailVerified}
+                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     placeholder="John"
                     autoComplete="given-name"
@@ -275,7 +282,7 @@ function RegisterForm() {
                     name="lastName"
                     value={formData.lastName}
                     onChange={handleChange}
-                    disabled={otpSent || emailVerified}
+                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     placeholder="Doe"
                     autoComplete="family-name"
@@ -292,7 +299,7 @@ function RegisterForm() {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
-                    disabled={otpSent || emailVerified}
+                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     placeholder="+1 (555) 000-0000"
                     autoComplete="tel"
@@ -312,7 +319,7 @@ function RegisterForm() {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    disabled={otpSent || emailVerified}
+                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     autoComplete="new-password"
                   />
@@ -332,7 +339,7 @@ function RegisterForm() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required
-                    disabled={otpSent || emailVerified}
+                    disabled={emailVerified}
                     className="w-full border border-[#d8cfc5] bg-white px-4 py-3.5 text-sm text-[#28231f] outline-none transition focus:border-[#2f6b36] disabled:cursor-not-allowed disabled:bg-[#f1eee9]"
                     autoComplete="new-password"
                   />
@@ -362,7 +369,7 @@ function RegisterForm() {
                 <button
                   type="submit"
                   disabled={loading || !emailVerified || !registrationToken}
-                  className="mt-5 w-full bg-[#d4a556] px-8 py-4 text-[10px] font-bold uppercase tracking-[0.18em] text-black transition hover:bg-[#28231f] hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                  className="mt-5 w-full bg-[#302b35] px-8 py-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white transition hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {loading ? 'Creating Account...' : emailVerified ? 'Create Account' : 'Verify Email to Continue'}
                 </button>
