@@ -3,6 +3,7 @@ import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
 import { SupportChat } from '@/components/SupportChat';
+import { HomeCouponLabel } from '@/components/HomeCouponLabel';
 const SITE_URL = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'https://wolhomes.com';
 
 export const metadata: Metadata = {
@@ -77,6 +78,7 @@ export default function RootLayout({
         <SiteHeader />
         {children}
         <SiteFooter />
+        <HomeCouponLabel />
         <SupportChat />
       </body>
     </html>
