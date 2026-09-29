@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -16,6 +17,8 @@ import { User, OtpPurpose, UserStatus } from '@prisma/client';
 import { RegisterDto } from './dto/register.dto';
 import { EmailService } from '../email/email.service';
 import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'node:crypto';
+import { RedisService } from '../redis/redis.service';
 
 const DUMMY_PASSWORD_HASH = '$2b$12$PjFGb4R2ZsGoGdN5NlnhaO/rhab96Xx9anmLIlZRhapRdIkz//Zzu';
 
@@ -45,6 +48,7 @@ export class AuthService {
     private readonly passwordReset: PasswordResetService,
     private readonly loginAttempts: LoginAttemptService,
     private readonly email: EmailService,
+    private readonly redis: RedisService,
   ) {}
 
   // ----------------------------------------------------------------
@@ -56,30 +60,64 @@ export class AuthService {
     _meta: { ipAddress?: string; userAgent?: string },
   ): Promise<{ message: string }> {
     const message =
-      'If this email is eligible for registration, your request has been received. Please check your email for a verification code.';
+      'Verification code sent. Verify your email before creating your Wolhomes account.';
 
-    const existing = await this.users.findByEmail(dto.email);
+    const email = dto.email.toLowerCase().trim();
+    const existing = await this.users.findByEmail(email);
+
     if (existing) {
-      // Match the password-hashing work of a real registration to reduce timing leaks.
       await bcrypt.hash(dto.password, 12);
+
+      if (!existing.emailVerified) {
+        try {
+          const code = await this.otp.generate(
+            existing.email,
+            OtpPurpose.EMAIL_VERIFICATION,
+            existing.id,
+          );
+          await this.email.sendVerificationCode(existing.email, code);
+        } catch (error) {
+          this.logger.error('Failed to send verification email to ' + email, error);
+          throw new BadRequestException(
+            'Unable to send the verification code right now. Please try again.',
+          );
+        }
+      }
+
       return { message };
     }
 
-    let user: User;
+    const passwordHash = await bcrypt.hash(dto.password, 12);
+    const pending = {
+      email,
+      passwordHash,
+      firstName: dto.firstName ?? null,
+      lastName: dto.lastName ?? null,
+      phone: dto.phone ?? null,
+    };
+
+    const pendingKey = this.pendingRegistrationKey(email);
+    const ttlSeconds = Math.max(
+      60,
+      this.config.get<number>('OTP_EXPIRES_MINUTES', 10) * 60,
+    );
+
+    await this.redis.set(pendingKey, JSON.stringify(pending), ttlSeconds);
+
     try {
-      user = await this.users.create(dto);
+      const code = await this.otp.generate(
+        email,
+        OtpPurpose.EMAIL_VERIFICATION,
+      );
+      await this.email.sendVerificationCode(email, code);
     } catch (error) {
-      // Keep registration responses identical even if two requests race on the unique email.
-      if (error instanceof ConflictException) return { message };
-      throw error;
+      await this.redis.del(pendingKey);
+      this.logger.error('Failed to send verification email to ' + email, error);
+      throw new BadRequestException(
+        'Unable to send the verification code right now. Please check the email service configuration and try again.',
+      );
     }
 
-    const _code = await this.otp.generate(
-      user.email,
-      OtpPurpose.EMAIL_VERIFICATION,
-      user.id,
-    );
-    await this.email.sendVerificationCode(user.email, _code);
     return { message };
   }
 
@@ -132,6 +170,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password.');
     }
 
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(
+        'Please verify your email address before signing in.',
+      );
+    }
+
     await this.loginAttempts.record({
       email: normalEmail,
       userId: user.id,
@@ -176,23 +220,143 @@ export class AuthService {
   // Email verification
   // ----------------------------------------------------------------
 
-  async verifyEmail(email: string, code: string): Promise<void> {
-    await this.otp.verify(email.toLowerCase(), code, OtpPurpose.EMAIL_VERIFICATION);
-    const user = await this.users.findByEmail(email);
-    if (user) {
+  async verifyEmail(
+    email: string,
+    code: string,
+  ): Promise<{ message: string; registrationToken?: string }> {
+    const normalizedEmail = email.toLowerCase().trim();
+    const pendingKey = this.pendingRegistrationKey(normalizedEmail);
+    const pendingRaw = await this.redis.get(pendingKey);
+
+    await this.otp.verify(
+      normalizedEmail,
+      code,
+      OtpPurpose.EMAIL_VERIFICATION,
+    );
+
+    if (pendingRaw) {
+      let pending: {
+        email: string;
+        passwordHash: string;
+        firstName: string | null;
+        lastName: string | null;
+        phone: string | null;
+      };
+
+      try {
+        pending = JSON.parse(pendingRaw);
+      } catch {
+        await this.redis.del(pendingKey);
+        throw new BadRequestException(
+          'Registration session expired. Please start registration again.',
+        );
+      }
+
+      const registrationToken = randomBytes(32).toString('base64url');
+      await this.redis.set(
+        this.verifiedRegistrationKey(registrationToken),
+        JSON.stringify(pending),
+        15 * 60,
+      );
+      await this.redis.del(pendingKey);
+
+      return {
+        message: 'Email verified. You can now create your Wolhomes account.',
+        registrationToken,
+      };
+    }
+
+    const user = await this.users.findByEmail(normalizedEmail);
+    if (user && !user.emailVerified) {
       await this.users.markEmailVerified(user.id);
     }
+
+    return { message: 'Email verified successfully.' };
+  }
+
+  async completeRegistration(
+    registrationToken: string,
+  ): Promise<{ message: string }> {
+    const key = this.verifiedRegistrationKey(registrationToken);
+    const pendingRaw = await this.redis.get(key);
+
+    if (!pendingRaw) {
+      throw new BadRequestException(
+        'Registration verification expired. Please verify your email again.',
+      );
+    }
+
+    let pending: {
+      email: string;
+      passwordHash: string;
+      firstName: string | null;
+      lastName: string | null;
+      phone: string | null;
+    };
+
+    try {
+      pending = JSON.parse(pendingRaw);
+    } catch {
+      await this.redis.del(key);
+      throw new BadRequestException(
+        'Registration verification expired. Please start again.',
+      );
+    }
+
+    const existing = await this.users.findByEmail(pending.email);
+    if (existing) {
+      await this.redis.del(key);
+
+      if (existing.emailVerified) {
+        throw new ConflictException('An account with this email already exists.');
+      }
+
+      await this.users.markEmailVerified(existing.id);
+      return { message: 'Your existing account has been verified successfully.' };
+    }
+
+    await this.users.create({
+      email: pending.email,
+      password: pending.passwordHash,
+      firstName: pending.firstName ?? undefined,
+      lastName: pending.lastName ?? undefined,
+    });
+
+    await this.redis.del(key);
+    return { message: 'Account created successfully. You can now sign in.' };
   }
 
   async resendVerification(email: string): Promise<void> {
-    const user = await this.users.findByEmail(email);
-    if (!user || user.emailVerified) return; // silent  no enumeration
-    const _code = await this.otp.generate(
+    const normalizedEmail = email.toLowerCase().trim();
+    const pendingKey = this.pendingRegistrationKey(normalizedEmail);
+    const pendingRaw = await this.redis.get(pendingKey);
+
+    if (pendingRaw) {
+      const code = await this.otp.generate(
+        normalizedEmail,
+        OtpPurpose.EMAIL_VERIFICATION,
+      );
+      await this.email.sendVerificationCode(normalizedEmail, code);
+      return;
+    }
+
+    const user = await this.users.findByEmail(normalizedEmail);
+    if (!user || user.emailVerified) return;
+
+    const code = await this.otp.generate(
       user.email,
       OtpPurpose.EMAIL_VERIFICATION,
       user.id,
     );
-    await this.email.sendVerificationCode(user.email, _code);
+    await this.email.sendVerificationCode(user.email, code);
+  }
+
+  private pendingRegistrationKey(email: string): string {
+    return 'auth:pending-registration:' + email.toLowerCase().trim();
+  }
+
+  private verifiedRegistrationKey(token: string): string {
+    return 'auth:verified-registration:' + token;
   }
 
   // ----------------------------------------------------------------
