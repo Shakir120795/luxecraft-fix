@@ -282,7 +282,7 @@ export function SiteHeader() {
             </Link>
 
             <div
-              className="relative"
+              className="relative z-[70]"
             >
               <button
                 type="button"
