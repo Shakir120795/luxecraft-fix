@@ -289,14 +289,44 @@ export class OrdersService {
   }
 
   async findAllForUser(userId: string): Promise<Order[]> {
-    // Keep failed/pending orders visible so customers have a recovery path
-    // instead of losing access to an unpaid order.
+    // Keep real failed/pending orders visible so customers have a recovery path.
+    // System-expired payment attempts are not customer cancellations and should
+    // not pollute the customer's Cancelled order history.
     const orders = await this.prisma.order.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: { items: true },
     });
-    return this.attachProductDetails(orders);
+
+    const expiredCancellationLogs =
+      orders.length > 0
+        ? await this.prisma.inventoryLog.findMany({
+            where: {
+              reference: { in: orders.map((order) => order.id) },
+              reason: {
+                contains: 'Pending payment expired',
+                mode: 'insensitive',
+              },
+            },
+            select: { reference: true },
+          })
+        : [];
+
+    const systemExpiredOrderIds = new Set(
+      expiredCancellationLogs
+        .map((entry) => entry.reference)
+        .filter((reference): reference is string => Boolean(reference)),
+    );
+
+    const customerVisibleOrders = orders.filter(
+      (order) =>
+        !(
+          order.orderStatus === OrderStatus.CANCELLED &&
+          systemExpiredOrderIds.has(order.id)
+        ),
+    );
+
+    return this.attachProductDetails(customerVisibleOrders);
   }
 
   async findAll(params: {
