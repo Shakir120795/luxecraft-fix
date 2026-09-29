@@ -167,7 +167,7 @@ export class StorefrontService {
 
       if (slug === 'size') {
         const sizeWithSpaces = normalizedValue.replace(
-          /^(\\d+)x(\\d+)$/,
+          /^(\d+)x(\d+)$/,
           '$1 x $2',
         );
         const sizeCandidates = Array.from(
