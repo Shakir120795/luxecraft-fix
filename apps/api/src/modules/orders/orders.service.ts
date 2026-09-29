@@ -289,46 +289,37 @@ export class OrdersService {
   }
 
   async findAllForUser(userId: string): Promise<Order[]> {
-    // Keep real failed/pending orders visible so customers have a recovery path.
-    // System-expired payment attempts are not customer cancellations and should
-    // not pollute the customer's Cancelled order history.
     const orders = await this.prisma.order.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: { items: true },
     });
 
-    const expiredCancellationLogs =
-      orders.length > 0
-        ? await this.prisma.inventoryLog.findMany({
-            where: {
-              reference: { in: orders.map((order) => order.id) },
-              reason: {
-                contains: 'Pending payment expired',
-                mode: 'insensitive',
-              },
-            },
-            select: { reference: true },
-          })
-        : [];
+    if (orders.length === 0) return [];
 
-    const systemExpiredOrderIds = new Set(
-      expiredCancellationLogs
+    const customerCancellationLogs = await this.prisma.inventoryLog.findMany({
+      where: {
+        reference: { in: orders.map((order) => order.id) },
+        reason: { contains: 'Customer cancelled', mode: 'insensitive' },
+      },
+      select: { reference: true },
+    });
+
+    const customerCancelledOrderIds = new Set(
+      customerCancellationLogs
         .map((entry) => entry.reference)
         .filter((reference): reference is string => Boolean(reference)),
     );
 
-    const customerVisibleOrders = orders.filter(
+    const visibleOrders = orders.filter(
       (order) =>
-        !(
-          order.orderStatus === OrderStatus.CANCELLED &&
-          systemExpiredOrderIds.has(order.id)
-        ),
+        order.paymentStatus === PaymentStatus.PAID ||
+        (order.orderStatus === OrderStatus.CANCELLED &&
+          customerCancelledOrderIds.has(order.id)),
     );
 
-    return this.attachProductDetails(customerVisibleOrders);
+    return this.attachProductDetails(visibleOrders);
   }
-
   async findAll(params: {
     orderStatus?: OrderStatus;
     paymentStatus?: PaymentStatus;
