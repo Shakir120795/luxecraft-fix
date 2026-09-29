@@ -117,12 +117,84 @@ export class StorefrontService {
     }
 
     for (const [slug, value] of filterEntries) {
-      andConditions.push({
+      const normalizedValue = value.trim().toLowerCase();
+      const displayValue = normalizedValue.replace(/-/g, ' ');
+
+      const jsonCondition: Prisma.ProductWhereInput = {
         filterData: {
           path: [slug],
-          array_contains: [value],
+          array_contains: [normalizedValue],
         },
-      });
+      };
+
+      const fallbackConditions: Prisma.ProductWhereInput[] = [jsonCondition];
+
+      if (slug === 'style') {
+        fallbackConditions.push({
+          style: {
+            contains: displayValue,
+            mode: 'insensitive',
+          },
+        });
+      }
+
+      if (slug === 'material') {
+        fallbackConditions.push({
+          material: {
+            contains: displayValue,
+            mode: 'insensitive',
+          },
+        });
+      }
+
+      if (slug === 'color') {
+        fallbackConditions.push({
+          color: {
+            contains: displayValue,
+            mode: 'insensitive',
+          },
+        });
+      }
+
+      if (slug === 'collection') {
+        fallbackConditions.push({
+          collection: {
+            contains: displayValue,
+            mode: 'insensitive',
+          },
+        });
+      }
+
+      if (slug === 'size') {
+        fallbackConditions.push({
+          variants: {
+            some: {
+              deletedAt: null,
+              name: {
+                contains: displayValue,
+                mode: 'insensitive',
+              },
+            },
+          },
+        });
+      }
+
+      if (slug === 'weave-type' || slug === 'shape') {
+        fallbackConditions.push({
+          category: {
+            name: {
+              contains: displayValue,
+              mode: 'insensitive',
+            },
+          },
+        });
+      }
+
+      andConditions.push(
+        fallbackConditions.length === 1
+          ? fallbackConditions[0]
+          : { OR: fallbackConditions },
+      );
     }
 
     if (Number.isFinite(params.minPrice) || Number.isFinite(params.maxPrice)) {
