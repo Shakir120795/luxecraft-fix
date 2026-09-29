@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { getCartTotals, getStorefrontCategories, getProductFilters, Category, ProductFilterSetting, isAuthenticated } from '@/lib/api';
+import { getCartTotals, getStorefrontCategories, getProductFilters, Category, ProductFilterSetting, isAuthenticated, logout } from '@/lib/api';
 
 const navigation = [
   { href: '/products', label: 'Shop' },
@@ -133,6 +133,13 @@ export function SiteHeader() {
 
     return () => window.clearInterval(interval);
   }, []);
+
+  async function handleAccountLogout() {
+    await logout();
+    setIsAuth(false);
+    setAccountOpen(false);
+    window.location.assign('/');
+  }
 
   async function loadCartCount() {
     try {
@@ -337,6 +344,17 @@ export function SiteHeader() {
                         Wishlist
                         <span>&rarr;</span>
                       </Link>
+
+                      {isAuth && (
+                        <button
+                          type="button"
+                          onClick={handleAccountLogout}
+                          className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-sm text-[#b94740] transition-all duration-200 hover:bg-[#f4f0eb] hover:pl-5"
+                        >
+                          Logout
+                          <span>&rarr;</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
