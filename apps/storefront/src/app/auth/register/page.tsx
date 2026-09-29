@@ -428,15 +428,6 @@ function RegisterForm() {
               </div>
             </form>
 
-            <div className="mt-7 border-t border-[#ded5ca] pt-5 text-center">
-              <p className="text-sm text-[#6d655e]">Already have an account?</p>
-              <Link
-                href={loginHref}
-                className="mt-2 inline-block text-[10px] font-bold uppercase tracking-[0.16em] text-[#2f6b36] underline underline-offset-4"
-              >
-                Sign In
-              </Link>
-            </div>
           </div>
         </div>
 
