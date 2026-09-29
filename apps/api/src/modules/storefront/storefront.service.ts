@@ -394,7 +394,14 @@ export class StorefrontService {
       throw new NotFoundException(`Product "${slug}" not found.`);
     }
 
-    return product;
+    return {
+      ...product,
+      reviews: (product.reviews ?? []).map((review: any) => ({
+        ...review,
+        customerName:
+          [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
+      })),
+    };
   }
 
   async getFeaturedProducts(take = 8): Promise<Product[]> {
@@ -430,10 +437,15 @@ export class StorefrontService {
             content: true,
             isFeatured: true,
             createdAt: true,
+            user: {
+              select: {
+                firstName: true,
+                lastName: true,
+              },
+            },
           },
         },
-      },
-    }).then((products: any[]) =>
+      }).then((products: any[]) =>
       products.map((product) => ({
         ...product,
         reviews: (product.reviews ?? []).map((review: any) => ({
