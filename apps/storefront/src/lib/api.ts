@@ -1317,6 +1317,50 @@ export async function verifyCryptoPayment(params: {
     return { success: false, message: 'Crypto verification failed' };
   }
 }
+export async function createProductReview(params: {
+  productId: string;
+  rating: number;
+  title?: string;
+  content?: string;
+}): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await apiFetch(
+      `${API_URL}/reviews/products/${encodeURIComponent(params.productId)}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(await getAuthHeaders()),
+        },
+        body: JSON.stringify({
+          rating: params.rating,
+          title: params.title?.trim() || undefined,
+          content: params.content?.trim() || undefined,
+        }),
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    if (res.ok) {
+      return {
+        success: true,
+        message:
+          data?.message ||
+          'Review submitted successfully. It will appear after approval.',
+      };
+    }
+
+    return {
+      success: false,
+      message: data?.message || 'Unable to submit review.',
+    };
+  } catch (error) {
+    console.error('Create review failed:', error);
+    return { success: false, message: 'Unable to submit review.' };
+  }
+}
+
 export async function getPaymentConfiguration(currency: string = 'USD'): Promise<{
   provider: string;
   providers: string[];
