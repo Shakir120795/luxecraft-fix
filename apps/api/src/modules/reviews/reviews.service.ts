@@ -10,11 +10,48 @@ export class ReviewsService {
   }
 
   async create(userId: string, productId: string, rating: number, title?: string, content?: string) {
-    if (!Number.isInteger(rating) || rating < 1 || rating > 5) throw new BadRequestException('Rating must be between 1 and 5.');
-    const purchased = await this.prisma.orderItem.findFirst({
-      where: { productId, order: { userId, paymentStatus: 'PAID' } }, select: { id: true },
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw new BadRequestException('Rating must be between 1 and 5.');
+    }
+
+    const deliveredPurchase = await this.prisma.orderItem.findFirst({
+      where: {
+        productId,
+        order: {
+          userId,
+          paymentStatus: 'PAID',
+          orderStatus: 'DELIVERED',
+        },
+      },
+      select: { id: true },
     });
-    if (!purchased) throw new BadRequestException('Only verified purchasers can review this product.');
-    return this.prisma.review.create({ data: { userId, productId, rating, title, content, status: 'PENDING' } });
+
+    if (!deliveredPurchase) {
+      throw new BadRequestException(
+        'You can review a product after its order has been delivered.',
+      );
+    }
+
+    const existingReview = await this.prisma.review.findFirst({
+      where: { userId, productId },
+      select: { id: true, status: true },
+    });
+
+    if (existingReview) {
+      throw new BadRequestException(
+        'You have already submitted a review for this product.',
+      );
+    }
+
+    return this.prisma.review.create({
+      data: {
+        userId,
+        productId,
+        rating,
+        title: title?.trim() || null,
+        content: content?.trim() || null,
+        status: 'PENDING',
+      },
+    });
   }
 }
