@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOrders, isAuthenticated, Order, cancelOrder } from '@/lib/api';
+import { getOrders, getFreshCurrentUser, Order, cancelOrder } from '@/lib/api';
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -13,12 +13,16 @@ export default function OrdersPage() {
 
 
   useEffect(() => {
-    if (!isAuthenticated()) {
-      router.push('/auth/login?redirect=/account/orders');
-      return;
+    async function loadAuthenticatedOrders() {
+      const user = await getFreshCurrentUser();
+      if (!user) {
+        router.push('/auth/login?redirect=/account/orders');
+        return;
+      }
+      await loadOrders();
     }
 
-    loadOrders();
+    void loadAuthenticatedOrders();
   }, []);
 
   async function loadOrders() {
