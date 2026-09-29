@@ -117,9 +117,8 @@ export class PendingOrderCleanupService implements OnModuleInit, OnModuleDestroy
 
       if (paymentClaim.count === 0) return false;
 
-      // Claim the order only while it is still unpaid and pending.
-      // Customer cancellation uses the same state transition, so this
-      // prevents duplicate reservation releases.
+      // Expired payment attempts are payment failures, not customer cancellations.
+      // Keep CANCELLED reserved for an explicit customer cancellation.
       const orderClaim = await tx.order.updateMany({
         where: {
           id: orderId,
@@ -127,9 +126,8 @@ export class PendingOrderCleanupService implements OnModuleInit, OnModuleDestroy
           paymentStatus: PaymentStatus.PENDING,
         },
         data: {
-          orderStatus: OrderStatus.CANCELLED,
-          paymentStatus: PaymentStatus.CANCELLED,
-          cancelledAt: new Date(),
+          orderStatus: OrderStatus.FAILED,
+          paymentStatus: PaymentStatus.FAILED,
         },
       });
 
