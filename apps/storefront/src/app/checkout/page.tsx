@@ -12,6 +12,7 @@ import {
   clearCart,
   isAuthenticated, 
   getCurrentUser,
+  getFreshCurrentUser,
   getAddresses, 
   createAddress,
   getShippingMethods,
@@ -174,16 +175,14 @@ export default function CheckoutPage() {
         }
       }
 
-      // Check authentication
-      const authenticated = isAuthenticated();
+      // Refresh the authenticated session before deciding whether login is required.
+      // The refresh token is HttpOnly, so a page reload must not rely on stale localStorage alone.
+      const user = await getFreshCurrentUser();
       
-      if (authenticated) {
-        const user = getCurrentUser();
-        if (user) {
-          setGuestEmail(user.email);
-          setGuestFirstName(user.firstName || '');
-          setGuestLastName(user.lastName || '');
-        }
+      if (user) {
+        setGuestEmail(user.email);
+        setGuestFirstName(user.firstName || '');
+        setGuestLastName(user.lastName || '');
 
         // Load addresses
         const addressData = await getAddresses();
@@ -197,7 +196,7 @@ export default function CheckoutPage() {
 
         setCurrentStep('address');
       } else if (!isGuest) {
-        // Redirect to login
+        // Only require login when the authenticated session could not be refreshed.
         router.push(`/auth/login?redirect=/checkout`);
         return;
       } else {
