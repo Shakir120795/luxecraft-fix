@@ -957,14 +957,26 @@ export async function getFreshCurrentUser(): Promise<User | null> {
       headers: await getAuthHeaders(),
       cache: 'no-store',
     });
+
+    if (res.status === 401 || res.status === 403) {
+      accessToken = null;
+      refreshBlocked = true;
+      localStorage.removeItem('user');
+      return null;
+    }
+
     if (!res.ok) return getCurrentUser();
+
     const response = await res.json();
     const user = response?.data ?? response;
+
     if (user?.id) {
       localStorage.setItem('user', JSON.stringify(user));
       return user as User;
     }
-    return getCurrentUser();
+
+    localStorage.removeItem('user');
+    return null;
   } catch {
     return getCurrentUser();
   }
