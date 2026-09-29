@@ -6,9 +6,12 @@ import { AdminLayout } from '@/components/AdminLayout';
 import { getOrders, Order } from '@/lib/api';
 
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
+  PENDING: 'bg-green-100 text-green-800',
+  PAYMENT_CONFIRMED: 'bg-green-100 text-green-800',
   PROCESSING: 'bg-blue-100 text-blue-800',
+  READY_TO_SHIP: 'bg-blue-100 text-blue-800',
   SHIPPED: 'bg-purple-100 text-purple-800',
+  OUT_FOR_DELIVERY: 'bg-purple-100 text-purple-800',
   DELIVERED: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
 };
@@ -35,11 +38,19 @@ export default function OrdersPage() {
   }
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
+    const matchesSearch =
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.user?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       `${order.user?.firstName} ${order.user?.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || order.status === filterStatus;
+
+    const status = String(order.status || '').toUpperCase();
+    const paymentStatus = String(order.paymentStatus || '').toUpperCase();
+    const matchesStatus =
+      filterStatus === 'all' ||
+      (filterStatus === 'PLACED'
+        ? paymentStatus === 'PAID' && ['PENDING', 'PAYMENT_CONFIRMED'].includes(status)
+        : status === filterStatus);
+
     return matchesSearch && matchesStatus;
   });
 
@@ -76,8 +87,8 @@ export default function OrdersPage() {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-accent)]"
             >
-              <option value="all">All Status</option>
-              <option value="PENDING">Pending</option>
+              <option value="all">All Orders</option>
+              <option value="PLACED">Placed</option>
               <option value="PROCESSING">Processing</option>
               <option value="SHIPPED">Shipped</option>
               <option value="DELIVERED">Delivered</option>
