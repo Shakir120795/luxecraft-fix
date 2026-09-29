@@ -66,6 +66,7 @@ export interface ProductReview {
   status?: string;
   isFeatured?: boolean;
   createdAt: string;
+  customerName?: string;
   isMine?: boolean;
 }
 
