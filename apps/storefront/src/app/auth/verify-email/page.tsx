@@ -155,16 +155,6 @@ function VerifyEmailForm() {
           </div>
         </div>
 
-        {/* Skip for Now */}
-        <div className="mt-8 text-center">
-          <Link
-            href="/account"
-            className="text-sm text-luxury-brown hover:text-luxury-gold transition-colors"
-          >
-            Skip for now (verify later) 
-          </Link>
-        </div>
-
         {/* Back to Login */}
         <div className="mt-4 text-center">
           <Link
