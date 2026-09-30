@@ -610,7 +610,7 @@ export default function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Wolhomes on eBay — ShakilExport"
-              className="group flex min-w-[150px] snap-start items-center justify-center rounded-xl border border-black/8 bg-white px-6 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/40 hover:bg-luxury-cream/35 hover:shadow-[0_10px_28px_rgba(48,43,53,0.08)]"
+              className="group flex min-w-[132px] snap-start items-center justify-center px-4 py-3 transition-all duration-300 hover:-translate-y-0.5"
             >
               <span className="font-sans text-[28px] font-black tracking-[-0.08em] text-luxury-charcoal transition-colors duration-300 group-hover:text-luxury-gold">
                 <span>e</span><span>b</span><span>a</span><span>y</span>
@@ -622,7 +622,7 @@ export default function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Wolhomes on Etsy — ShakilExport"
-              className="group flex min-w-[150px] snap-start items-center justify-center rounded-xl border border-black/8 bg-white px-6 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/40 hover:bg-luxury-cream/35 hover:shadow-[0_10px_28px_rgba(48,43,53,0.08)]"
+              className="group flex min-w-[132px] snap-start items-center justify-center px-4 py-3 transition-all duration-300 hover:-translate-y-0.5"
             >
               <span className="font-serif text-[30px] font-semibold tracking-[-0.05em] text-luxury-charcoal transition-colors duration-300 group-hover:text-luxury-gold">
                 etsy
@@ -634,7 +634,7 @@ export default function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Wolhomes on Pinterest — ShakilCarpet"
-              className="group flex min-w-[150px] snap-start items-center justify-center gap-3 rounded-xl border border-black/8 bg-white px-6 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/40 hover:bg-luxury-cream/35 hover:shadow-[0_10px_28px_rgba(48,43,53,0.08)]"
+              className="group flex min-w-[132px] snap-start items-center justify-center gap-3 px-4 py-3 transition-all duration-300 hover:-translate-y-0.5"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-luxury-charcoal text-white transition-colors duration-300 group-hover:bg-luxury-gold" aria-hidden="true">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
@@ -649,7 +649,7 @@ export default function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Wolhomes on Facebook — ShakilCarpet"
-              className="group flex min-w-[150px] snap-start items-center justify-center gap-3 rounded-xl border border-black/8 bg-white px-6 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/40 hover:bg-luxury-cream/35 hover:shadow-[0_10px_28px_rgba(48,43,53,0.08)]"
+              className="group flex min-w-[132px] snap-start items-center justify-center gap-3 px-4 py-3 transition-all duration-300 hover:-translate-y-0.5"
             >
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-luxury-charcoal text-white transition-colors duration-300 group-hover:bg-luxury-gold" aria-hidden="true">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
@@ -664,7 +664,7 @@ export default function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Wolhomes on Justdial — ShakilCarpet"
-              className="group flex min-w-[150px] snap-start items-center justify-center rounded-xl border border-black/8 bg-white px-6 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/40 hover:bg-luxury-cream/35 hover:shadow-[0_10px_28px_rgba(48,43,53,0.08)]"
+              className="group flex min-w-[132px] snap-start items-center justify-center px-4 py-3 transition-all duration-300 hover:-translate-y-0.5"
             >
               <span className="font-sans text-[24px] font-black tracking-[-0.05em] text-luxury-charcoal transition-colors duration-300 group-hover:text-luxury-gold">
                 justdial
@@ -676,7 +676,7 @@ export default function HomePage() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Wolhomes on Linker Store — Shakil Carpet"
-              className="group flex min-w-[150px] snap-start items-center justify-center gap-2 rounded-xl border border-black/8 bg-white px-6 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/40 hover:bg-luxury-cream/35 hover:shadow-[0_10px_28px_rgba(48,43,53,0.08)]"
+              className="group flex min-w-[132px] snap-start items-center justify-center gap-2 px-4 py-3 transition-all duration-300 hover:-translate-y-0.5"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-full border border-luxury-charcoal text-luxury-charcoal transition-colors duration-300 group-hover:border-luxury-gold group-hover:text-luxury-gold" aria-hidden="true">
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
@@ -688,13 +688,13 @@ export default function HomePage() {
             </a>
 
             <a
-              href="https://www.instagram.com/shakilcarp"
+              href="https://www.instagram.com/shakilcarpet116/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Wolhomes on Instagram — ShakilCarp"
-              className="group flex min-w-[150px] snap-start items-center justify-center gap-3 rounded-xl border border-black/8 bg-white px-6 py-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/40 hover:bg-luxury-cream/35 hover:shadow-[0_10px_28px_rgba(48,43,53,0.08)]"
+              aria-label="Wolhomes on Instagram — ShakilCarpet"
+              className="group flex min-w-[132px] snap-start items-center justify-center gap-3 px-4 py-3 transition-all duration-300 hover:-translate-y-0.5"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-luxury-charcoal text-luxury-charcoal transition-colors duration-300 group-hover:border-luxury-gold group-hover:text-luxury-gold" aria-hidden="true">
+              <span className="flex h-9 w-9 items-center justify-center text-luxury-charcoal transition-all duration-300 group-hover:scale-110 group-hover:text-luxury-gold" aria-hidden="true">
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7">
                   <rect x="3" y="3" width="18" height="18" rx="5"/>
                   <circle cx="12" cy="12" r="4"/>
