@@ -511,128 +511,6 @@ export default function ProductDetailPage() {
 
                </div>
              )}
-            {reviewCount > 0 && (
-              <details className="group mb-5 border-y border-black/10">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-luxury-charcoal">
-                        Customer Reviews
-                      </h2>
-                      <span className="text-[10px] text-luxury-brown">
-                        {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="text-sm tracking-[0.08em] text-luxury-gold">
-                        {'★'.repeat(Math.max(0, Math.min(5, Math.round(averageRating))))}
-                      </span>
-                      <span className="text-[11px] font-semibold text-luxury-charcoal">
-                        {averageRating.toFixed(1)} / 5
-                      </span>
-                      <span className="text-[10px] uppercase tracking-[0.12em] text-luxury-brown/60">
-                        Verified customer feedback
-                      </span>
-                    </div>
-                  </div>
-                  <span className="shrink-0 text-xl font-light text-luxury-gold transition-transform duration-300 group-open:rotate-45">
-                    +
-                  </span>
-                </summary>
-
-                <div className="border-t border-black/5 pb-5 pt-5">
-                  <div className="grid gap-5 rounded-sm bg-luxury-cream/60 p-4 sm:grid-cols-[150px_1fr] sm:p-5">
-                    <div className="text-center sm:border-r sm:border-black/10 sm:pr-5">
-                      <div className="font-serif text-4xl text-luxury-charcoal">
-                        {averageRating.toFixed(1)}
-                      </div>
-                      <div className="mt-1 text-sm tracking-[0.08em] text-luxury-gold">
-                        {'★'.repeat(Math.max(0, Math.min(5, Math.round(averageRating))))}
-                      </div>
-                      <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-luxury-brown/65">
-                        Based on {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      {ratingDistribution.map((item) => (
-                        <div key={item.rating} className="flex items-center gap-3">
-                          <span className="w-7 text-[10px] font-semibold text-luxury-brown">
-                            {item.rating}★
-                          </span>
-                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/8">
-                            <div
-                              className="h-full rounded-full bg-luxury-gold transition-all duration-500"
-                              style={{ width: `${item.percentage}%` }}
-                            />
-                          </div>
-                          <span className="w-5 text-right text-[10px] text-luxury-brown/70">
-                            {item.count}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-5 space-y-0">
-                    {topReviews.map((review) => (
-                      <article
-                        key={review.id}
-                        className="border-b border-black/7 py-4 first:pt-1 last:border-0 last:pb-0"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span className="text-[11px] tracking-[0.06em] text-luxury-gold">
-                                {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
-                              </span>
-                              <span className="text-[10px] text-luxury-brown">
-                                {Number(review.rating || 0).toFixed(0)}/5
-                              </span>
-                              {review.isFeatured && (
-                                <span className="rounded-full border border-luxury-gold/30 bg-luxury-gold/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-luxury-brown">
-                                  Featured
-                                </span>
-                              )}
-                            </div>
-                            {review.title && (
-                              <h3 className="mt-1.5 text-sm font-semibold text-luxury-charcoal">
-                                {review.title}
-                              </h3>
-                            )}
-                            {review.content && (
-                              <p className="mt-1 text-sm leading-6 text-luxury-brown">
-                                {review.content}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="shrink-0 text-right">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-luxury-charcoal">
-                              {review.customerName || 'Customer'}
-                            </p>
-                            <p className="mt-1 text-[9px] uppercase tracking-[0.08em] text-luxury-brown/50">
-                              {new Date(review.createdAt).toLocaleDateString('en-US', {
-                                month: 'short',
-                                year: 'numeric',
-                              })}
-                            </p>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-
-                  {reviewCount > 5 && (
-                    <p className="mt-4 border-t border-black/5 pt-4 text-center text-[10px] uppercase tracking-[0.12em] text-luxury-brown/55">
-                      Showing 5 featured/latest reviews
-                    </p>
-                  )}
-                </div>
-              </details>
-            )}
-           </div>
-
           {/* Details */}
           <div className="lg:max-w-[560px]">
             <div className="mb-3">
@@ -871,33 +749,129 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            <div className="pt-7">
-              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-luxury-charcoal">
-                Share this piece
-              </p>
+            {/* Customer Reviews — positioned in the details column */}
+            {reviewCount > 0 && (
+              <details className="group mb-5 border-y border-black/10">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-luxury-charcoal">
+                        Customer Reviews
+                      </h2>
+                      <span className="text-[10px] text-luxury-brown">
+                        {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm tracking-[0.08em] text-luxury-gold">
+                        {'★'.repeat(Math.max(0, Math.min(5, Math.round(averageRating))))}
+                      </span>
+                      <span className="text-[11px] font-semibold text-luxury-charcoal">
+                        {averageRating.toFixed(1)} / 5
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-luxury-brown/60">
+                        Verified customer feedback
+                      </span>
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-xl font-light text-luxury-gold transition-transform duration-300 group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
 
-              <div className="flex items-center gap-3">
-                <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook" className="flex h-10 w-10 items-center justify-center border border-luxury-sand bg-white text-luxury-charcoal transition hover:border-current hover:bg-black/[0.03] text-[#1877F2]">
-                  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor"><path d="M14.5 8H17V4.5h-2.5C11.4 4.5 10 6.2 10 9v2H7v3.5h3V20h3.5v-5.5H16l.8-3.5h-3.3V9.3c0-.9.3-1.3 1-1.3Z"/></svg>
-                </a>
+                <div className="border-t border-black/5 pb-5 pt-5">
+                  <div className="grid gap-5 rounded-sm bg-luxury-cream/60 p-4 sm:grid-cols-[150px_1fr] sm:p-5">
+                    <div className="text-center sm:border-r sm:border-black/10 sm:pr-5">
+                      <div className="font-serif text-4xl text-luxury-charcoal">
+                        {averageRating.toFixed(1)}
+                      </div>
+                      <div className="mt-1 text-sm tracking-[0.08em] text-luxury-gold">
+                        {'★'.repeat(Math.max(0, Math.min(5, Math.round(averageRating))))}
+                      </div>
+                      <p className="mt-2 text-[10px] uppercase tracking-[0.12em] text-luxury-brown/65">
+                        Based on {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                      </p>
+                    </div>
 
-                <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&text=${encodeURIComponent(product.name)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on X" className="flex h-10 w-10 items-center justify-center border border-luxury-sand bg-white text-luxury-charcoal transition hover:border-current hover:bg-black/[0.03] text-[#111111]">
-                  <svg viewBox="0 0 24 24" className="h-[16px] w-[16px]" fill="currentColor"><path d="M18.9 2H22l-6.8 7.8L23.2 22h-6.3l-4.9-6.4L6.5 22H3.4l7.3-8.3L2.8 2h6.4l4.4 5.8L18.9 2Zm-1.1 17.3h1.7L8.3 4.5H6.4L17.8 19.3Z"/></svg>
-                </a>
+                    <div className="space-y-2">
+                      {ratingDistribution.map((item) => (
+                        <div key={item.rating} className="flex items-center gap-3">
+                          <span className="w-7 text-[10px] font-semibold text-luxury-brown">
+                            {item.rating}★
+                          </span>
+                          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-black/8">
+                            <div
+                              className="h-full rounded-full bg-luxury-gold transition-all duration-500"
+                              style={{ width: `${item.percentage}%` }}
+                            />
+                          </div>
+                          <span className="w-5 text-right text-[10px] text-luxury-brown/70">
+                            {item.count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-                <a href={`https://wa.me/?text=${encodeURIComponent(product.name + " " + (typeof window !== "undefined" ? window.location.href : ""))}`} target="_blank" rel="noopener noreferrer" aria-label="Share on WhatsApp" className="flex h-10 w-10 items-center justify-center border border-luxury-sand bg-white text-luxury-charcoal transition hover:border-current hover:bg-black/[0.03] text-[#25D366]">
-                  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 11.7a8 8 0 0 1-11.8 7L4 20l1.3-4A8 8 0 1 1 20 11.7Z"/><path d="M8.5 8.2c.2-.4.4-.4.7-.4h.4c.2 0 .3.1.4.4l.5 1.2c.1.2.1.4 0 .6l-.4.5c-.1.2-.1.3 0 .5.4.7 1 1.3 1.7 1.7.2.1.4.1.5 0l.5-.4c.2-.1.4-.1.6 0l1.2.5c.2.1.3.2.3.4v.4c0 .3-.1.5-.4.7-.4.3-1 .4-1.5.2-2.5-.8-4.5-2.8-5.4-5.4-.2-.5-.1-1.1.2-1.5Z"/></svg>
-                </a>
+                  <div className="mt-5 space-y-0">
+                    {topReviews.map((review) => (
+                      <article
+                        key={review.id}
+                        className="border-b border-black/7 py-4 first:pt-1 last:border-0 last:pb-0"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-[11px] tracking-[0.06em] text-luxury-gold">
+                                {'★'.repeat(Math.max(0, Math.min(5, Number(review.rating || 0))))}
+                              </span>
+                              <span className="text-[10px] text-luxury-brown">
+                                {Number(review.rating || 0).toFixed(0)}/5
+                              </span>
+                              {review.isFeatured && (
+                                <span className="rounded-full border border-luxury-gold/30 bg-luxury-gold/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-luxury-brown">
+                                  Featured
+                                </span>
+                              )}
+                            </div>
+                            {review.title && (
+                              <h3 className="mt-1.5 text-sm font-semibold text-luxury-charcoal">
+                                {review.title}
+                              </h3>
+                            )}
+                            {review.content && (
+                              <p className="mt-1 text-sm leading-6 text-luxury-brown">
+                                {review.content}
+                              </p>
+                            )}
+                          </div>
 
-                <a href={`https://www.instagram.com/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Instagram" className="flex h-10 w-10 items-center justify-center border border-luxury-sand bg-white text-luxury-charcoal transition hover:border-current hover:bg-black/[0.03] text-[#E4405F]">
-                  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.4" cy="6.6" r="1" fill="currentColor" stroke="none"/></svg>
-                </a>
+                          <div className="shrink-0 text-right">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-luxury-charcoal">
+                              {review.customerName || 'Customer'}
+                            </p>
+                            <p className="mt-1 text-[9px] uppercase tracking-[0.08em] text-luxury-brown/50">
+                              {new Date(review.createdAt).toLocaleDateString('en-US', {
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
 
-                <a href={`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}&description=${encodeURIComponent(product.name)}`} target="_blank" rel="noopener noreferrer" aria-label="Share on Pinterest" className="flex h-10 w-10 items-center justify-center border border-luxury-sand bg-white text-luxury-charcoal transition hover:border-current hover:bg-black/[0.03] text-[#E60023]">
-                  <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.5 19.4c-.1-1.6 0-3.5.4-5.2l1-4.2s-.3-.6-.3-1.4c0-1.3.8-2.3 1.7-2.3.8 0 1.2.6 1.2 1.3 0 .8-.5 2-.8 3.1-.2.9.5 1.6 1.4 1.6 1.7 0 2.8-1.7 2.8-3.8 0-1.6-1.1-2.8-3-2.8-2.2 0-3.5 1.6-3.5 3.4 0 .6.2 1 .5 1.4.1.2.2.2.1.4l-.2.7c-.1.2-.2.3-.4.2-1.2-.5-1.8-1.8-1.8-3.3C7.6 6.1 9.7 3.2 13.8 3.2c3.3 0 5.4 2.4 5.4 4.9 0 3.4-1.9 5.9-4.6 5.9-.9 0-1.8-.5-2.1-1.1l-.6 2.4c-.4 1.4-1 3-1.6 4.1A10 10 0 1 0 12 2Z"/></svg>
-                </a>
-              </div>
-            </div>
+                  {reviewCount > 5 && (
+                    <p className="mt-4 border-t border-black/5 pt-4 text-center text-[10px] uppercase tracking-[0.12em] text-luxury-brown/55">
+                      Showing 5 featured/latest reviews
+                    </p>
+                  )}
+                </div>
+              </details>
+            )}
+           </div>
+
           </div>
         </div>
 
