@@ -604,33 +604,68 @@ export default function HomePage() {
             <span className="hidden h-px flex-1 bg-gradient-to-l from-transparent to-black/15 sm:block" />
           </div>
 
-          <div className="luxecraft-marketplace-slider flex snap-x snap-mandatory items-center justify-start gap-7 overflow-x-auto pb-2 sm:justify-center sm:gap-9">
-            <a href="https://www.ebay.com/str/shakilexport" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on eBay — ShakilExport" className="group flex min-w-[138px] snap-start items-center justify-center px-2 py-2 transition-transform duration-300 hover:-translate-y-1">
-              <img src="/marketplace-logos/ebay.webp" alt="eBay" loading="lazy" className="h-14 w-auto max-w-[150px] object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-7 sm:gap-x-14 sm:gap-y-8">
+            <a href="https://www.ebay.com/str/shakilexport" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on eBay — ShakilExport" className="group inline-flex items-center justify-center px-2 py-1.5 transition-transform duration-300 hover:-translate-y-1">
+              <svg viewBox="0 0 360 130" className="h-12 w-auto max-w-[170px] sm:h-14" role="img" aria-label="eBay">
+                <text x="180" y="88" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="92" fontWeight="700" letterSpacing="-8">
+                  <tspan fill="#e53238">e</tspan><tspan fill="#0064d2">b</tspan><tspan fill="#f5af02">a</tspan><tspan fill="#86b817">y</tspan>
+                </text>
+              </svg>
             </a>
 
-            <a href="https://www.etsy.com/shop/ShakilExport" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Etsy — ShakilExport" className="group flex min-w-[138px] snap-start items-center justify-center px-2 py-2 transition-transform duration-300 hover:-translate-y-1">
-              <img src="/marketplace-logos/etsy.webp" alt="Etsy" loading="lazy" className="h-14 w-auto max-w-[145px] object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+            <a href="https://www.etsy.com/shop/ShakilExport" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Etsy — ShakilExport" className="group inline-flex items-center justify-center px-2 py-1.5 transition-transform duration-300 hover:-translate-y-1">
+              <svg viewBox="0 0 360 130" className="h-12 w-auto max-w-[160px] sm:h-14" role="img" aria-label="Etsy">
+                <text x="180" y="92" textAnchor="middle" fontFamily="Georgia, 'Times New Roman', serif" fontSize="92" fontWeight="600" fill="#f1641e" letterSpacing="-4">Etsy</text>
+              </svg>
             </a>
 
-            <a href="https://www.pinterest.com/shakilcarpet116/?invite_code=26ce6156ce1d4c79910b96ba488b2bbf&sender=984458937204131670" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Pinterest — ShakilCarpet" className="group flex min-w-[138px] snap-start items-center justify-center px-2 py-2 transition-transform duration-300 hover:-translate-y-1">
-              <img src="/marketplace-logos/pinterest.webp" alt="Pinterest" loading="lazy" className="h-14 w-auto max-w-[155px] object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+            <a href="https://www.pinterest.com/shakilcarpet116/?invite_code=26ce6156ce1d4c79910b96ba488b2bbf&sender=984458937204131670" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Pinterest — ShakilCarpet" className="group inline-flex items-center justify-center px-2 py-1.5 transition-transform duration-300 hover:-translate-y-1">
+              <svg viewBox="0 0 360 130" className="h-12 w-auto max-w-[190px] sm:h-14" role="img" aria-label="Pinterest">
+                <circle cx="58" cy="65" r="43" fill="#bd081c"/>
+                <text x="58" y="88" textAnchor="middle" fontFamily="Georgia, serif" fontSize="67" fontWeight="700" fill="#fff">p</text>
+                <text x="116" y="82" fontFamily="Arial, Helvetica, sans-serif" fontSize="50" fontWeight="700" fill="#bd081c" letterSpacing="-2">Pinterest</text>
+              </svg>
             </a>
 
-            <a href="https://www.facebook.com/shakilcarpet/" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Facebook — ShakilCarpet" className="group flex min-w-[138px] snap-start items-center justify-center px-2 py-2 transition-transform duration-300 hover:-translate-y-1">
-              <img src="/marketplace-logos/facebook.webp" alt="Facebook" loading="lazy" className="h-14 w-auto max-w-[155px] object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+            <a href="https://www.facebook.com/shakilcarpet/" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Facebook — ShakilCarpet" className="group inline-flex items-center justify-center px-2 py-1.5 transition-transform duration-300 hover:-translate-y-1">
+              <svg viewBox="0 0 360 90" className="h-10 w-auto max-w-[190px] sm:h-12" role="img" aria-label="Facebook">
+                <text x="180" y="66" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontSize="64" fontWeight="700" fill="#1877f2" letterSpacing="-3">facebook</text>
+              </svg>
             </a>
 
-            <a href="https://www.justdial.com/Mirzapur/AH-Point-Near-Rajasthan-Inter-College/9999P5442-5442-171231071943-W3G9_BZDET/photos" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Justdial — ShakilCarpet" className="group flex min-w-[138px] snap-start items-center justify-center px-2 py-2 transition-transform duration-300 hover:-translate-y-1">
-              <img src="/marketplace-logos/justdial.webp" alt="Justdial" loading="lazy" className="h-14 w-auto max-w-[155px] object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+            <a href="https://www.justdial.com/Mirzapur/AH-Point-Near-Rajasthan-Inter-College/9999P5442-5442-171231071943-W3G9_BZDET/photos" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Justdial — ShakilCarpet" className="group inline-flex items-center justify-center px-2 py-1.5 transition-transform duration-300 hover:-translate-y-1">
+              <svg viewBox="0 0 360 120" className="h-11 w-auto max-w-[180px] sm:h-13" role="img" aria-label="Justdial">
+                <text x="15" y="84" fontFamily="Arial, Helvetica, sans-serif" fontSize="70" fontWeight="700" letterSpacing="-4">
+                  <tspan fill="#1847a0">Just</tspan><tspan fill="#e82c23">dial</tspan>
+                </text>
+              </svg>
             </a>
 
-            <a href="https://shakilcarpet.linker.store/" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on GlobalLinker — Shakil Carpet" className="group flex min-w-[138px] snap-start items-center justify-center px-2 py-2 transition-transform duration-300 hover:-translate-y-1">
-              <img src="/marketplace-logos/linker.webp" alt="GlobalLinker" loading="lazy" className="h-11 w-auto max-w-[165px] object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+            <a href="https://shakilcarpet.linker.store/" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on GlobalLinker — Shakil Carpet" className="group inline-flex items-center justify-center px-2 py-1.5 transition-transform duration-300 hover:-translate-y-1">
+              <svg viewBox="0 0 360 70" className="h-9 w-auto max-w-[190px] sm:h-10" role="img" aria-label="GlobalLinker">
+                <text x="10" y="48" fontFamily="Arial, Helvetica, sans-serif" fontSize="38" fontWeight="700" letterSpacing="-1.5">
+                  <tspan fill="#343a8f">GLOBAL</tspan><tspan fill="#1e2a72">LINKER</tspan>
+                </text>
+                <circle cx="101" cy="33" r="11" fill="none" stroke="#17a9c6" strokeWidth="3"/>
+              </svg>
             </a>
 
-            <a href="https://www.instagram.com/shakilcarpet116/" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Instagram — ShakilCarpet" className="group flex min-w-[138px] snap-start items-center justify-center px-2 py-2 transition-transform duration-300 hover:-translate-y-1">
-              <img src="/marketplace-logos/instagram.webp" alt="Instagram" loading="lazy" className="h-14 w-auto max-w-[160px] object-contain transition-transform duration-300 group-hover:scale-[1.03]" />
+            <a href="https://www.instagram.com/shakilcarpet116/" target="_blank" rel="noopener noreferrer" aria-label="Wolhomes on Instagram — ShakilCarpet" className="group inline-flex items-center justify-center px-2 py-1.5 transition-transform duration-300 hover:-translate-y-1">
+              <svg viewBox="0 0 360 110" className="h-12 w-auto max-w-[190px] sm:h-14" role="img" aria-label="Instagram">
+                <defs>
+                  <linearGradient id="wolhomesInstagramGradient" x1="0" x2="1" y1="1" y2="0">
+                    <stop offset="0%" stopColor="#ffd600"/>
+                    <stop offset="35%" stopColor="#ff7a00"/>
+                    <stop offset="68%" stopColor="#d62976"/>
+                    <stop offset="100%" stopColor="#4f5bd5"/>
+                  </linearGradient>
+                </defs>
+                <rect x="10" y="12" width="80" height="80" rx="22" fill="url(#wolhomesInstagramGradient)"/>
+                <rect x="27" y="29" width="46" height="46" rx="13" fill="none" stroke="#fff" strokeWidth="6"/>
+                <circle cx="50" cy="52" r="10" fill="none" stroke="#fff" strokeWidth="6"/>
+                <circle cx="67" cy="35" r="4" fill="#fff"/>
+                <text x="105" y="69" fontFamily="'Brush Script MT', 'Segoe Script', cursive" fontSize="44" fontWeight="700" fill="#222">Instagram</text>
+              </svg>
             </a>
           </div>
 
