@@ -203,7 +203,7 @@ export function ProductFilterManager() {
         ) : (
           filters.map((attribute, attributeIndex) => (
             <div
-              key={`${attribute.slug}-${attributeIndex}`}
+              key={attributeIndex}
               className="border border-[var(--color-border)] bg-[var(--color-bg)] p-5"
             >
               <div className="grid gap-4 md:grid-cols-[1fr_1fr_auto_auto]">
@@ -216,7 +216,6 @@ export function ProductFilterManager() {
                     onChange={(event) =>
                       updateAttribute(attributeIndex, {
                         name: event.target.value,
-                        slug: attribute.slug || slugify(event.target.value),
                       })
                     }
                     className="w-full border border-[var(--color-border)] bg-white px-3 py-2.5"
@@ -232,7 +231,7 @@ export function ProductFilterManager() {
                     value={attribute.slug}
                     onChange={(event) =>
                       updateAttribute(attributeIndex, {
-                        slug: slugify(event.target.value),
+                        slug: event.target.value,
                       })
                     }
                     className="w-full border border-[var(--color-border)] bg-white px-3 py-2.5"
@@ -283,7 +282,7 @@ export function ProductFilterManager() {
                 ) : (
                   attribute.values.map((value, valueIndex) => (
                     <div
-                      key={`${value.slug}-${valueIndex}`}
+                      key={valueIndex}
                       className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]"
                     >
                       <input
@@ -291,7 +290,6 @@ export function ProductFilterManager() {
                         onChange={(event) =>
                           updateValue(attributeIndex, valueIndex, {
                             label: event.target.value,
-                            slug: value.slug || slugify(event.target.value),
                           })
                         }
                         className="w-full border border-[var(--color-border)] bg-white px-3 py-2.5"
@@ -301,7 +299,7 @@ export function ProductFilterManager() {
                         value={value.slug}
                         onChange={(event) =>
                           updateValue(attributeIndex, valueIndex, {
-                            slug: slugify(event.target.value),
+                            slug: event.target.value,
                           })
                         }
                         className="w-full border border-[var(--color-border)] bg-white px-3 py-2.5"
