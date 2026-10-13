@@ -1,5 +1,11 @@
 # Current State
 
+## Admin Product Filter Input Focus Fix — 2026-10-13
+
+- Fixed the Product Filters editor losing input focus when a slug changed: row keys now remain stable while typing.
+- Slug fields now accept raw text while editing, including spaces and backspaces; filter/value slugs are normalized when Save Filters is submitted.
+- Verified source anchors and save-time slug normalization statically on `safe-site-pages-cms-fix`; admin TypeScript check and production image build remain pending before deployment.
+
 ## Desktop Product Detail Layout — 2026-10-13
 
 - Fixed the product gallery/details wrapper nesting so both are independent children of the existing responsive grid.
