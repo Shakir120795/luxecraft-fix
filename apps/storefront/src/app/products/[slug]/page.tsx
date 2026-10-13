@@ -321,10 +321,10 @@ export default function ProductDetailPage() {
 
       {/* Product Detail */}
       <div className="mx-auto max-w-[1400px] px-4 py-8 sm:px-6 lg:px-10 lg:py-12">
-        <div className="grid grid-cols-1 items-start gap-8 sm:gap-10 lg:grid-cols-2">
+        <div className="grid grid-cols-1 items-start gap-8 sm:gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12 xl:gap-14">
           {/* Images */}
           <div>
-            <div className="relative mb-4 aspect-[4/5] overflow-hidden border border-luxury-sand bg-luxury-beige sm:aspect-[3/4]">
+            <div className="relative mb-4 aspect-[4/5] overflow-hidden border border-luxury-sand bg-luxury-beige sm:aspect-[3/4] lg:aspect-auto lg:h-[min(78vh,700px)]">
               {selectedImage?.url ? (
                 <button
                   type="button"
@@ -339,7 +339,7 @@ export default function ProductDetailPage() {
                     fetchPriority="high"
                     decoding="async"
                     referrerPolicy="no-referrer"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02] lg:object-contain"
                   />
                   <span className="pointer-events-none absolute bottom-4 right-4 bg-black/55 px-3 py-2 text-xs uppercase tracking-wider text-white opacity-0 transition-opacity group-hover:opacity-100">
                     View fullscreen
@@ -511,8 +511,10 @@ export default function ProductDetailPage() {
 
                </div>
              )}
+          </div>
+
           {/* Details */}
-          <div className="lg:max-w-[560px]">
+          <div className="min-w-0 lg:max-w-none lg:pt-1">
             <div className="mb-3">
               <h1 className="font-serif text-[30px] font-normal leading-[1.15] text-luxury-charcoal sm:text-[32px]">
                 {product.name}
@@ -871,8 +873,6 @@ export default function ProductDetailPage() {
               </details>
             )}
            </div>
-
-          </div>
         </div>
 
         <div className="mt-6">
