@@ -1,5 +1,12 @@
 # Current State
 
+## Desktop Product Detail Layout — 2026-10-13
+
+- Fixed the product gallery/details wrapper nesting so both are independent children of the existing responsive grid.
+- Desktop uses balanced gallery/details columns and a bounded viewport-based gallery height with contained product imagery.
+- Existing single-column mobile order, image aspect-ratio rules below the desktop breakpoint, API calls, cart, wishlist, variants, and reviews logic are unchanged.
+- Verification so far: targeted source anchors and wrapper placement checked on `safe-site-pages-cms-fix`. A TypeScript check and production build still need to run in a build environment before AWS deployment.
+
 ## Project Status
 
 Phase: **PHASE 10 IN PROGRESS — Lean VPS deployment**
