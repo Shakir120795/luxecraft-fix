@@ -1,5 +1,11 @@
 # Task Queue
 
+## Admin Product Filter Input Focus Fix — 2026-10-13
+
+- [x] Keep Product Filters editor row keys stable while filter/value slugs are edited.
+- [x] Allow spaces and backspaces in slug inputs, normalizing slugs on save.
+- [ ] Run the admin production Docker build and verify typing, spaces, backspace, save, and removal before AWS rollout.
+
 ## Storefront Product Detail Desktop Layout — 2026-10-13
 
 - [x] Correct gallery/details wrapper nesting so the desktop grid can place the gallery and product information side by side.
