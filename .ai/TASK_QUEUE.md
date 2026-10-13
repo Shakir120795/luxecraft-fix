@@ -1,5 +1,11 @@
 # Task Queue
 
+## Storefront Product Detail Desktop Layout — 2026-10-13
+
+- [x] Correct gallery/details wrapper nesting so the desktop grid can place the gallery and product information side by side.
+- [x] Add desktop-only gallery height/fitting and balanced column sizing; preserve the existing mobile single-column order and image aspect ratios.
+- [ ] Run `npm run typecheck:storefront` and `npm run build:storefront` in a build environment, then verify the product page on mobile and desktop before the AWS rollout.
+
 ## Active — Workflow repair and production completion (2026-09-02)
 
 - [x] Repair guest checkout order-confirmation access securely.
