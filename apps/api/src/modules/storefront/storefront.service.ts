@@ -286,6 +286,10 @@ export class StorefrontService {
       });
     }
 
+    const categoryIds = params.categoryId
+      ? await this.getCategoryAndDescendantIds(params.categoryId)
+      : undefined;
+
     const where: Prisma.ProductWhereInput = {
       status: ProductStatus.ACTIVE,
       deletedAt: null,
@@ -298,9 +302,6 @@ export class StorefrontService {
 
     const take = Math.min(Math.max(params.take ?? 12, 1), 48);
     const skip = Math.max(params.skip ?? 0, 0);
-    const categoryIds = params.categoryId
-      ? await this.getCategoryAndDescendantIds(params.categoryId)
-      : undefined;
 
     const orderBy: Prisma.ProductOrderByWithRelationInput[] =
       params.sort === 'price-low'
