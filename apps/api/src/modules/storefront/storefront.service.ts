@@ -380,7 +380,10 @@ export class StorefrontService {
           ...(selectedVariant && {
             regularPrice: selectedVariant.regularPrice ?? product.regularPrice,
             salePrice: selectedVariant.salePrice ?? product.salePrice,
-            selectedVariantName: selectedVariant.name,
+          }),
+          ...(selectedSize && {
+            selectedVariantName:
+              selectedVariant?.name ?? selectedSize.replace(/-/g, ' '),
           }),
           reviews: (product.reviews ?? []).map((review: any) => ({
             ...review,
