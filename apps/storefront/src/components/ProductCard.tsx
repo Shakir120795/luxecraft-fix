@@ -3,11 +3,26 @@ import { Product } from '@/lib/api';
 
 export function ProductCard({ product }: { product: Product }) {
   const mainImage = product.media?.find((m) => m.isMain) || product.media?.[0];
-  const displayPrice = parseFloat(String(product.salePrice || product.regularPrice));
+  const displayPrice = parseFloat(String(product.salePrice ?? product.regularPrice));
   const regularPrice = parseFloat(String(product.regularPrice));
   const hasDiscount =
-    product.salePrice &&
+    product.salePrice != null &&
     parseFloat(String(product.salePrice)) < regularPrice;
+  const variantSizes = Array.from(
+    new Set(
+      (product.variants ?? [])
+        .filter((variant) => variant.isAvailable !== false && variant.name?.trim() && variant.name.trim().toLowerCase() !== 'default')
+        .map((variant) => variant.name.trim()),
+    ),
+  );
+  const configuredSizes = (product.filterData?.size ?? [])
+    .map((size) => size.replace(/-/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  const displaySizes = product.selectedVariantName
+    ? [product.selectedVariantName]
+    : variantSizes.length > 0
+      ? variantSizes
+      : configuredSizes;
 
   return (
     <Link href={`/products/${product.slug}`} className="group block">
@@ -75,10 +90,11 @@ export function ProductCard({ product }: { product: Product }) {
             )}
           </div>
 
-          {product.variants && product.variants.length > 0 && (
-            <p className="mt-2 text-[9px] font-medium uppercase tracking-[0.13em] text-[rgb(var(--luxecraft-muted))]">
-              {product.variants.length} variant
-              {product.variants.length > 1 ? 's' : ''} available
+          {displaySizes.length > 0 && (
+            <p className="mt-2 line-clamp-2 text-[10px] font-medium uppercase tracking-[0.1em] text-[rgb(var(--luxecraft-muted))]">
+              {product.selectedVariantName
+                ? `Size: ${displaySizes[0]}`
+                : `Sizes: ${displaySizes.slice(0, 3).join(', ')}${displaySizes.length > 3 ? ' +' + (displaySizes.length - 3) + ' more' : ''}`}
             </p>
           )}
         </div>
