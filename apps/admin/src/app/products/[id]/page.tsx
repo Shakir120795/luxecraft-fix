@@ -395,6 +395,10 @@ export default function ProductEditPage() {
       .replace(/^-+|-+$/g, '');
   }
 
+  function normalizeSizeKey(value: string) {
+    return value.toLowerCase().trim().replace(/[^a-z0-9]/g, '').replace(/ft$/, '');
+  }
+
   function updateForm<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
@@ -676,9 +680,32 @@ export default function ProductEditPage() {
       throw new Error('Please select a category.');
     }
 
-    const filterDataToSave = Object.fromEntries(
+    const filterDataToSave: Record<string, string[]> = Object.fromEntries(
       Object.entries(selectedFilters).filter(([, values]) => Array.isArray(values) && values.length > 0),
     );
+
+    const sizeFilter = filterConfig.find((filter) => filter.slug === 'size');
+    const variantSizeSlugs = Array.from(
+      new Set(
+        variants
+          .filter((variant) =>
+            variant.name.trim() &&
+            variant.name.trim().toLowerCase() !== 'default' &&
+            variant.isAvailable !== false,
+          )
+          .map((variant) => {
+            const matchingSize = sizeFilter?.values.find(
+              (value) =>
+                normalizeSizeKey(value.label) === normalizeSizeKey(variant.name) ||
+                normalizeSizeKey(value.slug) === normalizeSizeKey(variant.name),
+            );
+            return matchingSize?.slug ?? generateSlug(variant.name);
+          }),
+      ),
+    );
+    if (variantSizeSlugs.length > 0) {
+      filterDataToSave.size = variantSizeSlugs;
+    }
 
     const labelForSelection = (slug: string): string | undefined => {
       const valueSlug = selectedFilters[slug]?.[0];
@@ -787,10 +814,28 @@ export default function ProductEditPage() {
       mediaResults.push(created);
     }
 
-    // Save sizes/variants.
+    // Save sizes/variants. Once real size variants exist, remove the old
+    // placeholder Default variant so customers only see actual size choices.
     if (useSizes || variants.length > 0) {
-      for (let index = 0; index < variants.length; index += 1) {
-        const item = variants[index];
+      const hasNamedSizeVariants = variants.some(
+        (variant) =>
+          variant.name.trim() &&
+          variant.name.trim().toLowerCase() !== 'default',
+      );
+      const variantsToSave = hasNamedSizeVariants
+        ? variants.filter((variant) => variant.name.trim().toLowerCase() !== 'default')
+        : variants;
+      const defaultVariantIdsToRemove = hasNamedSizeVariants
+        ? variants
+            .filter(
+              (variant) =>
+                variant.id && variant.name.trim().toLowerCase() === 'default',
+            )
+            .map((variant) => variant.id as string)
+        : [];
+
+      for (let index = 0; index < variantsToSave.length; index += 1) {
+        const item = variantsToSave[index];
 
         if (!item.name.trim()) continue;
 
@@ -819,6 +864,10 @@ export default function ProductEditPage() {
         } else {
           await addProductVariant(savedId, variantData);
         }
+      }
+
+      for (const variantId of defaultVariantIdsToRemove) {
+        await deleteProductVariant(variantId);
       }
     } else if (isNew) {
       await addProductVariant(savedId, {
