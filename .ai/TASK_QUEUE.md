@@ -1,5 +1,13 @@
 # Task Queue
 
+## Admin Product Image Upload Authorization — 2026-10-16
+
+- [x] Reuse the shared admin access-token/refresh flow for product image uploads.
+- [x] Resolve category descendant IDs before the category-scoped product query.
+- [ ] Run API, admin, and storefront production builds; deploy only after all pass.
+- [ ] Verify local product-image upload no longer returns 401 and Crafts & Statues listing excludes rugs.
+- [ ] Check the draft product created by the failed upload attempt before creating anything again.
+
 ## Crafts & Statues Category Listing — 2026-10-16
 
 - [x] Route Crafts & Statues navigation to its category instead of all products.
