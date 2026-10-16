@@ -1,5 +1,12 @@
 # Current State
 
+## Admin Product Image Upload Authorization — 2026-10-16
+
+- Root cause confirmed from logs and repository code: product creation returned HTTP 201, while `POST /api/v1/admin/uploads/products` returned 401.
+- The product editor's local upload helper read the legacy `localStorage.adminToken`, while the active admin client keeps the access token in memory and provides it through `getAdminAuthHeaders()`. The editor now uses the shared exported uploader, which reuses the current admin auth flow.
+- The Crafts & Statues category query's descendant ID list is now resolved before constructing the Prisma product filter (avoids use-before-initialization at runtime).
+- Repo source checks completed on `safe-site-pages-cms-fix`; API/admin/storefront production builds and browser upload/category verification remain pending before AWS rollout. The failed attempt may already have created the draft product submitted before the upload 401; do not create the same product again without checking the Products list.
+
 ## Crafts & Statues Category Listing — 2026-10-16
 
 - Updated the storefront header's Crafts & Statues link to target its matching active category rather than the unfiltered `/products` route.
