@@ -1,5 +1,11 @@
 # Current State
 
+## Crafts & Statues Category Listing — 2026-10-16
+
+- Updated the storefront header's Crafts & Statues link to target its matching active category rather than the unfiltered `/products` route.
+- Product listing category filters now include the selected active category and its active descendant categories, so products assigned to crafts/statue subcategories can appear without mixing in unrelated rug categories.
+- Static source checks completed on `safe-site-pages-cms-fix`. Admin product-page `Internal server error` still requires API log evidence to identify the failing request safely; no speculative server-side change was made for it.
+
 ## Variant-Driven Size Filters and Pricing — 2026-10-16
 
 - Storefront size filter options now merge in real, available sizes from variants on active products without requiring manual filter-setting edits.
