@@ -189,6 +189,17 @@ export function SiteHeader() {
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const craftsAndStatuesCategory = categories.find((category) => {
+    const slug = category.slug.trim().toLowerCase();
+    const name = category.name.trim().toLowerCase();
+    return ['crafts-statues', 'crafts-and-statues'].includes(slug) ||
+      ['crafts & statues', 'crafts and statues'].includes(name);
+  });
+
+  const craftsAndStatuesHref = craftsAndStatuesCategory
+    ? '/products?category=' + encodeURIComponent(craftsAndStatuesCategory.id)
+    : '/categories/crafts-statues';
+
   function categoryRugHref(category: Category) {
     const categoryQuery = category.name.trim().toLowerCase() === 'rugs'
       ? '/products'
@@ -538,7 +549,7 @@ export function SiteHeader() {
               })}
 
               <Link
-                href="/products"
+                href={craftsAndStatuesHref}
                 className="block shrink-0 whitespace-nowrap px-4 py-3 text-[13px] font-semibold uppercase tracking-[0.13em] text-white transition-colors duration-200 hover:bg-black/15 sm:px-5 sm:py-2 sm:text-[16px]"
                 onClick={() => setOpenFilter(null)}
               >
