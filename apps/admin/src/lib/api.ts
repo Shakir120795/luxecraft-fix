@@ -163,6 +163,42 @@ export async function uploadCategoryImage(file: File): Promise<{
   return json.data;
 }
 
+export async function uploadProductImage(file: File): Promise<{
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  storageKey: string;
+}> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  // Use the same in-memory admin access token/refresh flow as all admin API requests.
+  // Do not read adminToken from localStorage: this app deliberately migrates away from it.
+  const authHeaders = await getAdminAuthHeaders();
+  const response = await fetch(`${API_BASE}/admin/uploads/products`, {
+    method: 'POST',
+    headers: {
+      ...authHeaders,
+    },
+    credentials: 'include',
+    body: formData,
+  });
+
+  const json = await response.json().catch(() => null);
+
+  if (!response.ok || !json?.success) {
+    throw new ApiError(
+      json?.statusCode ?? response.status,
+      json?.error ?? 'UploadError',
+      json?.message ?? 'Failed to upload product image',
+    );
+  }
+
+  return json.data;
+}
+
 // ============================================================================
 // Types
 // ============================================================================
