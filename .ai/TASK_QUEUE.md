@@ -1,5 +1,13 @@
 # Task Queue
 
+## Variant-Driven Size Filters and Pricing — 2026-10-16
+
+- [x] Add available variant names to storefront size-filter options dynamically.
+- [x] Return the selected variant's price when a size filter is active.
+- [x] Sync named variant sizes to product `filterData.size` on admin save and remove legacy Default placeholders when real sizes exist.
+- [x] Display actual size labels on product cards and avoid showing Default as a selectable size.
+- [ ] Run API/admin/storefront checks and production builds; verify size filtering, size-specific prices, and variant display before AWS deployment.
+
 ## Admin Product Filter Input Focus Fix — 2026-10-13
 
 - [x] Keep Product Filters editor row keys stable while filter/value slugs are edited.
