@@ -1,5 +1,13 @@
 # Current State
 
+## Variant-Driven Size Filters and Pricing — 2026-10-16
+
+- Storefront size filter options now merge in real, available sizes from variants on active products without requiring manual filter-setting edits.
+- Product listing responses include available variants; when a size filter is selected, the matching variant's regular/sale price is used for the displayed product price and the selected size is labelled on the card.
+- Admin product saves sync named available variant sizes into `filterData.size`. If real named size variants exist, the legacy `Default` placeholder variant is removed after named variants are saved.
+- Storefront product cards display actual size names (or saved size labels) rather than a generic variant count. Product detail pages hide the placeholder `Default` from the size selector and initialize to a real size when available.
+- Source-level checks performed on `safe-site-pages-cms-fix`; API/admin/storefront typechecks, production builds and browser verification are still pending before deployment.
+
 ## Admin Product Filter Input Focus Fix — 2026-10-13
 
 - Fixed the Product Filters editor losing input focus when a slug changed: row keys now remain stable while typing.
