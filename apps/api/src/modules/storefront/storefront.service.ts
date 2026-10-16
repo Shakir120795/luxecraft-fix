@@ -289,7 +289,7 @@ export class StorefrontService {
     const where: Prisma.ProductWhereInput = {
       status: ProductStatus.ACTIVE,
       deletedAt: null,
-      ...(params.categoryId && { categoryId: params.categoryId }),
+      ...(categoryIds && { categoryId: { in: categoryIds } }),
       ...(params.isFeatured !== undefined && {
         isFeatured: params.isFeatured,
       }),
@@ -298,6 +298,9 @@ export class StorefrontService {
 
     const take = Math.min(Math.max(params.take ?? 12, 1), 48);
     const skip = Math.max(params.skip ?? 0, 0);
+    const categoryIds = params.categoryId
+      ? await this.getCategoryAndDescendantIds(params.categoryId)
+      : undefined;
 
     const orderBy: Prisma.ProductOrderByWithRelationInput[] =
       params.sort === 'price-low'
@@ -394,6 +397,39 @@ export class StorefrontService {
       }),
       total,
     };
+  }
+
+  private async getCategoryAndDescendantIds(rootId: string): Promise<string[]> {
+    const categories = await this.prisma.category.findMany({
+      where: {
+        status: CategoryStatus.ACTIVE,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        parentId: true,
+      },
+    });
+
+    const includedIds = new Set<string>([rootId]);
+    let changed = true;
+
+    while (changed) {
+      changed = false;
+
+      for (const category of categories) {
+        if (
+          category.parentId &&
+          includedIds.has(category.parentId) &&
+          !includedIds.has(category.id)
+        ) {
+          includedIds.add(category.id);
+          changed = true;
+        }
+      }
+    }
+
+    return Array.from(includedIds);
   }
 
   async getSitemapData(): Promise<{
