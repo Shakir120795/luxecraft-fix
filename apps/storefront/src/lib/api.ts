@@ -43,6 +43,7 @@ export interface Product {
   collection?: string | null;
   color?: string | null;
   filterData?: Record<string, string[]> | null;
+  selectedVariantName?: string;
   deliveryInfo?: string | null;
   shippingInfo?: string | null;
   returnsInfo?: string | null;
