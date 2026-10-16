@@ -1,5 +1,12 @@
 # Task Queue
 
+## Crafts & Statues Category Listing — 2026-10-16
+
+- [x] Route Crafts & Statues navigation to its category instead of all products.
+- [x] Include active descendant categories in category-filtered storefront product listings.
+- [ ] Verify crafts/statues listing excludes rug products on the live site.
+- [ ] Diagnose Admin product-page `Internal server error` from API logs before applying a targeted repo fix.
+
 ## Variant-Driven Size Filters and Pricing — 2026-10-16
 
 - [x] Add available variant names to storefront size-filter options dynamically.
