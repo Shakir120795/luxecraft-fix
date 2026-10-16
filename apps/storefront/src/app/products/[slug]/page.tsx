@@ -45,7 +45,12 @@ export default function ProductDetailPage() {
         setProduct(data.data);
 
         if (data.data.variants && data.data.variants.length > 0) {
-          setSelectedVariant(data.data.variants[0].id);
+          const firstSizeVariant =
+            data.data.variants.find(
+              (variant: { name?: string }) =>
+                variant.name?.trim().toLowerCase() !== 'default',
+            ) ?? data.data.variants[0];
+          setSelectedVariant(firstSizeVariant.id);
         }
 
         const initialImage =
@@ -111,6 +116,16 @@ export default function ProductDetailPage() {
       </div>
     );
   }
+
+  const sizeVariants =
+    product.variants?.filter(
+      (variant) => variant.name?.trim().toLowerCase() !== 'default',
+    ) ?? [];
+  const configuredSizeLabels = product.filterData?.size ?? [];
+  const configuredSingleSize =
+    configuredSizeLabels.length === 1
+      ? configuredSizeLabels[0].replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+      : null;
 
   const selectedSizeVariant =
     product.variants?.find((variant) => variant.id === selectedVariant) ?? null;
@@ -593,7 +608,7 @@ export default function ProductDetailPage() {
             )}
 
             <div className="mb-6 flex flex-wrap items-start gap-6">
-              {product.variants && product.variants.length > 0 && (
+              {sizeVariants.length > 0 && (
                 <div className="w-[260px] max-w-full">
                   <label htmlFor="product-size" className="mb-2 block text-sm font-bold uppercase tracking-[0.14em] text-luxury-charcoal">
                     Size
@@ -606,7 +621,7 @@ export default function ProductDetailPage() {
                       onChange={(event) => handleVariantSelect(event.target.value)}
                       className="w-full appearance-none rounded-md border-4 border-[#c6534c] bg-white px-4 py-3.5 pr-10 text-base font-bold text-luxury-charcoal outline-none focus:border-[#b94740]"
                     >
-                      {product.variants.map((variant) => {
+                      {sizeVariants.map((variant) => {
                         const isUnavailable =
                           variant.trackInventory === true &&
                           variant.stockQty <= 0 &&
@@ -627,6 +642,17 @@ export default function ProductDetailPage() {
 
                   <p className="mt-2 text-[11px] text-luxury-brown/70">
                     Need a different size? <Link href="/custom-design" className="font-medium underline underline-offset-2 hover:text-luxury-gold">Request a custom quote ?</Link>
+                  </p>
+                </div>
+              )}
+
+              {sizeVariants.length === 0 && configuredSingleSize && (
+                <div className="w-[260px] max-w-full">
+                  <p className="mb-2 text-sm font-bold uppercase tracking-[0.14em] text-luxury-charcoal">
+                    Size
+                  </p>
+                  <p className="rounded-md border border-luxury-sand bg-white px-4 py-3.5 text-base font-semibold text-luxury-charcoal">
+                    {configuredSingleSize}
                   </p>
                 </div>
               )}
