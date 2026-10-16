@@ -15,6 +15,7 @@ import {
   addProductMedia,
   updateProductMedia,
   deleteProductMedia,
+  uploadProductImage,
   addProductVariant,
   updateProductVariant,
   deleteProductVariant,
@@ -536,46 +537,6 @@ export default function ProductEditPage() {
     setSelectedLocalFiles([]);
     setFileInputKey((current) => current + 1);
   }
-
-  async function uploadProductImage(file: File) {
-    const apiBase =
-      process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
-
-    const token =
-      typeof window === 'undefined'
-        ? null
-        : localStorage.getItem('adminToken');
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const response = await fetch(`${apiBase}/admin/uploads/products`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      body: formData,
-      credentials: 'include',
-    });
-
-    let json: any = null;
-    try {
-      json = await response.json();
-    } catch {
-      json = null;
-    }
-
-    if (!response.ok || !json?.success) {
-      throw new Error(
-        json?.message ?? json?.error ?? `Image upload failed (${response.status})`,
-      );
-    }
-
-    return json.data as {
-      url: string;
-      storageKey: string;
-      filename: string;
-    };
-  }
-
 
   function addVariant() {
     setUseSizes(true);
