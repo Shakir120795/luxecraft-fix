@@ -17,7 +17,59 @@ export class StorefrontService {
   ) {}
 
   async getProductFilters() {
-    return this.settings.getProductFilters();
+    const filters = await this.settings.getProductFilters();
+    const sizeFilter = filters.find((filter) => filter.slug === 'size');
+
+    if (!sizeFilter?.isActive) return filters;
+
+    const variants = await this.prisma.productVariant.findMany({
+      where: {
+        deletedAt: null,
+        isAvailable: true,
+        name: { not: '' },
+        product: {
+          is: {
+            status: ProductStatus.ACTIVE,
+            deletedAt: null,
+          },
+        },
+      },
+      select: { name: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+
+    const normalizeSizeKey = (value: string) =>
+      value.toLowerCase().trim().replace(/[^a-z0-9]/g, '').replace(/ft$/, '');
+    const slugify = (value: string) =>
+      value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+    const knownSizes = new Set(
+      sizeFilter.values.flatMap((value) => [
+        normalizeSizeKey(value.slug),
+        normalizeSizeKey(value.label),
+      ]),
+    );
+    const dynamicValues = variants
+      .map((variant) => variant.name.trim())
+      .filter((name) => name && name.toLowerCase() !== 'default')
+      .filter((name) => {
+        const key = normalizeSizeKey(name);
+        if (!key || knownSizes.has(key)) return false;
+        knownSizes.add(key);
+        return true;
+      })
+      .map((name, index) => ({
+        slug: slugify(name),
+        label: name,
+        sortOrder: sizeFilter.values.length + index,
+        isActive: true,
+      }));
+
+    return filters.map((filter) =>
+      filter.slug === 'size'
+        ? { ...filter, values: [...filter.values, ...dynamicValues] }
+        : filter,
+    );
   }
 
   async getHomepageVideos() {
@@ -275,6 +327,17 @@ export class StorefrontService {
             orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
             take: 1,
           },
+          variants: {
+            where: { deletedAt: null, isAvailable: true },
+            orderBy: { sortOrder: 'asc' },
+            select: {
+              id: true,
+              name: true,
+              regularPrice: true,
+              salePrice: true,
+              isAvailable: true,
+            },
+          },
           reviews: {
             where: { status: { in: ['APPROVED', 'PENDING'] } },
             orderBy: { createdAt: 'desc' },
@@ -299,15 +362,33 @@ export class StorefrontService {
       this.prisma.product.count({ where }),
     ]);
 
+    const selectedSize = params.filters?.size;
+    const normalizeSizeKey = (value: string) =>
+      value.toLowerCase().trim().replace(/[^a-z0-9]/g, '').replace(/ft$/, '');
+
     return {
-      items: items.map((product: any) => ({
-        ...product,
-        reviews: (product.reviews ?? []).map((review: any) => ({
-          ...review,
-          customerName:
-            [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
-        })),
-      })),
+      items: items.map((product: any) => {
+        const selectedVariant = selectedSize
+          ? (product.variants ?? []).find(
+              (variant: any) =>
+                normalizeSizeKey(variant.name) === normalizeSizeKey(selectedSize),
+            )
+          : undefined;
+
+        return {
+          ...product,
+          ...(selectedVariant && {
+            regularPrice: selectedVariant.regularPrice ?? product.regularPrice,
+            salePrice: selectedVariant.salePrice ?? product.salePrice,
+            selectedVariantName: selectedVariant.name,
+          }),
+          reviews: (product.reviews ?? []).map((review: any) => ({
+            ...review,
+            customerName:
+              [review.user?.firstName, review.user?.lastName].filter(Boolean).join(' ') || 'Customer',
+          })),
+        };
+      }),
       total,
     };
   }
