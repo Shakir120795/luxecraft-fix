@@ -63,7 +63,7 @@ export default function OrderDetailPage() {
     setUpdating(true);
     try {
       const updated = await updateOrderStatus(orderId, {
-        orderStatus: newStatus,
+        ...(newStatus !== order.status ? { orderStatus: newStatus } : {}),
         courierName: nextCourierName,
         trackingNumber: nextTrackingNumber,
         trackingUrl: nextTrackingUrl,
