@@ -3,14 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOrders, getFreshCurrentUser, Order, cancelOrder } from '@/lib/api';
+import { getOrders, getFreshCurrentUser, Order, cancelOrder, reconcileOrderPayment } from '@/lib/api';
 
 export default function OrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
-
+  const [reconcilingOrderIds, setReconcilingOrderIds] = useState<Set<string>>(new Set());
+  const [reconcileMessages, setReconcileMessages] = useState<Record<string, string>>({});
 
   useEffect(() => {
     async function loadAuthenticatedOrders() {
@@ -34,6 +35,33 @@ export default function OrdersPage() {
       console.error('Failed to load orders:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleReconcilePayment(orderId: string) {
+    setReconcilingOrderIds((current) => new Set(current).add(orderId));
+    setReconcileMessages((current) => ({ ...current, [orderId]: '' }));
+
+    try {
+      const result = await reconcileOrderPayment(orderId);
+      if (result.success) {
+        setReconcileMessages((current) => ({
+          ...current,
+          [orderId]: 'Payment confirmed. Refreshing order status…',
+        }));
+        await loadOrders();
+      } else {
+        setReconcileMessages((current) => ({
+          ...current,
+          [orderId]: result.message || 'No captured payment found yet. Do not pay again until you verify your payment status.',
+        }));
+      }
+    } finally {
+      setReconcilingOrderIds((current) => {
+        const next = new Set(current);
+        next.delete(orderId);
+        return next;
+      });
     }
   }
 
@@ -201,6 +229,11 @@ export default function OrdersPage() {
                         <span>Payment: <strong className="font-medium text-[#302b35]">{order.paymentStatus}</strong></span>
                         <span>Fulfillment: <strong className="font-medium text-[#302b35]">{order.fulfillmentStatus || 'UNFULFILLED'}</strong></span>
                       </div>
+                      {reconcileMessages[order.id] && (
+                        <p role="status" className="mt-3 text-sm text-[#7a5a2c]">
+                          {reconcileMessages[order.id]}
+                        </p>
+                      )}
 
                       {items.length > 0 && (
                         <div className="mt-5 border-l-2 border-[#c99545] bg-[#faf9f7] px-4 py-3">
@@ -234,6 +267,16 @@ export default function OrdersPage() {
                         )}
                       </div>
                       <div className="flex flex-wrap gap-2">
+                        {order.paymentStatus === 'PENDING' && (
+                          <button
+                            type="button"
+                            onClick={() => void handleReconcilePayment(order.id)}
+                            disabled={reconcilingOrderIds.has(order.id)}
+                            className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#2f6b36] underline underline-offset-4 disabled:cursor-wait disabled:opacity-50"
+                          >
+                            {reconcilingOrderIds.has(order.id) ? 'Checking payment…' : 'Check payment status'}
+                          </button>
+                        )}
                         {order.paymentStatus === 'FAILED' && (
                           <Link href={`/checkout?retryOrderId=${order.id}`} className="text-[10px] font-medium uppercase tracking-[0.14em] text-[#7a5a2c] underline underline-offset-4">
                             Retry payment
