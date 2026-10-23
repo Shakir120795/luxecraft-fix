@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { getOrder, getFreshCurrentUser, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder, createProductReview, getProductReviews } from '@/lib/api';
+import { getOrder, getFreshCurrentUser, Order, resumePayment, verifyRazorpayPayment, capturePayPalPayment, verifyCryptoPayment, cancelOrder, createProductReview, getProductReviews, getCarrierTrackingDashboardUrl } from '@/lib/api';
 
 export default function OrderDetailPage() {
   const router = useRouter();
@@ -53,6 +53,13 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   useEffect(() => {
+    const refreshTimer = window.setInterval(() => {
+      void loadOrder(false);
+    }, 60_000);
+    return () => window.clearInterval(refreshTimer);
+  }, [orderId]);
+
+  useEffect(() => {
     if (!resumeCrypto) {
       setResumeCryptoQr(null);
       return;
@@ -69,7 +76,9 @@ export default function OrderDetailPage() {
     PENDING: 'Payment Pending',
     PAYMENT_CONFIRMED: 'Payment Confirmed',
     PROCESSING: 'Processing',
-    SHIPPED: 'Shipped',
+    READY_TO_SHIP: 'Ready to Dispatch',
+    SHIPPED: 'Shipped / Dispatched',
+    OUT_FOR_DELIVERY: 'Out for Delivery',
     DELIVERED: 'Delivered',
     CANCELLED: 'Cancelled',
   }[status] || status);
@@ -247,9 +256,9 @@ export default function OrderDetailPage() {
     }
   }
 
-  async function loadOrder() {
+  async function loadOrder(showLoading = true) {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
       const data = await getOrder(orderId);
       
       if (data) {
@@ -279,7 +288,7 @@ export default function OrderDetailPage() {
       setError('Failed to load order');
       console.error(err);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }
 
@@ -309,6 +318,10 @@ export default function OrderDetailPage() {
       </div>
     );
   }
+
+  const carrierTrackingUrl =
+    (order.trackingUrl && order.trackingUrl.startsWith('https://') ? order.trackingUrl : null) ||
+    getCarrierTrackingDashboardUrl(order.courierName);
 
   return (
     <main className="min-h-screen bg-[#f7f3ef]">
@@ -368,8 +381,41 @@ export default function OrderDetailPage() {
 
               {/* Order Timeline */}
               <div className="space-y-4">
-                <OrderTimeline status={order.status} createdAt={order.createdAt} />
+                <OrderTimeline
+                  status={order.status}
+                  createdAt={order.createdAt}
+                  shippedAt={order.shippedAt}
+                  deliveredAt={order.deliveredAt}
+                />
               </div>
+
+              {(order.courierName || order.trackingNumber) && (
+                <div className="mt-6 rounded-lg border border-[#e0dbd6] bg-[#faf9f7] p-5 sm:p-6">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a837c]">Shipment Details</p>
+                  <h3 className="mt-1 font-serif text-xl text-[#302b35]">
+                    {order.courierName || 'Courier details'}
+                  </h3>
+                  {order.trackingNumber && (
+                    <div className="mt-4">
+                      <p className="text-xs text-[#8a837c]">AWB / Tracking ID</p>
+                      <p className="mt-1 break-all font-mono text-sm font-semibold text-[#302b35]">{order.trackingNumber}</p>
+                    </div>
+                  )}
+                  {carrierTrackingUrl && (
+                    <a
+                      href={carrierTrackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 inline-flex items-center justify-center rounded-md bg-[#302b35] px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#211e24]"
+                    >
+                      Track with {order.courierName || 'courier'} ↗
+                    </a>
+                  )}
+                  <p className="mt-3 text-xs leading-5 text-[#8a837c]">
+                    Shipment status refreshes automatically while this page is open. Courier scans may take some time to appear on the carrier&apos;s dashboard.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Order Items */}
@@ -660,13 +706,25 @@ export default function OrderDetailPage() {
   );
 }
 
-function OrderTimeline({ status, createdAt }: { status: string; createdAt: string }) {
+function OrderTimeline({
+  status,
+  createdAt,
+  shippedAt,
+  deliveredAt,
+}: {
+  status: string;
+  createdAt: string;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
+}) {
   const normalized = status.toUpperCase();
   const stages = [
-    { label: 'Order Placed', active: true },
-    { label: 'Processing', active: ['PROCESSING', 'SHIPPED', 'DELIVERED'].includes(normalized) },
-    { label: 'Shipped', active: ['SHIPPED', 'DELIVERED'].includes(normalized) },
-    { label: 'Delivered', active: normalized === 'DELIVERED' },
+    { label: 'Order Placed', active: true, date: createdAt },
+    { label: 'Processing', active: ['PROCESSING', 'READY_TO_SHIP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(normalized), date: null },
+    { label: 'Ready for Dispatch', active: ['READY_TO_SHIP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(normalized), date: null },
+    { label: 'Shipped / Dispatched', active: ['SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED'].includes(normalized), date: shippedAt },
+    { label: 'Out for Delivery', active: ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(normalized), date: null },
+    { label: 'Delivered', active: normalized === 'DELIVERED', date: deliveredAt },
   ];
 
   return (
@@ -680,7 +738,7 @@ function OrderTimeline({ status, createdAt }: { status: string; createdAt: strin
             </div>
             <div>
               <p className={`text-sm ${item.active ? 'font-medium text-[#302b35]' : 'text-[#8a837c]'}`}>{item.label}</p>
-              {idx === 0 && <p className="mt-1 text-xs text-[#8a837c]">{new Date(createdAt).toLocaleString()}</p>}
+              {item.date && item.active && <p className="mt-1 text-xs text-[#8a837c]">{new Date(item.date).toLocaleString()}</p>}
             </div>
           </div>
         ))}
