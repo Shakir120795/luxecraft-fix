@@ -188,6 +188,10 @@ export class PaymentsService {
     return this.paypalProvider.captureOrder(paypalOrderId);
   }
 
+  fetchPayPalOrder(paypalOrderId: string): Promise<Record<string, unknown>> {
+    return this.paypalProvider.fetchOrder(paypalOrderId);
+  }
+
   verifyRazorpaySignature(orderId: string, paymentId: string, signature: string): boolean {
     return this.razorpayProvider.verifyPayment(orderId, paymentId, signature);
   }
