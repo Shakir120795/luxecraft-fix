@@ -1916,7 +1916,15 @@ export async function toggleWishlist(params: {
     const data = await res.json();
     
     if (res.ok && data.success) {
-      return { success: true, added: data.data.added };
+      // The API currently returns { action: 'added' | 'removed' }, not an "added" boolean.
+      const result = data.data ?? data;
+      const added =
+        result.action === 'added'
+          ? true
+          : result.action === 'removed'
+            ? false
+            : Boolean(result.added);
+      return { success: true, added };
     }
 
     return { success: false, added: false, message: data.message || 'Failed to toggle wishlist' };
