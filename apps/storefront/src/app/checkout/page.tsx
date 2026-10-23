@@ -682,7 +682,7 @@ export default function CheckoutPage() {
                     }}
                     className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
                   >
-                    {showNewAddressForm && !editingAddress ? '-- Cancel' : '+ Add New Address'}
+                    {showNewAddressForm ? '-- Cancel' : '+ Add New Address'}
                   </button>}
 
                   {!isGuest && showNewAddressForm && (
