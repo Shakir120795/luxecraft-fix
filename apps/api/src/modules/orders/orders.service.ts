@@ -314,10 +314,9 @@ export class OrdersService {
 
     const visibleOrders = orders.filter(
       (order) =>
-        order.paymentStatus === PaymentStatus.PAID ||
-        (order.orderStatus === OrderStatus.CANCELLED &&
-          (customerCancelledOrderIds.has(order.id) ||
-            (order.customerNotes ?? '').toLowerCase().includes('cancelled by customer'))),
+        order.orderStatus !== OrderStatus.CANCELLED ||
+        customerCancelledOrderIds.has(order.id) ||
+        (order.customerNotes ?? '').toLowerCase().includes('cancelled by customer'),
     );
 
     return this.attachProductDetails(visibleOrders);
