@@ -233,7 +233,7 @@ export default function OrdersPage() {
                         <span>Payment: <strong className="font-medium text-[#302b35]">{order.paymentStatus}</strong></span>
                         <span>Fulfillment: <strong className="font-medium text-[#302b35]">{order.fulfillmentStatus || 'UNFULFILLED'}</strong></span>
                       </div>
-                      {(order.courierName || order.trackingNumber) && (
+                      {(order.courierName || order.trackingNumber || order.trackingUrl) && (
                         <div className="mt-4 border-l-2 border-[#c99545] bg-[#faf9f7] px-4 py-3">
                           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#8a837c]">Shipment</p>
                           {order.courierName && <p className="mt-1 text-sm font-semibold text-[#302b35]">{order.courierName}</p>}
