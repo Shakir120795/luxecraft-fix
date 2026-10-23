@@ -54,7 +54,9 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     const refreshTimer = window.setInterval(() => {
-      void loadOrder(false);
+      void getOrder(orderId).then((latestOrder) => {
+        if (latestOrder) setOrder(latestOrder);
+      });
     }, 60_000);
     return () => window.clearInterval(refreshTimer);
   }, [orderId]);
@@ -256,9 +258,9 @@ export default function OrderDetailPage() {
     }
   }
 
-  async function loadOrder(showLoading = true) {
+  async function loadOrder() {
     try {
-      if (showLoading) setLoading(true);
+      setLoading(true);
       const data = await getOrder(orderId);
       
       if (data) {
@@ -288,7 +290,7 @@ export default function OrderDetailPage() {
       setError('Failed to load order');
       console.error(err);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }
 
