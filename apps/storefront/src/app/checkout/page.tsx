@@ -627,7 +627,7 @@ export default function CheckoutPage() {
                       initialLastName={guestLastName}
                       onGuestAddress={(address) => setGuestShippingAddress(address)}
                     />
-                  ) : addresses.length > 0 ? (
+                  ) : addresses.some((addr) => addr.type !== 'BILLING') ? (
                     <div className="space-y-3">
                       {addresses.filter((addr) => addr.type !== 'BILLING').map(addr => (
                         <div key={addr.id} className={'flex items-start gap-3 border bg-white p-4 transition ' + (selectedShippingAddressId === addr.id ? 'border-[#302b35]' : 'border-black/10 hover:border-black/40')}>
@@ -747,9 +747,9 @@ export default function CheckoutPage() {
                           title="Billing Address"
                           onGuestAddress={(address) => setGuestBillingAddress(address)}
                         />
-                      ) : addresses.length > 0 ? (
+                      ) : addresses.some((addr) => addr.type !== 'SHIPPING') ? (
                         <div className="space-y-3">
-                          {addresses.map((addr) => (
+                          {addresses.filter((addr) => addr.type !== 'SHIPPING').map((addr) => (
                             <label key={addr.id} className="flex items-start gap-3 border border-black/10 bg-white p-4 transition hover:border-black/40 cursor-pointer">
                               <input
                                 type="radio"
