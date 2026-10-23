@@ -139,6 +139,27 @@ export class PayPalProvider {
     return data;
   }
 
+  async fetchOrder(paypalOrderId: string): Promise<Record<string, unknown>> {
+    const accessToken = await this.getAccessToken();
+    const response = await fetch(
+      `${this.baseUrl}/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+
+    const data = await response.json();
+    if (!response.ok || !data?.id) {
+      this.logger.error(`PayPal order lookup failed: ${response.status}`);
+      throw new BadRequestException('Unable to retrieve PayPal order status');
+    }
+
+    return data as Record<string, unknown>;
+  }
+
   async refundOrder(
     paypalOrderId: string,
     amount: number,
