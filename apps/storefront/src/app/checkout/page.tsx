@@ -109,6 +109,7 @@ export default function CheckoutPage() {
           parsed.razorpaySignature
         ) {
           setRazorpayRetryDetails(parsed);
+          setError('Payment may have succeeded but order confirmation is pending. Retry confirmation here before paying again.');
         } else {
           sessionStorage.removeItem(RAZORPAY_RETRY_STORAGE_KEY);
         }
