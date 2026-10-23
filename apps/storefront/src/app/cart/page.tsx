@@ -72,7 +72,7 @@ export default function CartPage() {
         // Always fetch server totals, even before a customer has saved an address.
         // Address/country is only needed to request country-specific delivery estimates.
         const [cartTotals, methods] = await Promise.all([
-          getCartTotals(country || undefined),
+          getCartTotals(),
           country
             ? getShippingMethods({ country, orderValue: subtotal })
             : Promise.resolve([]),
