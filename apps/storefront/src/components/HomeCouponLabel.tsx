@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getHomeCouponLabel, HomeCouponLabel as HomeCouponData } from '@/lib/api';
 
 function getDiscountText(coupon: HomeCouponData) {
@@ -23,6 +23,8 @@ function getDiscountText(coupon: HomeCouponData) {
 export function HomeCouponLabel() {
   const [coupon, setCoupon] = useState<HomeCouponData | null>(null);
   const [open, setOpen] = useState(false);
+  const manuallyOpenedRef = useRef(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -36,6 +38,26 @@ export function HomeCouponLabel() {
     };
   }, []);
 
+  useEffect(() => {
+    const isTouchLayout = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+    if (!isTouchLayout) return;
+
+    const handleScroll = () => {
+      if (manuallyOpenedRef.current) return;
+      setOpen(true);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = setTimeout(() => {
+        setOpen(manuallyOpenedRef.current);
+      }, 900);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
+
   if (!coupon) return null;
 
   const discountText = getDiscountText(coupon);
@@ -43,32 +65,45 @@ export function HomeCouponLabel() {
   return (
     <div
       className="fixed left-0 top-1/2 z-[55] -translate-y-1/2"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseEnter={() => {
+        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          setOpen(true);
+        }
+      }}
+      onMouseLeave={() => {
+        if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+          setOpen(manuallyOpenedRef.current);
+        }
+      }}
     >
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          const next = !manuallyOpenedRef.current;
+          manuallyOpenedRef.current = next;
+          setOpen(next);
+        }}
         aria-label={open ? 'Close coupon offer' : 'Open coupon offer'}
         aria-expanded={open}
         className={[
-          'group flex overflow-hidden rounded-r-2xl border border-black/10 bg-[#fbfaf7] shadow-[0_12px_35px_rgba(0,0,0,0.18)]',
-          'transition-[width,min-height,box-shadow] duration-300 ease-out',
-          open ? 'w-[174px] min-h-[94px]' : 'w-[46px] min-h-[154px]',
+          'group flex max-w-[min(174px,72vw)] overflow-hidden rounded-r-xl border border-black/10 bg-[#fbfaf7]',
+          open ? 'shadow-[0_8px_24px_rgba(0,0,0,0.15)]' : 'shadow-[0_3px_10px_rgba(0,0,0,0.08)]',
+          'transition-[width,min-height,box-shadow] duration-200 ease-out',
+          open ? 'w-[min(174px,72vw)] min-h-[88px]' : 'w-[24px] min-h-[80px]',
         ].join(' ')}
       >
         <div
           className={[
             'flex shrink-0 items-center justify-center border-r border-[#e8c98a] bg-[#f4f0eb]',
-            open ? 'w-10' : 'w-full border-r-0',
+            open ? 'w-9' : 'w-full border-r-0',
           ].join(' ')}
         >
           <span
             className={[
               'font-sans font-black uppercase text-black',
               open
-                ? 'text-[9px] tracking-[0.16em]'
-                : 'rotate-180 text-[24px] tracking-[-0.04em] [writing-mode:vertical-rl]',
+                ? 'text-[9px] tracking-[0.14em]'
+                : 'rotate-180 text-[13px] tracking-[-0.04em] [writing-mode:vertical-rl]',
             ].join(' ')}
           >
             {open ? 'OFFER' : discountText}
