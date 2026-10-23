@@ -106,7 +106,7 @@ export default function AddressesPage() {
             {/* Add Address Form */}
             {showForm && (
               <div className="border border-luxury-sand bg-luxury-beige p-8">
-                <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Add New Address</h2>
+                <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">{editingAddress ? 'Edit Address' : 'Add New Address'}</h2>
                 <AddressForm
                   key={editingAddress?.id ?? 'new-profile-address'}
                   address={editingAddress ?? undefined}
