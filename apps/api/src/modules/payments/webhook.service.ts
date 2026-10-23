@@ -117,15 +117,19 @@ export class WebhookService {
       : order.payments.find((p) => {
           if (p.providerPaymentId === data.paymentIntentId) return true;
 
-          if (p.provider === 'paypal') {
-            const metadata =
-              p.metadata &&
-              typeof p.metadata === 'object' &&
-              !Array.isArray(p.metadata)
-                ? (p.metadata as Record<string, unknown>)
-                : {};
+          const metadata =
+            p.metadata &&
+            typeof p.metadata === 'object' &&
+            !Array.isArray(p.metadata)
+              ? (p.metadata as Record<string, unknown>)
+              : {};
 
+          if (p.provider === 'paypal') {
             return String(metadata.paypalOrderId || '') === data.paymentIntentId;
+          }
+
+          if (p.provider === 'razorpay') {
+            return String(metadata.razorpayOrderId || '') === data.paymentIntentId;
           }
 
           return false;
