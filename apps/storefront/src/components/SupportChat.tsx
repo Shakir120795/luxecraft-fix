@@ -120,7 +120,7 @@ export function SupportChat() {
                         : 'mr-auto border border-neutral-200 bg-white text-neutral-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{m.body}</p>
+                    <p className="whitespace-pre-wrap">{m.message}</p>
                     <p className={`mt-1 text-[10px] ${m.senderType === 'CUSTOMER' ? 'text-green-100' : 'text-neutral-400'}`}>
                       {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>

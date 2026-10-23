@@ -1,9 +1,12 @@
+-- CreateEnum
+CREATE TYPE "SupportChatStatus" AS ENUM ('OPEN', 'CLOSED');
+
 -- CreateTable
 CREATE TABLE "support_conversations" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'OPEN',
-    "lastMessageAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" "SupportChatStatus" NOT NULL DEFAULT 'OPEN',
+    "lastMessageAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -14,8 +17,10 @@ CREATE TABLE "support_conversations" (
 CREATE TABLE "support_messages" (
     "id" TEXT NOT NULL,
     "conversationId" TEXT NOT NULL,
-    "senderType" TEXT NOT NULL,
-    "body" TEXT NOT NULL,
+    "senderId" TEXT NOT NULL,
+    "senderType" "SenderType" NOT NULL DEFAULT 'CUSTOMER',
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
     "readAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -26,16 +31,16 @@ CREATE TABLE "support_messages" (
 CREATE UNIQUE INDEX "support_conversations_userId_key" ON "support_conversations"("userId");
 
 -- CreateIndex
-CREATE INDEX "support_conversations_status_idx" ON "support_conversations"("status");
+CREATE INDEX "support_conversations_status_lastMessageAt_idx" ON "support_conversations"("status", "lastMessageAt");
 
 -- CreateIndex
-CREATE INDEX "support_conversations_lastMessageAt_idx" ON "support_conversations"("lastMessageAt");
+CREATE INDEX "support_messages_conversationId_createdAt_idx" ON "support_messages"("conversationId", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "support_messages_conversationId_idx" ON "support_messages"("conversationId");
+CREATE INDEX "support_messages_senderId_idx" ON "support_messages"("senderId");
 
 -- CreateIndex
-CREATE INDEX "support_messages_createdAt_idx" ON "support_messages"("createdAt");
+CREATE INDEX "support_messages_senderType_isRead_idx" ON "support_messages"("senderType", "isRead");
 
 -- AddForeignKey
 ALTER TABLE "support_conversations" ADD CONSTRAINT "support_conversations_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1536,8 +1536,10 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
 export interface SupportMessage {
   id: string;
   conversationId: string;
-  senderType: 'CUSTOMER' | 'ADMIN';
-  body: string;
+  senderId: string;
+  senderType: 'CUSTOMER' | 'ADMIN' | 'SYSTEM';
+  message: string;
+  isRead: boolean;
   readAt: string | null;
   createdAt: string;
 }

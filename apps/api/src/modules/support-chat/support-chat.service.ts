@@ -21,8 +21,8 @@ export class SupportChatService {
     if (!conversation) return { conversation: null, messages: [] };
 
     await this.prisma.supportMessage.updateMany({
-      where: { conversationId: conversation.id, senderType: ADMIN, readAt: null },
-      data: { readAt: new Date() },
+      where: { conversationId: conversation.id, senderType: ADMIN, isRead: false },
+      data: { isRead: true, readAt: new Date() },
     });
     return { conversation, messages: conversation.messages };
   }
@@ -35,7 +35,12 @@ export class SupportChatService {
     });
 
     const message = await this.prisma.supportMessage.create({
-      data: { conversationId: conversation.id, senderType: CUSTOMER, body: body.trim() },
+      data: {
+        conversationId: conversation.id,
+        senderId: userId,
+        senderType: CUSTOMER,
+        message: body.trim(),
+      },
     });
     await this.prisma.supportConversation.update({
       where: { id: conversation.id },
@@ -58,7 +63,7 @@ export class SupportChatService {
         title: 'New support chat message',
         message:
           `From: ${[user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Customer'} (${user?.email || userId})\n\n` +
-          message.body,
+          message.message,
         relatedId: conversation.id,
       });
     }
@@ -78,7 +83,7 @@ export class SupportChatService {
 
     const unread = await this.prisma.supportMessage.groupBy({
       by: ['conversationId'],
-      where: { senderType: CUSTOMER, readAt: null },
+      where: { senderType: CUSTOMER, isRead: false },
       _count: { _all: true },
     });
     const unreadByConversation = new Map(unread.map((u) => [u.conversationId, u._count._all]));
@@ -86,7 +91,7 @@ export class SupportChatService {
     return conversations.map((c) => ({
       id: c.id,
       status: c.status,
-      lastMessageAt: c.lastMessageAt,
+      lastMessageAt: c.lastMessageAt ?? c.createdAt,
       createdAt: c.createdAt,
       user: c.user,
       lastMessage: c.messages[0] ?? null,
@@ -107,13 +112,13 @@ export class SupportChatService {
     if (!conversation) throw new NotFoundException('Conversation not found');
 
     await this.prisma.supportMessage.updateMany({
-      where: { conversationId: id, senderType: CUSTOMER, readAt: null },
-      data: { readAt: new Date() },
+      where: { conversationId: id, senderType: CUSTOMER, isRead: false },
+      data: { isRead: true, readAt: new Date() },
     });
     return conversation;
   }
 
-  async sendAdminMessage(conversationId: string, body: string) {
+  async sendAdminMessage(conversationId: string, adminId: string, body: string) {
     const conversation = await this.prisma.supportConversation.findUnique({
       where: { id: conversationId },
       select: { id: true },
@@ -121,7 +126,7 @@ export class SupportChatService {
     if (!conversation) throw new NotFoundException('Conversation not found');
 
     const message = await this.prisma.supportMessage.create({
-      data: { conversationId, senderType: ADMIN, body: body.trim() },
+      data: { conversationId, senderId: adminId, senderType: ADMIN, message: body.trim() },
     });
     await this.prisma.supportConversation.update({
       where: { id: conversationId },

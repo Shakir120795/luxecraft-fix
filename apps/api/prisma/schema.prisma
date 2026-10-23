@@ -777,32 +777,39 @@ model ContactMessage {
 }
 
 model SupportConversation {
-  id            String           @id @default(cuid())
-  userId        String           @unique
-  status        String           @default("OPEN")
-  lastMessageAt DateTime         @default(now())
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String            @id @default(cuid())
+  userId        String            @unique
+  status        SupportChatStatus @default(OPEN)
+  lastMessageAt DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages      SupportMessage[]
 
-  @@index([status])
-  @@index([lastMessageAt])
+  @@index([status, lastMessageAt])
   @@map("support_conversations")
 }
 
 model SupportMessage {
   id             String              @id @default(cuid())
   conversationId String
-  senderType     String
-  body           String
+  senderId       String
+  senderType     SenderType          @default(CUSTOMER)
+  message        String
+  isRead         Boolean             @default(false)
   readAt         DateTime?
   createdAt      DateTime            @default(now())
   conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId])
-  @@index([createdAt])
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+  @@index([senderType, isRead])
   @@map("support_messages")
+}
+
+enum SupportChatStatus {
+  OPEN
+  CLOSED
 }
 model Notification {
   id          String    @id @default(cuid())

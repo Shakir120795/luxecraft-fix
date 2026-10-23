@@ -10,7 +10,8 @@
 - [x] "15% OFF" side tab covering content: live inspection (2026-10-24) proved the tab and the support-chat button are the site's own components, NOT third-party widgets — but neither exists anywhere in this repo's git history, i.e. the live deployment is running code that was never pushed here. Added a redesigned first-party `OfferTab` to this repo instead: slim 36px edge tab, dismissible per session, expands in place with copyable FIRST15 code, and fully hidden on /cart and /checkout so it can never cover the order summary again.
 - [x] Reconcile the live deployment with this repo: DECIDED by owner (2026-10-24) — this repo is canonical and will be deployed live, replacing the divergent live build.
 - [ ] Deploy this repo to the VPS (`bash update.sh` after a database + live-code backup) and run the smoke tests above.
-- [x] Support chat ported into this repo (owner asked 2026-10-24): models + migration `20261024000000_add_support_chat`, API module, storefront widget, admin page. On deploy, also run `prisma migrate deploy` so the new tables exist.
+- [x] Support chat ported into this repo (owner asked 2026-10-24): models + migration `20261024000000_add_support_chat`, API module, storefront widget, admin page.
+- [ ] Finish the live support-chat activation: production already had the tables, so after deploying the schema-aligned build run `prisma migrate resolve --applied 20261024000000_add_support_chat` in the api container, then verify one test message end-to-end (storefront widget → admin /support-chat → reply → customer thread).
 
 ## Active — Workflow repair and production completion (2026-09-02)
 

@@ -1,5 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import type { AdminUser } from '@prisma/client';
 import { AdminJwtAuthGuard } from '../admin-auth/guards/admin-jwt-auth.guard';
+import { CurrentAdmin } from '../../common/decorators/current-admin.decorator';
 import { SupportChatService } from './support-chat.service';
 import { SendSupportMessageDto } from './dto/send-support-message.dto';
 
@@ -19,8 +21,12 @@ export class AdminSupportChatController {
   }
 
   @Post('conversations/:id/messages')
-  reply(@Param('id') id: string, @Body() dto: SendSupportMessageDto) {
-    return this.svc.sendAdminMessage(id, dto.body);
+  reply(
+    @Param('id') id: string,
+    @Body() dto: SendSupportMessageDto,
+    @CurrentAdmin() admin: AdminUser,
+  ) {
+    return this.svc.sendAdminMessage(id, admin.id, dto.body);
   }
 
   @Patch('conversations/:id/status')

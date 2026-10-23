@@ -116,7 +116,7 @@ export default function SupportChatPage() {
                       )}
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-gray-500">
-                      {c.lastMessage ? `${c.lastMessage.senderType === 'ADMIN' ? 'You: ' : ''}${c.lastMessage.body}` : '—'}
+                      {c.lastMessage ? `${c.lastMessage.senderType === 'ADMIN' ? 'You: ' : ''}${c.lastMessage.message}` : '—'}
                     </span>
                     <span className="mt-0.5 block text-[11px] text-gray-400">
                       {new Date(c.lastMessageAt).toLocaleString()} · {c.status}
@@ -157,7 +157,7 @@ export default function SupportChatPage() {
                         : 'mr-auto border border-gray-200 bg-white text-gray-800'
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{m.body}</p>
+                    <p className="whitespace-pre-wrap">{m.message}</p>
                     <p className={`mt-1 text-[10px] ${m.senderType === 'ADMIN' ? 'text-green-100' : 'text-gray-400'}`}>
                       {new Date(m.createdAt).toLocaleString()}
                     </p>

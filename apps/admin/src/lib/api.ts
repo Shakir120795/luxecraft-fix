@@ -1054,8 +1054,10 @@ export async function updateContactMessageStatus(
 export interface SupportChatMessage {
   id: string;
   conversationId: string;
-  senderType: 'CUSTOMER' | 'ADMIN';
-  body: string;
+  senderId: string;
+  senderType: 'CUSTOMER' | 'ADMIN' | 'SYSTEM';
+  message: string;
+  isRead: boolean;
   readAt: string | null;
   createdAt: string;
 }
