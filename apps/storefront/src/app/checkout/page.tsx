@@ -30,6 +30,13 @@ import {
 } from '@/lib/api';
 
 type CheckoutStep = 'customer' | 'address' | 'payment';
+type RazorpayRetryDetails = {
+  orderId: string;
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+};
+const RAZORPAY_RETRY_STORAGE_KEY = 'wolhomes:razorpayVerificationRetry';
 
 const CURRENCY_SYMBOLS: Record<string,string> = { USD:'$', INR:'₹', CAD:'C$', GBP:'£', AUD:'A$', AED:'د.إ', EUR:'€', JPY:'¥', SGD:'S$', NZD:'NZ$', CHF:'CHF ', CNY:'¥' };
 const COUNTRY_OPTIONS = getCountries()
@@ -86,10 +93,30 @@ export default function CheckoutPage() {
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
   const [paymentProviderOrderId, setPaymentProviderOrderId] = useState<string | null>(null);
+  const [razorpayRetryDetails, setRazorpayRetryDetails] = useState<RazorpayRetryDetails | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
 
   useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(RAZORPAY_RETRY_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved) as RazorpayRetryDetails;
+        if (
+          parsed.orderId &&
+          parsed.razorpayOrderId &&
+          parsed.razorpayPaymentId &&
+          parsed.razorpaySignature
+        ) {
+          setRazorpayRetryDetails(parsed);
+        } else {
+          sessionStorage.removeItem(RAZORPAY_RETRY_STORAGE_KEY);
+        }
+      }
+    } catch {
+      sessionStorage.removeItem(RAZORPAY_RETRY_STORAGE_KEY);
+    }
+
     loadCheckoutData();
   }, []);
   useEffect(() => {
@@ -292,6 +319,29 @@ export default function CheckoutPage() {
     setCurrentStep('payment');
   }
 
+  async function handleRazorpayConfirmationRetry() {
+    if (!razorpayRetryDetails || submitting) return;
+
+    setSubmitting(true);
+    setError(null);
+    const verification = await verifyRazorpayPayment(razorpayRetryDetails);
+
+    if (!verification.success) {
+      setError(
+        verification.message ||
+          'Payment may have succeeded, but order confirmation is still pending. Retry confirmation before paying again.',
+      );
+      setSubmitting(false);
+      return;
+    }
+
+    sessionStorage.removeItem(RAZORPAY_RETRY_STORAGE_KEY);
+    setRazorpayRetryDetails(null);
+    await clearCart();
+    const confirmationQuery = new URLSearchParams({ orderId: razorpayRetryDetails.orderId });
+    router.push(`/order-confirmation?${confirmationQuery.toString()}`);
+  }
+
   async function handlePlaceOrder() {
     if (!cart || !shippingMethod) {
       setError('Shipping is unavailable for this address.');
@@ -466,20 +516,34 @@ export default function CheckoutPage() {
             razorpay_signature: string;
           }) => {
             setSubmitting(true);
-
-            const verification = await verifyRazorpayPayment({
+            const retryDetails: RazorpayRetryDetails = {
               orderId: result.data!.order.id,
               razorpayOrderId: response.razorpay_order_id,
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
-            });
+            };
+
+            // Keep the verification payload in this tab so an interrupted API
+            // confirmation can be retried without creating/capturing another payment.
+            sessionStorage.setItem(
+              RAZORPAY_RETRY_STORAGE_KEY,
+              JSON.stringify(retryDetails),
+            );
+            setRazorpayRetryDetails(retryDetails);
+
+            const verification = await verifyRazorpayPayment(retryDetails);
 
             if (!verification.success) {
-              setError(verification.message || 'Razorpay payment verification failed.');
+              setError(
+                verification.message ||
+                  'Payment may have succeeded, but order confirmation is pending. Retry confirmation before paying again.',
+              );
               setSubmitting(false);
               return;
             }
 
+            sessionStorage.removeItem(RAZORPAY_RETRY_STORAGE_KEY);
+            setRazorpayRetryDetails(null);
             await clearCart();
             const confirmationQuery = new URLSearchParams({ orderId: result.data!.order.id });
             router.push(`/order-confirmation?${confirmationQuery.toString()}`);
@@ -568,7 +632,17 @@ export default function CheckoutPage() {
 
         {error && (
           <div className="mb-8 border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-6 py-4 text-luxury-charcoal max-w-2xl mx-auto">
-            {error}
+            <p>{error}</p>
+            {razorpayRetryDetails && (
+              <button
+                type="button"
+                onClick={() => void handleRazorpayConfirmationRetry()}
+                disabled={submitting}
+                className="mt-4 rounded-md border border-[#302b35] bg-[#302b35] px-5 py-2.5 text-xs font-semibold uppercase tracking-wide text-white disabled:cursor-wait disabled:opacity-50"
+              >
+                {submitting ? 'Confirming Payment...' : 'Retry Order Confirmation'}
+              </button>
+            )}
           </div>
         )}
 
