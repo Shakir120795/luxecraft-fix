@@ -358,23 +358,23 @@ export default function OrderDetailPage() {
               
               <div className="flex items-center gap-4 mb-6">
                 <span className={`px-4 py-2 text-sm ${
-                  order.status === 'Delivered' ? 'bg-luxury-gold/20 text-luxury-gold' :
-                  order.status === 'Shipped' ? 'bg-luxury-gold/10 text-luxury-gold' :
-                  order.status === 'Cancelled' ? 'bg-luxury-terracotta/20 text-luxury-terracotta' :
+                  normalizedStatus === 'DELIVERED' ? 'bg-luxury-gold/20 text-luxury-gold' :
+                  ['SHIPPED', 'OUT_FOR_DELIVERY'].includes(normalizedStatus) ? 'bg-luxury-gold/10 text-luxury-gold' :
+                  normalizedStatus === 'CANCELLED' ? 'bg-luxury-terracotta/20 text-luxury-terracotta' :
                   'bg-luxury-sand text-[#67625c]'
                 }`}>
-                  {order.status}
+                  {statusLabel(normalizedStatus)}
                 </span>
-                
+
                 <span className={`px-4 py-2 text-sm ${
-                  order.paymentStatus === 'Paid' ? 'bg-luxury-gold/20 text-luxury-gold' :
+                  order.paymentStatus.toUpperCase() === 'PAID' ? 'bg-luxury-gold/20 text-luxury-gold' :
                   'bg-luxury-sand text-[#67625c]'
                 }`}>
                   Payment: {order.paymentStatus}
                 </span>
-                
+
                 <span className={`px-4 py-2 text-sm ${
-                  order.fulfillmentStatus === 'Fulfilled' ? 'bg-luxury-gold/20 text-luxury-gold' :
+                  order.fulfillmentStatus.toUpperCase() === 'FULFILLED' ? 'bg-luxury-gold/20 text-luxury-gold' :
                   'bg-luxury-sand text-[#67625c]'
                 }`}>
                   {order.fulfillmentStatus}
