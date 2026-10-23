@@ -288,23 +288,73 @@ export class PaymentsController {
           req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
         );
 
+    const payment = order.payments.find((item) => {
+      if (item.provider !== 'paypal') return false;
+      if (item.providerPaymentId === body.paypalOrderId) return true;
+      const metadata =
+        item.metadata &&
+        typeof item.metadata === 'object' &&
+        !Array.isArray(item.metadata)
+          ? (item.metadata as Record<string, unknown>)
+          : {};
+      return String(metadata.paypalOrderId || '') === body.paypalOrderId;
+    });
+
+    if (!payment) {
+      throw new BadRequestException('PayPal payment was not found for this order');
+    }
+
+    const paymentMetadata =
+      payment.metadata &&
+      typeof payment.metadata === 'object' &&
+      !Array.isArray(payment.metadata)
+        ? (payment.metadata as Record<string, unknown>)
+        : {};
+    if (
+      payment.providerPaymentId !== body.paypalOrderId &&
+      String(paymentMetadata.paypalOrderId || '') !== body.paypalOrderId
+    ) {
+      throw new BadRequestException('PayPal order does not match this payment');
+    }
+
+    // PayPal's webhook can finish the order before the browser returns from approval.
+    if (
+      order.paymentStatus === PaymentStatus.PAID &&
+      payment.status === PaymentStatus.PAID
+    ) {
+      return {
+        success: true,
+        captured: true,
+        alreadyProcessed: true,
+        paypalOrderId: body.paypalOrderId,
+        orderId: order.id,
+      };
+    }
+
     if (order.paymentStatus !== PaymentStatus.PENDING) {
       throw new BadRequestException('This order is no longer awaiting payment');
     }
 
-    const payment = order.payments.find(
-      (item) => item.provider === 'paypal' && item.status !== PaymentStatus.PAID,
-    );
-
-    if (!payment) {
-      throw new BadRequestException('PayPal payment is not pending for this order');
+    let capture: Record<string, unknown>;
+    try {
+      capture = await this.payments.capturePayPalOrder(body.paypalOrderId);
+    } catch (captureError) {
+      // A retry after a successful remote capture must reconcile the existing order,
+      // not require another capture attempt or risk charging the customer twice.
+      const existingOrder = await this.payments.fetchPayPalOrder(body.paypalOrderId).catch(() => null);
+      const existingUnits = Array.isArray(existingOrder?.purchase_units)
+        ? existingOrder.purchase_units as Array<Record<string, unknown>>
+        : [];
+      const hasCompletedCapture = existingUnits.some((unit) => {
+        const unitPayments = unit.payments as Record<string, unknown> | undefined;
+        const captures = Array.isArray(unitPayments?.captures)
+          ? unitPayments.captures as Array<Record<string, unknown>>
+          : [];
+        return captures.some((entry) => String(entry.status || '').toUpperCase() === 'COMPLETED');
+      });
+      if (!existingOrder || !hasCompletedCapture) throw captureError;
+      capture = existingOrder;
     }
-
-    if (payment.providerPaymentId !== body.paypalOrderId) {
-      throw new BadRequestException('PayPal order does not match this payment');
-    }
-
-    const capture = await this.payments.capturePayPalOrder(body.paypalOrderId);
     const purchaseUnit = Array.isArray(capture.purchase_units)
       ? capture.purchase_units[0] as Record<string, unknown> | undefined
       : undefined;
@@ -340,7 +390,36 @@ export class PaymentsController {
     }
 
     if (await this.webhooks.isEventProcessed('paypal', captureId)) {
-      throw new BadRequestException('This PayPal capture has already been processed');
+      const latestOrder = req.user?.id
+        ? await this.orders.findOneForUser(body.orderId, req.user.id)
+        : await this.orders.findOneForGuest(
+            body.orderId,
+            req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
+          );
+      const latestPayment = latestOrder.payments.find(
+        (item) =>
+          item.provider === 'paypal' &&
+          (item.providerPaymentId === body.paypalOrderId ||
+            String(
+              item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata)
+                ? (item.metadata as Record<string, unknown>).paypalOrderId || ''
+                : '',
+            ) === body.paypalOrderId),
+      );
+      if (
+        latestOrder.paymentStatus === PaymentStatus.PAID &&
+        latestPayment?.status === PaymentStatus.PAID
+      ) {
+        return {
+          success: true,
+          captured: true,
+          alreadyProcessed: true,
+          captureId,
+          paypalOrderId: body.paypalOrderId,
+          orderId: latestOrder.id,
+        };
+      }
+      throw new BadRequestException('PayPal capture has already been processed; check the order status before retrying.');
     }
 
     await this.webhooks.recordWebhookEvent({
