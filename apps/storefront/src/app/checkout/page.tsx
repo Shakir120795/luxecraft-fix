@@ -750,27 +750,39 @@ export default function CheckoutPage() {
                       ) : addresses.some((addr) => addr.type !== 'SHIPPING') ? (
                         <div className="space-y-3">
                           {addresses.filter((addr) => addr.type !== 'SHIPPING').map((addr) => (
-                            <label key={addr.id} className="flex items-start gap-3 border border-black/10 bg-white p-4 transition hover:border-black/40 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="billingAddress"
-                                value={addr.id}
-                                checked={selectedBillingAddressId === addr.id}
-                                onChange={(e) => setSelectedBillingAddressId(e.target.value)}
-                                className="mt-1"
-                              />
-                              <div className="flex-1">
-                                <p className="font-medium text-luxury-charcoal">{addr.firstName} {addr.lastName}</p>
-                                <p className="mt-1 text-sm text-luxury-brown">
-                                  {addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}
-                                </p>
-                                <p className="text-sm text-luxury-brown">
-                                  {addr.city}, {addr.stateProvince} {addr.postalCode}
-                                </p>
-                                <p className="text-sm text-luxury-brown">{addr.country}</p>
-                                <p className="text-sm text-luxury-brown">{addr.phone}</p>
-                              </div>
-                            </label>
+                            <div key={addr.id} className={'flex items-start gap-3 border bg-white p-4 transition ' + (selectedBillingAddressId === addr.id ? 'border-[#302b35]' : 'border-black/10 hover:border-black/40')}>
+                              <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
+                                <input
+                                  type="radio"
+                                  name="billingAddress"
+                                  value={addr.id}
+                                  checked={selectedBillingAddressId === addr.id}
+                                  onChange={(e) => setSelectedBillingAddressId(e.target.value)}
+                                  className="mt-1"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-luxury-charcoal">{addr.firstName} {addr.lastName}</p>
+                                  <p className="mt-1 text-sm text-luxury-brown">
+                                    {addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}
+                                  </p>
+                                  <p className="text-sm text-luxury-brown">
+                                    {addr.city}, {addr.stateProvince} {addr.postalCode}
+                                  </p>
+                                  <p className="text-sm text-luxury-brown">{addr.country}</p>
+                                  <p className="text-sm text-luxury-brown">{addr.phone}</p>
+                                </div>
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingAddress(addr);
+                                  setShowNewAddressForm(true);
+                                }}
+                                className="shrink-0 rounded border border-[#ded8d0] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[#302b35] hover:border-[#302b35]"
+                              >
+                                Edit
+                              </button>
+                            </div>
                           ))}
                         </div>
                       ) : (
