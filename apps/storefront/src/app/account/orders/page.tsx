@@ -37,12 +37,21 @@ export default function OrdersPage() {
     }
   }
 
-  const statusLabel = (status: string) => {
+  const statusLabel = (status: string, paymentStatus?: string) => {
+    const normalizedPayment = paymentStatus?.toUpperCase() || 'PENDING';
+    if (normalizedPayment !== 'PAID') {
+      if (normalizedPayment === 'FAILED') return 'Payment Failed';
+      if (normalizedPayment === 'CANCELLED') return 'Payment Cancelled';
+      return 'Payment Pending';
+    }
+
     const labels: Record<string, string> = {
       PENDING: 'Placed',
       PAYMENT_CONFIRMED: 'Placed',
       PROCESSING: 'Processing',
+      READY_TO_SHIP: 'Processing',
       SHIPPED: 'Shipped',
+      OUT_FOR_DELIVERY: 'Out for Delivery',
       DELIVERED: 'Delivered',
       CANCELLED: 'Cancelled',
       FAILED: 'Payment Failed',
@@ -50,7 +59,12 @@ export default function OrdersPage() {
     return labels[status?.toUpperCase()] || status || 'Pending';
   };
 
-  const statusTone = (status: string) => {
+  const statusTone = (status: string, paymentStatus?: string) => {
+    if (paymentStatus && paymentStatus.toUpperCase() !== 'PAID') {
+      return paymentStatus.toUpperCase() === 'FAILED' || paymentStatus.toUpperCase() === 'CANCELLED'
+        ? 'border-[#b94740]/30 bg-[#b94740]/10 text-[#b94740]'
+        : 'border-[#c99545]/30 bg-[#c99545]/10 text-[#7a5a2c]';
+    }
     switch (status?.toUpperCase()) {
       case 'DELIVERED':
         return 'border-[#2f6b36]/30 bg-[#2f6b36]/10 text-[#2f6b36]';
@@ -74,6 +88,9 @@ export default function OrdersPage() {
           return order.paymentStatus.toUpperCase() === 'PAID' &&
             ['PENDING', 'PAYMENT_CONFIRMED'].includes(status);
         }
+        if (filter === 'payment-pending') {
+          return order.paymentStatus.toUpperCase() !== 'PAID' && status !== 'CANCELLED';
+        }
         if (filter === 'processing') {
           return ['PROCESSING', 'READY_TO_SHIP'].includes(status);
         }
@@ -88,6 +105,10 @@ export default function OrdersPage() {
     placed: orders.filter((order) =>
       order.paymentStatus.toUpperCase() === 'PAID' &&
       ['PENDING', 'PAYMENT_CONFIRMED'].includes((order.orderStatus || order.status || '').toUpperCase()),
+    ).length,
+    paymentPending: orders.filter((order) =>
+      order.paymentStatus.toUpperCase() !== 'PAID' &&
+      (order.orderStatus || order.status || '').toUpperCase() !== 'CANCELLED',
     ).length,
     processing: orders.filter((order) =>
       ['PROCESSING', 'READY_TO_SHIP'].includes((order.orderStatus || order.status || '').toUpperCase()),
@@ -133,6 +154,7 @@ export default function OrdersPage() {
             {[
               ['all', 'All', counts.all],
               ['placed', 'Placed', counts.placed],
+              ['payment-pending', 'Payment Issues', counts.paymentPending],
               ['processing', 'Processing', counts.processing],
               ['shipped', 'Shipped', counts.shipped],
               ['delivered', 'Delivered', counts.delivered],
@@ -166,8 +188,8 @@ export default function OrdersPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-3">
                         <h2 className="font-serif text-2xl text-[#161616]">Order #{order.orderNumber}</h2>
-                        <span className={`border px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.14em] ${statusTone(currentStatus)}`}>
-                          {statusLabel(currentStatus)}
+                        <span className={`border px-2.5 py-1 text-[9px] font-medium uppercase tracking-[0.14em] ${statusTone(currentStatus, order.paymentStatus)}`}>
+                          {statusLabel(currentStatus, order.paymentStatus)}
                         </span>
                       </div>
                       <p className="mt-2 text-xs uppercase tracking-[0.12em] text-[#8a837c]">
