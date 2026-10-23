@@ -79,6 +79,12 @@ export function HomeCouponLabel() {
       <button
         type="button"
         onClick={() => {
+          const hasHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+          if (hasHover) {
+            manuallyOpenedRef.current = false;
+            setOpen((value) => !value);
+            return;
+          }
           const next = !manuallyOpenedRef.current;
           manuallyOpenedRef.current = next;
           setOpen(next);
