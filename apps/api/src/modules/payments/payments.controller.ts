@@ -149,7 +149,7 @@ export class PaymentsController {
     const payment = order.payments.find(
       (item) =>
         ['razorpay', 'paypal'].includes(item.provider) &&
-        [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED].includes(item.status),
+        (item.status === PaymentStatus.PENDING || item.status === PaymentStatus.AUTHORIZED),
     );
 
     if (!payment) {
