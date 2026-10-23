@@ -391,7 +391,7 @@ export default function OrderDetailPage() {
                 />
               </div>
 
-              {(order.courierName || order.trackingNumber) && (
+              {(order.courierName || order.trackingNumber || order.trackingUrl) && (
                 <div className="mt-6 rounded-lg border border-[#e0dbd6] bg-[#faf9f7] p-5 sm:p-6">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a837c]">Shipment Details</p>
                   <h3 className="mt-1 font-serif text-xl text-[#302b35]">
