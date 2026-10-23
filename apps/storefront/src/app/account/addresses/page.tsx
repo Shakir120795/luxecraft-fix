@@ -85,7 +85,15 @@ export default function AddressesPage() {
               </Link>
               
               <button
-                onClick={() => setShowForm(!showForm)}
+                onClick={() => {
+                  if (showForm) {
+                    setShowForm(false);
+                    setEditingAddress(null);
+                  } else {
+                    setEditingAddress(null);
+                    setShowForm(true);
+                  }
+                }}
                 className="w-full rounded-md border border-[#bf4e48] bg-[#bf4e48] px-6 py-3 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#a9443e]"
               >
                 {showForm ? 'Cancel' : '+ Add New Address'}
@@ -100,9 +108,12 @@ export default function AddressesPage() {
               <div className="border border-luxury-sand bg-luxury-beige p-8">
                 <h2 className="text-2xl font-serif text-luxury-charcoal mb-6">Add New Address</h2>
                 <AddressForm
+                  key={editingAddress?.id ?? 'new-profile-address'}
+                  address={editingAddress ?? undefined}
                   onSuccess={() => {
-                    loadAddresses();
+                    void loadAddresses();
                     setShowForm(false);
+                    setEditingAddress(null);
                   }}
                 />
               </div>
@@ -245,17 +256,7 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
       })(),
     };
 
-    const result = address
-      ? await updateAddress(address.id, payload)
-      : await createAddress(payload);
-
-    if (result.success) {
-      onSuccess();
-    } else {
-      setError(result.message || (address ? 'Failed to update address' : 'Failed to create address'));
-      setSubmitting(false);
-    }
-  }
+undefined  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
