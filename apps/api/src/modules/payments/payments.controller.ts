@@ -503,7 +503,9 @@ export class PaymentsController {
     const captures = Array.isArray(payments?.captures)
       ? payments.captures as Array<Record<string, unknown>>
       : [];
-    const firstCapture = captures[0];
+    const firstCapture =
+      captures.find((entry) => String(entry.status || '').toUpperCase() === 'COMPLETED') ??
+      captures[0];
     const firstCaptureAmount = firstCapture?.amount as Record<string, unknown> | undefined;
     const captureStatus = String(firstCapture?.status || capture.status || '').toUpperCase();
     const captureId = String(firstCapture?.id || body.paypalOrderId);
