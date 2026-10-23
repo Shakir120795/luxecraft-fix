@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCart, updateCartItem, removeCartItem, clearCart, getAddresses, getCartTotals, getShippingMethods, isAuthenticated, validateCoupon, Cart, CartItem, CartTotals } from '@/lib/api';
+import { getCart, updateCartItem, removeCartItem, clearCart, getAddresses, getCartTotals, getShippingMethods, isAuthenticated, validateCoupon, addToWishlist, Cart, CartItem, CartTotals } from '@/lib/api';
 
 const CURRENCY_SYMBOLS: Record<string,string> = { USD:'$', INR:'₹', CAD:'C$', GBP:'£', AUD:'A$', AED:'د.إ', EUR:'€', JPY:'¥', SGD:'S$', NZD:'NZ$', CHF:'CHF ', CNY:'¥' };
 function money(amount:number,currency:string){return (CURRENCY_SYMBOLS[currency] ?? (currency + ' ')) + amount.toFixed(2);}
@@ -57,7 +57,7 @@ export default function CartPage() {
     let cancelled = false;
 
     async function loadShippingData() {
-      if (!cart || cart.items.length === 0 || !country) {
+      if (!cart || cart.items.length === 0) {
         setTotals(null);
         setEstimatedDelivery(null);
         return;
@@ -69,9 +69,13 @@ export default function CartPage() {
       );
 
       try {
+        // Always fetch server totals, even before a customer has saved an address.
+        // Address/country is only needed to request country-specific delivery estimates.
         const [cartTotals, methods] = await Promise.all([
-          getCartTotals(),
-          getShippingMethods({ country, orderValue: subtotal }),
+          getCartTotals(country || undefined),
+          country
+            ? getShippingMethods({ country, orderValue: subtotal })
+            : Promise.resolve([]),
         ]);
 
         if (cancelled) return;
@@ -81,7 +85,7 @@ export default function CartPage() {
         const available = methods.filter((method) => method.rate >= 0);
         const cheapest = [...available].sort((a, b) => a.rate - b.rate)[0];
         setEstimatedDelivery(cheapest?.estimatedDays ?? null);
-        setShippingCurrency(cheapest?.currency ?? 'USD');
+        setShippingCurrency(cheapest?.currency ?? cartTotals.currency ?? cart?.currency ?? 'USD');
       } catch (err) {
         if (cancelled) return;
         console.error('Failed to load shipping data:', err);
@@ -182,8 +186,46 @@ export default function CartPage() {
     });
   }
 
-  async function handleClearCart() {
+  async function handleSaveForLater(itemId: string) {
+    const item = cart?.items.find((cartItem) => cartItem.id === itemId);
+    if (!item) return;
 
+    if (!isAuthenticated()) {
+      router.push('/auth/login?redirect=/cart');
+      return;
+    }
+
+    setUpdatingItems((current) => new Set(current).add(itemId));
+    setError(null);
+
+    try {
+      const saved = await addToWishlist({
+        productId: item.productId,
+        variantId: item.variantId ?? undefined,
+      });
+
+      if (!saved.success) {
+        setError(saved.message || 'Unable to save this item to your wishlist.');
+        return;
+      }
+
+      const removed = await removeCartItem(itemId);
+      if (!removed.success) {
+        setError('Item saved to your wishlist, but could not be removed from the cart.');
+      }
+      await loadCart();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to save this item for later.');
+    } finally {
+      setUpdatingItems((current) => {
+        const next = new Set(current);
+        next.delete(itemId);
+        return next;
+      });
+    }
+  }
+
+  async function handleClearCart() {
     const result = await clearCart();
 
     if (result.success) {
@@ -206,12 +248,24 @@ export default function CartPage() {
     );
   }
 
-  const subtotal = totals?.subtotal ?? 0;
   const itemCount = cart?.items.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
-  const originalTotal = cart?.items.reduce((sum, item) => sum + (Number(item.product.regularPrice) || 0) * Number(item.quantity), 0) || 0;
+  const snapshotSubtotal = cart?.items.reduce(
+    (sum, item) => sum + (Number(item.priceSnapshot) || 0) * Number(item.quantity),
+    0,
+  ) || 0;
+  const serverTotalsAvailable = Boolean(totals && totals.itemCount > 0);
+  const subtotal = serverTotalsAvailable ? Number(totals!.subtotal) : snapshotSubtotal;
+  const cartCurrency = totals?.currency || cart?.currency || 'USD';
+  const originalTotal = cart?.items.reduce(
+    (sum, item) =>
+      sum +
+      Number(item.variant?.regularPrice ?? item.product.regularPrice ?? item.priceSnapshot ?? 0) *
+        Number(item.quantity),
+    0,
+  ) || 0;
   const shopDiscount = Math.max(0, originalTotal - subtotal);
-  const shipping = totals?.shipping ?? 0;
-  const total = totals?.total ?? subtotal;
+  const shipping = serverTotalsAvailable ? Number(totals!.shipping) : 0;
+  const total = serverTotalsAvailable ? Number(totals!.total) : subtotal + shipping;
 
   return (
     <main className="min-h-screen bg-[#f8f6f2] font-sans">
@@ -263,6 +317,7 @@ export default function CartPage() {
                     item={item}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
+                    onSaveForLater={handleSaveForLater}
                     isUpdating={updatingItems.has(item.id)}
                     currency={totals?.currency ?? cart.currency}
                   />
@@ -290,19 +345,19 @@ export default function CartPage() {
                 <div className="mb-6 space-y-4 border-b border-[#ded8d0] pb-6">
                   <div className="flex justify-between text-luxury-brown">
                     <span>Item(s) total</span>
-                    <span>{money(originalTotal, 'USD')}</span>
+                    <span>{money(originalTotal, cartCurrency)}</span>
                   </div>
                   <div className="flex justify-between text-luxury-brown">
                     <span>Shop discount</span>
-                    <span className="font-medium text-green-700">-{money(shopDiscount, 'USD')}</span>
+                    <span className="font-medium text-green-700">-{money(shopDiscount, cartCurrency)}</span>
                   </div>
                   <div className="flex justify-between text-luxury-brown">
                     <span>Subtotal</span>
-                    <span>{money(subtotal, 'USD')}</span>
+                    <span>{money(subtotal, cartCurrency)}</span>
                   </div>
                   <div className="flex justify-between text-luxury-brown text-sm">
                     <span>Delivery</span>
-                    <span className="font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded">{shipping === 0 ? 'FREE' : money(shipping, 'USD')}</span>
+                    <span className="font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded">{shipping === 0 ? 'FREE' : money(shipping, cartCurrency)}</span>
                   </div>
                 </div>
 
@@ -313,7 +368,7 @@ export default function CartPage() {
 
                 <div className="mb-7 flex justify-between text-xl font-semibold text-[#2f2933]">
                   <span>Total</span>
-                  <span>{money(Math.max(0, total - couponDiscount), 'USD')}</span>
+                  <span>{money(Math.max(0, total - couponDiscount), cartCurrency)}</span>
                 </div>
 
                 <button
@@ -380,12 +435,14 @@ function CartItemCard({
   item,
   onUpdateQuantity,
   onRemove,
+  onSaveForLater,
   isUpdating,
   currency,
 }: {
   item: CartItem;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemove: (itemId: string) => void;
+  onSaveForLater: (itemId: string) => void;
   isUpdating: boolean;
   currency: string;
 }) {
@@ -449,7 +506,7 @@ function CartItemCard({
             </div>
             <div className="mt-3 flex w-full items-center justify-between text-xs font-medium text-[#59535b]">
               <Link href={`/products/${item.product.slug}`} className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38]">Edit</Link>
-              <button type="button" className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38]">Save for later</button>
+              <button type="button" onClick={() => onSaveForLater(item.id)} disabled={isUpdating} className="border border-[#b99b5d] bg-white px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#6a552e] transition hover:bg-[#f6f0e4] disabled:cursor-not-allowed disabled:opacity-50">Save for later</button>
               <button type="button" onClick={() => onRemove(item.id)} disabled={isUpdating} className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38] disabled:cursor-not-allowed disabled:opacity-40">Remove</button>
             </div>
           </div>
