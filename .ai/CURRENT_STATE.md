@@ -1,5 +1,17 @@
 # Current State
 
+## Wishlist, Cart Totals, and Payment Order Recovery — 2026-10-24
+
+- Wishlist item reads now include product image media; repeat Add-to-Wishlist requests are idempotent. The storefront toggle helper reads the API's `action: added|removed` response correctly, and the product detail heart calls the API and refreshes persisted state instead of toggling local UI only.
+- Restyled the wishlist page to match the Wolhomes cream/beige/gold typography and card style, added a working remove icon, lazy-loaded product images, and display variant-specific prices when saved with a variant.
+- Cart totals now load even when the customer has no saved address; a local price-snapshot subtotal fallback prevents a failed/empty totals response from rendering a zero subtotal for a non-empty cart. Cart totals remain in the cart's base currency so line prices and summary do not mix currencies. Variant pricing uses variant regular price for the discount baseline.
+- Wired Cart's Save for later action to add the selected product/variant to wishlist first, then remove it from the cart only after the wishlist save succeeds.
+- Corrected Razorpay verification to resolve the internal payment record (rather than searching by a provider order ID after that record can be updated to a payment ID) and added idempotent handling when the provider webhook already marked an order as paid.
+- PayPal capture is now idempotent when the webhook wins the race, recovers a previously completed provider capture before asking the customer to try again, and prefers a completed capture when more than one exists.
+- Added a guarded payment reconciliation endpoint for authenticated customer/guest orders. It only changes an order after fetching the Razorpay/PayPal provider status and validating captured amount, currency, and order reference. My Orders now includes pending/failed statuses and a "Check payment status" action; Admin Orders includes unpaid payment attempts while revenue remains limited to paid orders.
+- Checkout retains Razorpay verification details in session storage if the gateway succeeds but order confirmation fails, providing a confirmation-only retry button that does not create another charge.
+- Static source checks completed on `safe-site-pages-cms-fix`; API/admin/storefront production builds, browser tests, live provider test-mode verification, and AWS deployment remain pending. Do not re-run a real payment until the batch has been deployed and verified; use reconciliation on the affected pending order first.
+
 ## Checkout Address Flow and Floating Offer Tab — 2026-10-24
 
 - Replaced the checkout address-step outer form with a non-form wrapper to prevent invalid nested forms when Add/Edit Address forms are open. The Continue action now calls the address validation/progression handler directly.
