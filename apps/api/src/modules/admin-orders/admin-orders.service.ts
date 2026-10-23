@@ -23,22 +23,13 @@ export class AdminOrdersService {
       }),
     };
 
-    if (
-      params.paymentStatus &&
-      params.paymentStatus !== PaymentStatus.PAID
-    ) {
-      return { items: [], total: 0 };
-    }
-
-    if (params.orderStatus === OrderStatus.CANCELLED) {
-      return { items: [], total: 0 };
-    }
-
     const where: Prisma.OrderWhereInput = {
       ...baseWhere,
-      paymentStatus: PaymentStatus.PAID,
+      ...(params.paymentStatus
+        ? { paymentStatus: params.paymentStatus as PaymentStatus }
+        : {}),
       ...(params.orderStatus
-        ? { orderStatus: params.orderStatus as any }
+        ? { orderStatus: params.orderStatus as OrderStatus }
         : { orderStatus: { not: OrderStatus.CANCELLED } }),
     };
 
