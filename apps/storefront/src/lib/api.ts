@@ -1263,6 +1263,41 @@ export interface Order {
 // PAYMENT API
 // ============================================
 
+export async function reconcileOrderPayment(orderId: string): Promise<{
+  success: boolean;
+  provider?: string;
+  message?: string;
+}> {
+  try {
+    const res = await apiFetch(`${API_URL}/payments/reconcile`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...await getAuthHeaders(),
+      },
+      body: JSON.stringify({ orderId }),
+      cache: 'no-store',
+    });
+    const data = await res.json().catch(() => null);
+    const result = data?.data ?? data;
+
+    if (!res.ok || data?.success === false || result?.success === false) {
+      return {
+        success: false,
+        message: data?.message || result?.message || 'Payment has not been confirmed yet.',
+      };
+    }
+
+    return { success: true, provider: result?.provider };
+  } catch (error) {
+    console.error('Payment reconciliation failed:', error);
+    return {
+      success: false,
+      message: 'Could not check payment status. Please try again in a moment.',
+    };
+  }
+}
+
 export async function verifyRazorpayPayment(params: {
   orderId: string;
   razorpayOrderId: string;
