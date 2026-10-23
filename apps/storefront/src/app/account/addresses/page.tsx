@@ -256,7 +256,17 @@ function AddressForm({ onSuccess, address, onCancel }: { onSuccess: () => void; 
       })(),
     };
 
-undefined  }
+    const result = address
+      ? await updateAddress(address.id, payload)
+      : await createAddress(payload);
+
+    if (result.success) {
+      onSuccess();
+    } else {
+      setError(result.message || (address ? 'Failed to update address' : 'Failed to create address'));
+      setSubmitting(false);
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
