@@ -629,28 +629,40 @@ export default function CheckoutPage() {
                     />
                   ) : addresses.length > 0 ? (
                     <div className="space-y-3">
-                      {addresses.map(addr => (
-                        <label key={addr.id} className="flex items-start gap-3 p-4 border border-black/10 bg-white transition hover:border-black/40 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="shippingAddress"
-                            value={addr.id}
-                            checked={selectedShippingAddressId === addr.id}
-                            onChange={(e) => setSelectedShippingAddressId(e.target.value)}
-                            className="mt-1"
-                          />
-                          <div className="flex-1">
-                            <p className="font-medium text-luxury-charcoal">{addr.firstName} {addr.lastName}</p>
-                            <p className="text-sm text-luxury-brown mt-1">
-                              {addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}
-                            </p>
-                            <p className="text-sm text-luxury-brown">
-                              {addr.city}, {addr.stateProvince} {addr.postalCode}
-                            </p>
-                            <p className="text-sm text-luxury-brown">{addr.country}</p>
-                            <p className="text-sm text-luxury-brown">{addr.phone}</p>
-                          </div>
-                        </label>
+                      {addresses.filter((addr) => addr.type !== 'BILLING').map(addr => (
+                        <div key={addr.id} className={'flex items-start gap-3 border bg-white p-4 transition ' + (selectedShippingAddressId === addr.id ? 'border-[#302b35]' : 'border-black/10 hover:border-black/40')}>
+                          <label className="flex min-w-0 flex-1 cursor-pointer items-start gap-3">
+                            <input
+                              type="radio"
+                              name="shippingAddress"
+                              value={addr.id}
+                              checked={selectedShippingAddressId === addr.id}
+                              onChange={(e) => setSelectedShippingAddressId(e.target.value)}
+                              className="mt-1"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-luxury-charcoal">{addr.firstName} {addr.lastName}</p>
+                              <p className="mt-1 text-sm text-luxury-brown">
+                                {addr.addressLine1}{addr.addressLine2 && `, ${addr.addressLine2}`}
+                              </p>
+                              <p className="text-sm text-luxury-brown">
+                                {addr.city}, {addr.stateProvince} {addr.postalCode}
+                              </p>
+                              <p className="text-sm text-luxury-brown">{addr.country}</p>
+                              <p className="text-sm text-luxury-brown">{addr.phone}</p>
+                            </div>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingAddress(addr);
+                              setShowNewAddressForm(true);
+                            }}
+                            className="shrink-0 rounded border border-[#ded8d0] px-3 py-2 text-xs font-semibold uppercase tracking-wide text-[#302b35] hover:border-[#302b35]"
+                          >
+                            Edit
+                          </button>
+                        </div>
                       ))}
                     </div>
                   ) : (
