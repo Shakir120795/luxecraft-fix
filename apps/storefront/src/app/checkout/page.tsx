@@ -1165,13 +1165,15 @@ function StripePaymentForm({
 }
 function AddressForm({
   onSuccess,
+  address,
   guestMode = false,
   initialFirstName = '',
   initialLastName = '',
   onGuestAddress,
   title,
 }: {
-  onSuccess?: () => void;
+  onSuccess?: (savedAddress?: Address) => void;
+  address?: Address;
   guestMode?: boolean;
   initialFirstName?: string;
   initialLastName?: string;
@@ -1179,18 +1181,18 @@ function AddressForm({
   title?: string;
 }) {
   const [formData, setFormData] = useState({
-    firstName: initialFirstName,
-    lastName: initialLastName,
-    company: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    stateProvince: '',
-    postalCode: '',
-    country: 'US',
-    phone: '',
-    isDefault: false,
-    type: 'BOTH' as 'SHIPPING' | 'BILLING' | 'BOTH',
+    firstName: address?.firstName ?? initialFirstName,
+    lastName: address?.lastName ?? initialLastName,
+    company: address?.company ?? '',
+    addressLine1: address?.addressLine1 ?? '',
+    addressLine2: address?.addressLine2 ?? '',
+    city: address?.city ?? '',
+    stateProvince: address?.stateProvince ?? '',
+    postalCode: address?.postalCode ?? '',
+    country: (address?.country ?? 'US').toUpperCase(),
+    phone: address?.phone ?? '',
+    isDefault: address?.isDefault ?? false,
+    type: (address?.type ?? 'BOTH') as 'SHIPPING' | 'BILLING' | 'BOTH',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1214,19 +1216,21 @@ function AddressForm({
       return;
     }
 
-    const result = await createAddress(formData);
+    const result = address
+      ? await updateAddress(address.id, formData)
+      : await createAddress(formData);
 
     if (result.success) {
-      onSuccess?.();
+      onSuccess?.(result.data);
     } else {
-      setError(result.message || 'Failed to create address');
+      setError(result.message || (address ? 'Failed to update address' : 'Failed to create address'));
       setSubmitting(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-6 border border-luxury-sand bg-luxury-cream">
-      <h3 className="font-serif text-lg text-luxury-charcoal mb-4">{title || 'New Address'}</h3>
+      <h3 className="font-serif text-lg text-luxury-charcoal mb-4">{title || (address ? 'Edit Address' : 'New Address')}</h3>
 
       {error && (
         <div className="border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-4 py-3 text-luxury-charcoal text-sm">
@@ -1273,7 +1277,7 @@ function AddressForm({
       <input name="phone" type="tel" placeholder="Phone *" value={formData.phone} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
 
       <button type="submit" disabled={submitting} className="btn-luxury w-full px-6 py-3 text-sm disabled:opacity-50">
-        {submitting ? 'Saving...' : guestMode ? 'Use This Address' : 'Save Address'}
+        {submitting ? 'Saving...' : guestMode ? 'Use This Address' : address ? 'Update Address' : 'Save Address'}
       </button>
     </form>
   );
