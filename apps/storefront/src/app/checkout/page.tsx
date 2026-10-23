@@ -659,13 +659,45 @@ export default function CheckoutPage() {
 
                   {!isGuest && <button
                     type="button"
-                    onClick={() => setShowNewAddressForm(!showNewAddressForm)}
+                    onClick={() => {
+                      if (showNewAddressForm) {
+                        setShowNewAddressForm(false);
+                        setEditingAddress(null);
+                      } else {
+                        setEditingAddress(null);
+                        setShowNewAddressForm(true);
+                      }
+                    }}
                     className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
                   >
-                    {showNewAddressForm ? '-- Cancel' : '+ Add New Address'}
+                    {showNewAddressForm && !editingAddress ? '-- Cancel' : '+ Add New Address'}
                   </button>}
 
-                  {!isGuest && showNewAddressForm && <AddressForm onSuccess={() => { loadCheckoutData(); setShowNewAddressForm(false); }} />}
+                  {!isGuest && showNewAddressForm && (
+                    <AddressForm
+                      key={editingAddress?.id ?? 'new-checkout-address'}
+                      address={editingAddress ?? undefined}
+                      onSuccess={async (savedAddress) => {
+                        const latestAddresses = savedAddress
+                          ? [
+                              ...addresses.filter((item) => item.id !== savedAddress.id),
+                              savedAddress,
+                            ]
+                          : await getAddresses();
+                        setAddresses(latestAddresses);
+                        if (savedAddress) {
+                          if (savedAddress.type !== 'BILLING') {
+                            setSelectedShippingAddressId(savedAddress.id);
+                          }
+                          if (savedAddress.type !== 'SHIPPING') {
+                            setSelectedBillingAddressId(savedAddress.id);
+                          }
+                        }
+                        setShowNewAddressForm(false);
+                        setEditingAddress(null);
+                      }}
+                    />
+                  )}
 
                   <div className="flex items-center gap-2 pt-4">
                     <input
@@ -737,7 +769,7 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                </form>
+                </div>
               </div>
             )}
 
@@ -1040,7 +1072,7 @@ export default function CheckoutPage() {
                 <button type="button" onClick={() => setCurrentStep("customer")} className="rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#302b35] hover:text-white">
                   Back
                 </button>
-                <button type="submit" form="address-form" className="flex-1 rounded-md bg-[#302b35] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#211e24]">
+                <button type="button" onClick={() => void handleAddressSubmit()} className="flex-1 rounded-md bg-[#302b35] px-6 py-3 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#211e24]">
                   Continue to Shipping & Payment →
                 </button>
               </div>
