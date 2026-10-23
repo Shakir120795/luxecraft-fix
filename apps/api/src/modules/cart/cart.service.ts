@@ -219,17 +219,30 @@ export class CartService {
       });
     }
 
-    // Calculate price snapshot (variant price overrides product price)
+    // Use the same variant-first pricing precedence as checkout.
+    // A variant may have a sale price even when its regular price is not set.
     let priceSnapshot = product.salePrice ?? product.regularPrice;
 
     if (dto.variantId) {
-      const variant = await this.prisma.productVariant.findUnique({
-        where: { id: dto.variantId },
+      const variant = await this.prisma.productVariant.findFirst({
+        where: {
+          id: dto.variantId,
+          productId: dto.productId,
+          deletedAt: null,
+        },
       });
 
-      if (variant?.regularPrice != null) {
-        priceSnapshot = variant.salePrice ?? variant.regularPrice;
+      if (variant) {
+        priceSnapshot =
+          variant.salePrice ??
+          variant.regularPrice ??
+          product.salePrice ??
+          product.regularPrice;
       }
+    }
+
+    if (priceSnapshot == null || !Number.isFinite(Number(priceSnapshot)) || Number(priceSnapshot) < 0) {
+      throw new BadRequestException('This product has an invalid price.');
     }
 
     // Create new cart item
