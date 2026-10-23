@@ -15,6 +15,7 @@ import {
   getFreshCurrentUser,
   getAddresses, 
   createAddress,
+  updateAddress,
   getShippingMethods,
   getPaymentConfiguration,
   createOrder,
@@ -63,6 +64,7 @@ export default function CheckoutPage() {
   const [selectedBillingAddressId, setSelectedBillingAddressId] = useState<string>('');
   const [sameAsShipping, setSameAsShipping] = useState(true);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   // Shipping
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
@@ -223,8 +225,8 @@ export default function CheckoutPage() {
     setCurrentStep('address');
   }
 
-  async function handleAddressSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleAddressSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
     setError(null);
 
     const authenticated = isAuthenticated();
@@ -617,7 +619,7 @@ export default function CheckoutPage() {
             {currentStep === 'address' && (
               <div className="rounded-lg border border-[#ded8d0] bg-white p-6 sm:p-8 shadow-sm">
                 <h2 className="mb-7 font-serif text-2xl font-normal text-luxury-charcoal">Shipping Address</h2>
-                <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-6">
+                <div id="address-form" className="space-y-6">
                   {isGuest ? (
                     <AddressForm
                       guestMode
