@@ -8,7 +8,9 @@
 - [x] Fix payment confirmation chain for Razorpay + PayPal (provider id overwrite removed, webhook lookup fixed, idempotent verify/webhook, checkout returns Razorpay public key); crypto verify kept on the same unified lookup.
 - [ ] After deploying this slice, run one live test payment per provider (Razorpay, PayPal) and confirm the order appears as PAYMENT_CONFIRMED/PAID in admin.
 - [x] "15% OFF" side tab covering content: live inspection (2026-10-24) proved the tab and the support-chat button are the site's own components, NOT third-party widgets — but neither exists anywhere in this repo's git history, i.e. the live deployment is running code that was never pushed here. Added a redesigned first-party `OfferTab` to this repo instead: slim 36px edge tab, dismissible per session, expands in place with copyable FIRST15 code, and fully hidden on /cart and /checkout so it can never cover the order summary again.
-- [ ] Reconcile the live deployment with this repo: find the code the live site is actually built from (it contains the coupon tab + support chat + a different checkout UI) and either push it here or deploy this repo, otherwise fixes in this repo will not match live behavior.
+- [x] Reconcile the live deployment with this repo: DECIDED by owner (2026-10-24) — this repo is canonical and will be deployed live, replacing the divergent live build.
+- [ ] Deploy this repo to the VPS (`bash update.sh` after a database + live-code backup) and run the smoke tests above.
+- [ ] Known consequence of the switch: the live-only customer support chat does not exist in this repo and will disappear on deploy, unless it is ported here first (owner to confirm keep/drop).
 
 ## Active — Workflow repair and production completion (2026-09-02)
 
