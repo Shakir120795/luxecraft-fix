@@ -190,10 +190,19 @@ export default function CheckoutPage() {
         const addressData = await getAddresses();
         setAddresses(addressData);
         
-        const defaultAddr = addressData.find(a => a.isDefault);
-        if (defaultAddr) {
-          setSelectedShippingAddressId(defaultAddr.id);
-          setSelectedBillingAddressId(defaultAddr.id);
+        const defaultShippingAddress =
+          addressData.find((address) => address.isDefault && address.type !== 'BILLING') ??
+          addressData.find((address) => address.type !== 'BILLING');
+        const defaultBillingAddress =
+          addressData.find((address) => address.isDefault && address.type !== 'SHIPPING') ??
+          addressData.find((address) => address.type !== 'SHIPPING') ??
+          defaultShippingAddress;
+
+        if (defaultShippingAddress) {
+          setSelectedShippingAddressId(defaultShippingAddress.id);
+        }
+        if (defaultBillingAddress) {
+          setSelectedBillingAddressId(defaultBillingAddress.id);
         }
 
         setCurrentStep('address');
