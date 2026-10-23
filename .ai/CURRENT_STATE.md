@@ -1,5 +1,13 @@
 # Current State
 
+## Manual Courier Tracking — 2026-10-24
+
+- Added nullable `courierName` and `trackingUrl` fields to the Order model with a Prisma migration at `apps/api/prisma/migrations/20261024120000_add_manual_courier_tracking/migration.sql`. The existing `trackingNumber`, `shippedAt` and `deliveredAt` fields are reused.
+- Admin order details now allow manual order status, courier company, AWB/tracking number, and optional HTTPS carrier tracking URL to be saved together.
+- Customer My Orders cards and Order Details now show courier/AWB details and a Track Shipment link. Known carriers link to their official tracking dashboards; a custom direct tracking URL can be entered where prefilled tracking is available.
+- Customer order list polls the order list every 60 seconds; the order detail page refreshes shipment/order status every 60 seconds while open. Carrier scan locations/events are not imported automatically in this manual phase.
+- Source changes are in `safe-site-pages-cms-fix`; API/Admin/Storefront builds, DTO tests, DB migration execution and browser verification are pending. Apply the Prisma migration before serving the updated API in production.
+
 ## Wishlist, Cart Totals, and Payment Order Recovery — 2026-10-24
 
 - Wishlist item reads now include product image media; repeat Add-to-Wishlist requests are idempotent. The storefront toggle helper reads the API's `action: added|removed` response correctly, and the product detail heart calls the API and refreshes persisted state instead of toggling local UI only.
