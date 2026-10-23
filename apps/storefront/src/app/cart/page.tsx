@@ -253,7 +253,9 @@ export default function CartPage() {
   ) || 0;
   const serverTotalsAvailable = Boolean(totals && totals.itemCount > 0);
   const subtotal = serverTotalsAvailable ? Number(totals!.subtotal) : snapshotSubtotal;
-  const cartCurrency = totals?.currency || cart?.currency || 'USD';
+  const cartCurrency = serverTotalsAvailable
+    ? totals!.currency
+    : cart?.currency || totals?.currency || 'USD';
   const originalTotal = cart?.items.reduce(
     (sum, item) =>
       sum +
@@ -317,7 +319,7 @@ export default function CartPage() {
                     onRemove={handleRemoveItem}
                     onSaveForLater={handleSaveForLater}
                     isUpdating={updatingItems.has(item.id)}
-                    currency={totals?.currency ?? cart.currency}
+                    currency={cartCurrency}
                   />
                 ))}
               </div>
