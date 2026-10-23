@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Product, ProductMedia, addToCart, getProducts } from '@/lib/api';
+import { Product, ProductMedia, addToCart, getProducts, getWishlist, isAuthenticated, toggleWishlist } from '@/lib/api';
 import { ProductRecommendations } from '@/components/ProductRecommendations';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
@@ -21,6 +21,8 @@ export default function ProductDetailPage() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
+  const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<Product[]>([]);
   const [cartMessage, setCartMessage] = useState<string | null>(null);
   const [cartError, setCartError] = useState<string | null>(null);
@@ -71,6 +73,60 @@ export default function ProductDetailPage() {
     }
 
   }, [slug]);
+  useEffect(() => {
+    let active = true;
+
+    if (!product || !isAuthenticated()) {
+      setIsWishlisted(false);
+      return () => {
+        active = false;
+      };
+    }
+
+    void getWishlist().then((wishlist) => {
+      if (!active) return;
+      setIsWishlisted(
+        Boolean(
+          wishlist?.items.some(
+            (item) =>
+              item.productId === product.id &&
+              item.variantId === (selectedVariant || null),
+          ),
+        ),
+      );
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [product?.id, selectedVariant]);
+
+  async function handleToggleWishlist() {
+    if (!product || wishlistBusy) return;
+
+    if (!isAuthenticated()) {
+      router.push(`/auth/login?redirect=${encodeURIComponent(`/products/${product.slug}`)}`);
+      return;
+    }
+
+    setWishlistBusy(true);
+    setWishlistMessage(null);
+
+    const result = await toggleWishlist({
+      productId: product.id,
+      variantId: selectedVariant || undefined,
+    });
+
+    if (result.success) {
+      setIsWishlisted(result.added);
+      setWishlistMessage(result.added ? 'Saved to your wishlist.' : 'Removed from your wishlist.');
+    } else {
+      setWishlistMessage(result.message || 'Unable to update your wishlist.');
+    }
+
+    setWishlistBusy(false);
+  }
+
   useEffect(() => {
     if (!product) return;
 
@@ -409,10 +465,12 @@ export default function ProductDetailPage() {
 
               <button
                 type="button"
-                onClick={() => setIsWishlisted((current) => !current)}
-                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/95 shadow-sm backdrop-blur-sm transition hover:scale-105"
+                onClick={() => void handleToggleWishlist()}
+                disabled={wishlistBusy}
+                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/95 shadow-sm backdrop-blur-sm transition hover:scale-105 disabled:cursor-wait disabled:opacity-60"
                 aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
                 aria-pressed={isWishlisted}
+                aria-busy={wishlistBusy}
               >
                 {isWishlisted ? (
                   <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">
@@ -716,6 +774,11 @@ export default function ProductDetailPage() {
                   )}
               </div>
             </div>
+            {wishlistMessage && (
+              <p role="status" className="mb-3 text-sm text-luxury-brown">
+                {wishlistMessage}
+              </p>
+            )}
             {cartMessage && (
               <div className="mb-4 border border-green-700/20 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">
                 {cartMessage}
