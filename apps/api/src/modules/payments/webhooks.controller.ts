@@ -112,11 +112,16 @@ export class WebhooksController {
         paymentEntity?.order_id || orderEntity?.id || '',
       );
 
-      const orderId = String(
-        paymentEntity?.notes?.orderId ||
-        orderEntity?.notes?.orderId ||
-        '',
-      );
+      const orderId =
+        String(
+          paymentEntity?.notes?.orderId ||
+          orderEntity?.notes?.orderId ||
+          '',
+        ) ||
+        (razorpayOrderId
+          ? await this.webhookService.findOrderIdByProviderReference(razorpayOrderId)
+          : null) ||
+        '';
 
       if (eventType === 'payment.captured' || eventType === 'order.paid') {
         if (!orderId) {
@@ -125,6 +130,8 @@ export class WebhooksController {
           await this.webhookService.handlePaymentSuccess({
             orderId,
             paymentIntentId: razorpayOrderId,
+            provider: 'razorpay',
+            providerReferenceIds: [String(paymentEntity?.id || '')],
             amount: Number(paymentEntity?.amount || orderEntity?.amount || 0) / 100,
             currency: String(paymentEntity?.currency || orderEntity?.currency || ''),
           });
@@ -136,6 +143,8 @@ export class WebhooksController {
           await this.webhookService.handlePaymentFailed({
             orderId,
             paymentIntentId: razorpayOrderId,
+            provider: 'razorpay',
+            providerReferenceIds: [String(paymentEntity?.id || '')],
             reason: String(
               paymentEntity?.error_description ||
               paymentEntity?.error_reason ||
@@ -236,13 +245,37 @@ export class WebhooksController {
       const amount = Number(resource.amount?.value || 0);
       const currency = String(resource.amount?.currency_code || '');
 
-      if (eventType === 'PAYMENT.CAPTURE.COMPLETED' && customId) {
-        await this.webhookService.handlePaymentSuccess({
-          orderId: customId,
-          paymentIntentId: captureId,
-          amount,
-          currency,
-        });
+      if (eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+        // The capture resource's own id is NOT the id stored on the payment
+        // (that is the PayPal ORDER id). Resolve the PayPal order id from
+        // supplementary_data.related_ids, and the internal order from
+        // custom_id; if custom_id is absent, resolve it through the stored
+        // payment record. Passing captureId as the payment reference caused
+        // "Payment not found" for every PayPal webhook.
+        const paypalOrderId = String(
+          resource.supplementary_data?.related_ids?.order_id || '',
+        );
+        const internalOrderId =
+          customId ||
+          (paypalOrderId
+            ? await this.webhookService.findOrderIdByProviderReference(paypalOrderId)
+            : null) ||
+          '';
+
+        if (!internalOrderId) {
+          this.logger.warn(
+            `PayPal event ${eventId} could not be matched to an internal order (capture ${captureId})`,
+          );
+        } else {
+          await this.webhookService.handlePaymentSuccess({
+            orderId: internalOrderId,
+            paymentIntentId: paypalOrderId || captureId,
+            provider: 'paypal',
+            providerReferenceIds: [captureId],
+            amount,
+            currency,
+          });
+        }
       }
 
       await this.webhookService.markEventProcessed('paypal', eventId);

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Product, ProductMedia, addToCart, getProducts } from '@/lib/api';
+import { Product, ProductMedia, addToCart, getProducts, getWishlist, toggleWishlist, isAuthenticated } from '@/lib/api';
 import { ProductRecommendations } from '@/components/ProductRecommendations';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
@@ -21,6 +21,8 @@ export default function ProductDetailPage() {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [wishlistBusy, setWishlistBusy] = useState(false);
+  const [wishlistMessage, setWishlistMessage] = useState<string | null>(null);
   const [recommendations, setRecommendations] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -64,6 +66,61 @@ export default function ProductDetailPage() {
     }
 
   }, [slug]);
+  // Wishlist state comes from the API. The heart button previously only
+  // flipped local state and never called the wishlist API, so nothing was
+  // ever saved and the wishlist page stayed empty.
+  useEffect(() => {
+    if (!product || !isAuthenticated()) {
+      setIsWishlisted(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadWishlistState() {
+      const wishlist = await getWishlist();
+      if (cancelled || !wishlist) return;
+      const saved = wishlist.items.some(
+        (item) =>
+          item.productId === product!.id &&
+          (item.variantId ?? null) === (selectedVariant ?? null),
+      );
+      setIsWishlisted(saved);
+    }
+
+    void loadWishlistState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product, selectedVariant]);
+
+  async function handleToggleWishlist() {
+    if (!product || wishlistBusy) return;
+
+    if (!isAuthenticated()) {
+      router.push(`/auth/login?redirect=/products/${product.slug}`);
+      return;
+    }
+
+    setWishlistBusy(true);
+    setWishlistMessage(null);
+
+    const result = await toggleWishlist({
+      productId: product.id,
+      variantId: selectedVariant ?? undefined,
+    });
+
+    if (result.success) {
+      setIsWishlisted(result.added);
+      setWishlistMessage(result.added ? 'Saved to your wishlist.' : 'Removed from your wishlist.');
+    } else {
+      setWishlistMessage(result.message || 'Could not update your wishlist. Please try again.');
+    }
+
+    setWishlistBusy(false);
+  }
+
   useEffect(() => {
     if (!product) return;
 
@@ -359,8 +416,9 @@ export default function ProductDetailPage() {
 
               <button
                 type="button"
-                onClick={() => setIsWishlisted((current) => !current)}
-                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/95 shadow-sm backdrop-blur-sm transition hover:scale-105"
+                onClick={() => void handleToggleWishlist()}
+                disabled={wishlistBusy}
+                className="absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/95 shadow-sm backdrop-blur-sm transition hover:scale-105 disabled:opacity-60"
                 aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
                 aria-pressed={isWishlisted}
               >
@@ -672,6 +730,16 @@ export default function ProductDetailPage() {
                 </button>
               </div>
 
+              {wishlistMessage && (
+                <p className="mt-3 text-sm text-luxury-brown" role="status">
+                  {wishlistMessage}{' '}
+                  {isWishlisted && (
+                    <Link href="/wishlist" className="font-medium underline underline-offset-4">
+                      View wishlist
+                    </Link>
+                  )}
+                </p>
+              )}
             </div>
             {(product.deliveryInfo || product.shippingInfo || product.returnsInfo || product.careInstructions || product.origin) && (
               <div className="mb-3">

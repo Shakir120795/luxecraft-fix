@@ -1,5 +1,14 @@
 # Task Queue
 
+## Storefront bug fixes (2026-10-23)
+
+- [x] Fix cart/checkout calculation (variant-aware reference price, totals fallback instead of $0 summary).
+- [x] Fix wishlist saving (product-page heart wired to API, cart "Save for later" implemented, toggle response parsed).
+- [x] Fix checkout address add/edit (nested-form root cause removed, edit support, auto-select saved address, 2-letter country code).
+- [x] Fix payment confirmation chain for Razorpay + PayPal (provider id overwrite removed, webhook lookup fixed, idempotent verify/webhook, checkout returns Razorpay public key); crypto verify kept on the same unified lookup.
+- [ ] After deploying this slice, run one live test payment per provider (Razorpay, PayPal) and confirm the order appears as PAYMENT_CONFIRMED/PAID in admin.
+- [ ] External "15% OFF" side tab + chat widget on wolhomes.com are not part of this codebase (no such component/script in the repo); identify the injecting service (tag manager / third-party dashboard) and restyle/move it there so it stops covering order-summary content on mobile.
+
 ## Active — Workflow repair and production completion (2026-09-02)
 
 - [x] Repair guest checkout order-confirmation access securely.

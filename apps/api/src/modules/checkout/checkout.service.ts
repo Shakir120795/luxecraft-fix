@@ -174,7 +174,7 @@ export class CheckoutService {
     }
 
     // 3. Create order with reserved stock
-    let order, payment, clientSecret, approveUrl;
+    let order, payment, clientSecret, approveUrl, publicKey;
 
     try {
       order = await this.orders.create({
@@ -209,6 +209,7 @@ export class CheckoutService {
 
       payment = paymentResult.payment;
       approveUrl = paymentResult.approveUrl;
+      publicKey = paymentResult.publicKey;
 
       this.logger.log(`Payment created for ${order.orderNumber}: ${payment.provider}`);
 
@@ -238,6 +239,11 @@ export class CheckoutService {
       order,
       payment,
       clientSecret,
+      // The storefront needs the provider public key to open Razorpay
+      // Checkout; dropping it here made every Razorpay payment fail with
+      // "Razorpay payment could not be initialized" after the order and the
+      // Razorpay order had already been created.
+      publicKey,
       providerOrderId: payment?.providerPaymentId,
       approveUrl,
       paymentProvider: payment?.provider,

@@ -10,8 +10,9 @@ import {
   getCart, 
   isAuthenticated, 
   getCurrentUser,
-  getAddresses, 
+  getAddresses,
   createAddress,
+  updateAddress,
   getShippingMethods,
   getPaymentConfiguration,
   createOrder,
@@ -51,6 +52,7 @@ export default function CheckoutPage() {
   const [selectedBillingAddressId, setSelectedBillingAddressId] = useState<string>('');
   const [sameAsShipping, setSameAsShipping] = useState(true);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
 
   // Shipping
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
@@ -148,6 +150,25 @@ export default function CheckoutPage() {
     }
   }
 
+  // Refresh only the address list after add/edit at checkout (a full
+  // loadCheckoutData() reset the whole checkout state). When selectId is
+  // given, the saved address becomes the selected shipping address so the
+  // customer can continue immediately.
+  async function refreshAddresses(selectId?: string) {
+    try {
+      const data = await getAddresses();
+      setAddresses(data);
+      if (selectId && data.some((a) => a.id === selectId)) {
+        setSelectedShippingAddressId(selectId);
+        setSelectedBillingAddressId((prev) => (sameAsShipping ? selectId : prev));
+      }
+      return data;
+    } catch (err) {
+      console.error('Failed to refresh addresses:', err);
+      return null;
+    }
+  }
+
   async function handleCustomerInfoSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -165,7 +186,12 @@ export default function CheckoutPage() {
     setError(null);
 
     const authenticated = isAuthenticated();
-    
+
+    if (authenticated && showNewAddressForm) {
+      setError('Please click "Save Address" in the address form first, or cancel the form.');
+      return;
+    }
+
     if (authenticated && !selectedShippingAddressId) {
       setError('Please select a shipping address');
       return;
@@ -430,7 +456,11 @@ export default function CheckoutPage() {
     return null;
   }
 
-  const originalTotal = cart.items.reduce((sum, item) => sum + (Number(item.product.regularPrice) || Number(item.priceSnapshot) || 0) * item.quantity, 0);
+  // Variant-aware original total: when a variant is selected, its regular
+  // price is the reference price. Using the base product price here against
+  // a variant-priced subtotal fabricated huge fake "shop discounts"
+  // (e.g. $720 product vs $0.02 variant -> -$719.98 discount).
+  const originalTotal = cart.items.reduce((sum, item) => sum + (Number(item.variant?.regularPrice ?? item.product.regularPrice) || Number(item.priceSnapshot) || 0) * item.quantity, 0);
   const subtotal = cart.items.reduce((sum, item) => sum + Number(item.priceSnapshot) * item.quantity, 0);
   const shopDiscount = Math.max(0, originalTotal - subtotal);
   const selectedShippingMethod = shippingMethod;
@@ -546,6 +576,18 @@ export default function CheckoutPage() {
                             </p>
                             <p className="text-sm text-luxury-brown">{addr.country}</p>
                             <p className="text-sm text-luxury-brown">{addr.phone}</p>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditingAddress(addr);
+                                setShowNewAddressForm(true);
+                              }}
+                              className="mt-2 text-xs font-medium text-luxury-gold underline underline-offset-4 hover:text-luxury-darkGold"
+                            >
+                              Edit address
+                            </button>
                           </div>
                         </label>
                       ))}
@@ -556,13 +598,30 @@ export default function CheckoutPage() {
 
                   {!isGuest && <button
                     type="button"
-                    onClick={() => setShowNewAddressForm(!showNewAddressForm)}
+                    onClick={() => {
+                      setEditingAddress(null);
+                      setShowNewAddressForm(!showNewAddressForm);
+                    }}
                     className="text-sm text-luxury-gold hover:text-luxury-darkGold underline"
                   >
-                    {showNewAddressForm ? '-- Cancel' : '+ Add New Address'}
+                    {showNewAddressForm && !editingAddress ? '-- Cancel' : '+ Add New Address'}
                   </button>}
 
-                  {!isGuest && showNewAddressForm && <AddressForm onSuccess={() => { loadCheckoutData(); setShowNewAddressForm(false); }} />}
+                  {!isGuest && showNewAddressForm && (
+                    <AddressForm
+                      key={editingAddress?.id ?? 'new'}
+                      address={editingAddress ?? undefined}
+                      onCancel={() => {
+                        setShowNewAddressForm(false);
+                        setEditingAddress(null);
+                      }}
+                      onSuccess={(saved) => {
+                        setShowNewAddressForm(false);
+                        setEditingAddress(null);
+                        void refreshAddresses(saved?.id);
+                      }}
+                    />
+                  )}
 
                   {!isGuest && <div className="flex items-center gap-2 pt-4">
                     <input
@@ -858,7 +917,7 @@ export default function CheckoutPage() {
                       <p className="text-sm text-luxury-charcoal line-clamp-1">{item.product.name}</p>
                       <p className="text-xs text-luxury-brown">Qty: {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-serif text-luxury-charcoal">{money(item.priceSnapshot * item.quantity, shippingMethod?.currency ?? cart.currency)}</p>
+                    <p className="text-sm font-serif text-luxury-charcoal">{money(item.priceSnapshot * item.quantity, cart.currency)}</p>
                   </div>
                 ))}
               </div>
@@ -866,24 +925,26 @@ export default function CheckoutPage() {
               <div className="space-y-3 mb-6 pb-6 border-b border-[#ded8d0] text-sm">
                 <div className="flex justify-between text-[#59535b]">
                   <span>Item(s) total</span>
-                  <span>${originalTotal.toFixed(2)}</span>
+                  <span>{money(originalTotal, cart.currency)}</span>
                 </div>
-                <div className="flex justify-between text-[#59535b]">
-                  <span>Shop discount</span>
-                  <span className="font-medium text-green-700">-${shopDiscount.toFixed(2)}</span>
-                </div>
+                {shopDiscount > 0 && (
+                  <div className="flex justify-between text-[#59535b]">
+                    <span>Shop discount</span>
+                    <span className="font-medium text-green-700">-{money(shopDiscount, cart.currency)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-[#59535b]">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{money(subtotal, cart.currency)}</span>
                 </div>
                 <div className="flex justify-between text-[#59535b]">
                   <span>Delivery</span>
-                  <span className="font-semibold text-green-700">{shippingCost === 0 ? "FREE" : "$" + shippingCost.toFixed(2)}</span>
+                  <span className="font-semibold text-green-700">{shippingCost === 0 ? "FREE" : money(shippingCost, cart.currency)}</span>
                 </div>
               </div>
               <div className="flex justify-between text-2xl font-serif text-luxury-charcoal">
                 <span>Total</span>
-                <span className="text-2xl font-medium text-luxury-charcoal">${total.toFixed(2)}</span>
+                <span className="text-2xl font-medium text-luxury-charcoal">{money(total, cart.currency)}</span>
               </div>
             </div>
             {currentStep === "address" && (
@@ -982,30 +1043,34 @@ function StripePaymentForm({
 }
 function AddressForm({
   onSuccess,
+  onCancel,
+  address,
   guestMode = false,
   initialFirstName = '',
   initialLastName = '',
   onGuestAddress,
 }: {
-  onSuccess?: () => void;
+  onSuccess?: (saved?: Address) => void;
+  onCancel?: () => void;
+  address?: Address;
   guestMode?: boolean;
   initialFirstName?: string;
   initialLastName?: string;
   onGuestAddress?: (address: Omit<Address, 'id' | 'userId' | 'createdAt'>) => void;
 }) {
   const [formData, setFormData] = useState({
-    firstName: initialFirstName,
-    lastName: initialLastName,
-    company: '',
-    addressLine1: '',
-    addressLine2: '',
-    city: '',
-    stateProvince: '',
-    postalCode: '',
-    country: 'US',
-    phone: '',
-    isDefault: false,
-    type: 'BOTH' as 'SHIPPING' | 'BILLING' | 'BOTH',
+    firstName: address?.firstName ?? initialFirstName,
+    lastName: address?.lastName ?? initialLastName,
+    company: address?.company ?? '',
+    addressLine1: address?.addressLine1 ?? '',
+    addressLine2: address?.addressLine2 ?? '',
+    city: address?.city ?? '',
+    stateProvince: address?.stateProvince ?? '',
+    postalCode: address?.postalCode ?? '',
+    country: address?.country ?? 'US',
+    phone: address?.phone ?? '',
+    isDefault: address?.isDefault ?? false,
+    type: (address?.type ?? 'BOTH') as 'SHIPPING' | 'BILLING' | 'BOTH',
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1018,30 +1083,68 @@ function AddressForm({
     }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // NOTE: this component is rendered INSIDE the checkout address step's own
+  // <form id="address-form">. It must NOT render another <form>: nested
+  // forms are invalid HTML, the browser drops the inner form tag, and the
+  // "Save Address" button then submitted the OUTER form instead — which
+  // failed with "Please select a shipping address" and never saved anything.
+  // That is why adding an address worked from the account page (no outer
+  // form there) but never at checkout.
+  async function handleSubmit() {
     setError(null);
+
+    const required: Array<[string, string]> = [
+      [formData.firstName, 'First name'],
+      [formData.lastName, 'Last name'],
+      [formData.addressLine1, 'Address line 1'],
+      [formData.city, 'City'],
+      [formData.postalCode, 'Postal code'],
+      [formData.phone, 'Phone'],
+    ];
+    const missing = required.find(([value]) => !value.trim());
+    if (missing) {
+      setError(`Please fill in: ${missing[1]}`);
+      return;
+    }
+
+    const country = formData.country.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(country)) {
+      setError('Country must be the 2-letter code, e.g. IN, US, GB, AE.');
+      return;
+    }
+
+    const payload = { ...formData, country };
     setSubmitting(true);
 
     if (guestMode) {
-      onGuestAddress?.(formData);
+      onGuestAddress?.(payload);
       setSubmitting(false);
       return;
     }
 
-    const result = await createAddress(formData);
+    const result = address
+      ? await updateAddress(address.id, payload)
+      : await createAddress(payload);
 
     if (result.success) {
-      onSuccess?.();
+      onSuccess?.(result.data);
     } else {
-      setError(result.message || 'Failed to create address');
+      setError(result.message || (address ? 'Failed to update address' : 'Failed to create address'));
       setSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-6 border border-luxury-sand bg-luxury-cream">
-      <h3 className="font-serif text-lg text-luxury-charcoal mb-4">New Address</h3>
+    <div
+      className="space-y-4 p-6 border border-luxury-sand bg-luxury-cream"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          void handleSubmit();
+        }
+      }}
+    >
+      <h3 className="font-serif text-lg text-luxury-charcoal mb-4">{address ? 'Edit Address' : 'New Address'}</h3>
 
       {error && (
         <div className="border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-4 py-3 text-luxury-charcoal text-sm">
@@ -1065,15 +1168,22 @@ function AddressForm({
 
       <div className="grid grid-cols-2 gap-3">
         <input name="postalCode" placeholder="Postal Code *" value={formData.postalCode} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
-        <input name="country" placeholder="Country *" value={formData.country} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
+        <input name="country" placeholder="Country code (IN, US, GB) *" value={formData.country} onChange={handleChange} required maxLength={2} className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm uppercase text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
       </div>
 
       <input name="phone" type="tel" placeholder="Phone *" value={formData.phone} onChange={handleChange} required className="w-full rounded-md border border-[#ded8d0] bg-white px-4 py-3 text-sm text-luxury-charcoal outline-none transition focus:border-[#302b35]" />
 
-      <button type="submit" disabled={submitting} className="btn-luxury w-full px-6 py-3 text-sm disabled:opacity-50">
-        {submitting ? 'Saving...' : guestMode ? 'Use This Address' : 'Save Address'}
-      </button>
-    </form>
+      <div className="flex gap-3">
+        <button type="button" onClick={() => void handleSubmit()} disabled={submitting} className="btn-luxury flex-1 px-6 py-3 text-sm disabled:opacity-50">
+          {submitting ? 'Saving...' : guestMode ? 'Use This Address' : address ? 'Update Address' : 'Save Address'}
+        </button>
+        {onCancel && (
+          <button type="button" onClick={onCancel} disabled={submitting} className="rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-sm font-semibold text-[#302b35] transition hover:border-[#302b35] disabled:opacity-50">
+            Cancel
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

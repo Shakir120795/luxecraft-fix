@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getCart, updateCartItem, removeCartItem, clearCart, getAddresses, getCartTotals, getShippingMethods, isAuthenticated, validateCoupon, Cart, CartItem, CartTotals } from '@/lib/api';
+import { getCart, updateCartItem, removeCartItem, clearCart, getAddresses, getCartTotals, getShippingMethods, isAuthenticated, validateCoupon, addToWishlist, Cart, CartItem, CartTotals } from '@/lib/api';
 
 const CURRENCY_SYMBOLS: Record<string,string> = { USD:'$', INR:'₹', CAD:'C$', GBP:'£', AUD:'A$', AED:'د.إ', EUR:'€', JPY:'¥', SGD:'S$', NZD:'NZ$', CHF:'CHF ', CNY:'¥' };
 function money(amount:number,currency:string){return (CURRENCY_SYMBOLS[currency] ?? (currency + ' ')) + amount.toFixed(2);}
@@ -57,7 +57,7 @@ export default function CartPage() {
     let cancelled = false;
 
     async function loadShippingData() {
-      if (!cart || cart.items.length === 0 || !country) {
+      if (!cart || cart.items.length === 0) {
         setTotals(null);
         setEstimatedDelivery(null);
         return;
@@ -69,14 +69,23 @@ export default function CartPage() {
       );
 
       try {
-        const [cartTotals, methods] = await Promise.all([
-          getCartTotals(),
-          getShippingMethods({ country, orderValue: subtotal }),
-        ]);
+        // Totals must load even when no shipping country/address is known
+        // yet. Gating this on `country` left totals null and the summary
+        // collapsed to Item(s) total $720 / discount -$720 / Total $0.00.
+        const cartTotals = await getCartTotals(country || undefined);
 
         if (cancelled) return;
 
         setTotals(cartTotals);
+
+        if (!country) {
+          setEstimatedDelivery(null);
+          return;
+        }
+
+        const methods = await getShippingMethods({ country, orderValue: subtotal });
+
+        if (cancelled) return;
 
         const available = methods.filter((method) => method.rate >= 0);
         const cheapest = [...available].sort((a, b) => a.rate - b.rate)[0];
@@ -161,6 +170,49 @@ export default function CartPage() {
     });
   }
 
+  const [saveNotice, setSaveNotice] = useState<string | null>(null);
+
+  // "Save for later" = move the cart item into the wishlist. This button was
+  // previously dead (no onClick at all), so items never reached the wishlist.
+  async function handleSaveForLater(item: CartItem) {
+    setError(null);
+    setSaveNotice(null);
+
+    if (!isAuthenticated()) {
+      router.push('/auth/login?redirect=/cart');
+      return;
+    }
+
+    setUpdatingItems(prev => new Set(prev).add(item.id));
+
+    try {
+      const wish = await addToWishlist({
+        productId: item.productId,
+        variantId: item.variantId ?? undefined,
+      });
+
+      const alreadySaved = !wish.success && /already/i.test(wish.message || '');
+      if (!wish.success && !alreadySaved) {
+        setError(wish.message || 'Failed to save item to wishlist');
+        return;
+      }
+
+      const removed = await removeCartItem(item.id);
+      if (removed.success) {
+        setSaveNotice('Saved to your wishlist.');
+        await loadCart();
+      } else {
+        setError(removed.message || 'Item saved to wishlist, but could not be removed from cart');
+      }
+    } finally {
+      setUpdatingItems(prev => {
+        const next = new Set(prev);
+        next.delete(item.id);
+        return next;
+      });
+    }
+  }
+
   async function handleRemoveItem(itemId: string) {
 
     setUpdatingItems(prev => new Set(prev).add(itemId));
@@ -204,12 +256,37 @@ export default function CartPage() {
     );
   }
 
-  const subtotal = totals?.subtotal ?? 0;
-  const itemCount = cart?.items.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
-  const originalTotal = cart?.items.reduce((sum, item) => sum + (Number(item.product.regularPrice) || 0) * Number(item.quantity), 0) || 0;
+  // Summary math is anchored on what the customer is actually charged
+  // (priceSnapshot per item, which already reflects the selected variant).
+  // The "original" total must use the VARIANT's regular price when a variant
+  // is selected — using the base product price ($720) against a variant
+  // price ($0.02) fabricated a -$720 "shop discount" and a $0.00 total.
+  const itemsSubtotal =
+    cart?.items.reduce(
+      (sum, item) => sum + (Number(item.priceSnapshot) || 0) * Number(item.quantity),
+      0,
+    ) || 0;
+  const itemsOriginalTotal =
+    cart?.items.reduce((sum, item) => {
+      const regular =
+        Number(item.variant?.regularPrice ?? item.product.regularPrice) || 0;
+      return sum + regular * Number(item.quantity);
+    }, 0) || 0;
+
+  // Totals from the API are currency-converted when a country is known; use
+  // them when they are real, otherwise fall back to the item sums (never 0
+  // for a non-empty cart).
+  const totalsValid = !!totals && totals.subtotal > 0;
+  const subtotal = totalsValid ? totals.subtotal : itemsSubtotal;
+  const conversionRatio =
+    totalsValid && itemsSubtotal > 0 ? totals.subtotal / itemsSubtotal : 1;
+  const originalTotal = itemsOriginalTotal * conversionRatio;
   const shopDiscount = Math.max(0, originalTotal - subtotal);
   const shipping = totals?.shipping ?? 0;
-  const total = totals?.total ?? subtotal;
+  const tax = totalsValid ? (totals.tax ?? 0) : 0;
+  const total = totalsValid ? totals.total : subtotal + shipping;
+  const displayCurrency = totals?.currency ?? cart?.currency ?? 'USD';
+  const itemCount = cart?.items.reduce((sum, item) => sum + Number(item.quantity), 0) || 0;
 
   return (
     <main className="min-h-screen bg-[#f8f6f2] font-sans">
@@ -227,6 +304,15 @@ export default function CartPage() {
         {error && (
           <div className="mb-8 border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-6 py-4 text-luxury-charcoal">
             {error}
+          </div>
+        )}
+
+        {saveNotice && (
+          <div className="mb-8 border border-green-700/40 bg-green-50 px-6 py-4 text-green-900">
+            {saveNotice}{' '}
+            <Link href="/wishlist" className="font-medium underline underline-offset-4">
+              View wishlist
+            </Link>
           </div>
         )}
 
@@ -261,8 +347,9 @@ export default function CartPage() {
                     item={item}
                     onUpdateQuantity={handleUpdateQuantity}
                     onRemove={handleRemoveItem}
+                    onSaveForLater={handleSaveForLater}
                     isUpdating={updatingItems.has(item.id)}
-                    currency={totals?.currency ?? cart.currency}
+                    currency={displayCurrency}
                   />
                 ))}
               </div>
@@ -288,19 +375,27 @@ export default function CartPage() {
                 <div className="mb-6 space-y-4 border-b border-[#ded8d0] pb-6">
                   <div className="flex justify-between text-luxury-brown">
                     <span>Item(s) total</span>
-                    <span>{money(originalTotal, 'USD')}</span>
+                    <span>{money(originalTotal, displayCurrency)}</span>
                   </div>
-                  <div className="flex justify-between text-luxury-brown">
-                    <span>Shop discount</span>
-                    <span className="font-medium text-green-700">-{money(shopDiscount, 'USD')}</span>
-                  </div>
+                  {shopDiscount > 0 && (
+                    <div className="flex justify-between text-luxury-brown">
+                      <span>Shop discount</span>
+                      <span className="font-medium text-green-700">-{money(shopDiscount, displayCurrency)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-luxury-brown">
                     <span>Subtotal</span>
-                    <span>{money(subtotal, 'USD')}</span>
+                    <span>{money(subtotal, displayCurrency)}</span>
                   </div>
+                  {tax > 0 && (
+                    <div className="flex justify-between text-luxury-brown">
+                      <span>Tax</span>
+                      <span>{money(tax, displayCurrency)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-luxury-brown text-sm">
                     <span>Delivery</span>
-                    <span className="font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded">{shipping === 0 ? 'FREE' : money(shipping, 'USD')}</span>
+                    <span className="font-semibold text-green-700 bg-green-50 px-2.5 py-1 rounded">{shipping === 0 ? 'FREE' : money(shipping, displayCurrency)}</span>
                   </div>
                 </div>
 
@@ -311,7 +406,7 @@ export default function CartPage() {
 
                 <div className="mb-7 flex justify-between text-xl font-semibold text-[#2f2933]">
                   <span>Total</span>
-                  <span>{money(Math.max(0, total - couponDiscount), 'USD')}</span>
+                  <span>{money(Math.max(0, total - couponDiscount), displayCurrency)}</span>
                 </div>
 
                 <button
@@ -378,12 +473,14 @@ function CartItemCard({
   item,
   onUpdateQuantity,
   onRemove,
+  onSaveForLater,
   isUpdating,
   currency,
 }: {
   item: CartItem;
   onUpdateQuantity: (itemId: string, quantity: number) => void;
   onRemove: (itemId: string) => void;
+  onSaveForLater: (item: CartItem) => void;
   isUpdating: boolean;
   currency: string;
 }) {
@@ -447,7 +544,7 @@ function CartItemCard({
             </div>
             <div className="mt-3 flex w-full items-center justify-between text-xs font-medium text-[#59535b]">
               <Link href={`/products/${item.product.slug}`} className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38]">Edit</Link>
-              <button type="button" className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38]">Save for later</button>
+              <button type="button" onClick={() => onSaveForLater(item)} disabled={isUpdating} className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38] disabled:cursor-not-allowed disabled:opacity-40">Save for later</button>
               <button type="button" onClick={() => onRemove(item.id)} disabled={isUpdating} className="border border-[#b94b43] bg-[#b94b43] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wide text-white transition hover:bg-[#a83f38] hover:border-[#a83f38] disabled:cursor-not-allowed disabled:opacity-40">Remove</button>
             </div>
           </div>

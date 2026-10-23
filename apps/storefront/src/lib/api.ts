@@ -1464,9 +1464,14 @@ export async function toggleWishlist(params: {
     });
 
     const data = await res.json();
-    
+
     if (res.ok && data.success) {
-      return { success: true, added: data.data.added };
+      // API returns { action: 'added' | 'removed' } (older shape: { added })
+      const added =
+        typeof data.data?.added === 'boolean'
+          ? data.data.added
+          : data.data?.action === 'added';
+      return { success: true, added };
     }
 
     return { success: false, added: false, message: data.message || 'Failed to toggle wishlist' };

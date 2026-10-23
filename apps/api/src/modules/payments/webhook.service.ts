@@ -77,6 +77,63 @@ export class WebhookService {
   }
 
   /**
+   * Find the payment record for an order from any provider reference.
+   *
+   * Providers hand us different identifiers at different steps: the id we
+   * store at creation time is the provider ORDER id (Razorpay order_…,
+   * PayPal order id), while later callbacks may carry the provider PAYMENT /
+   * capture / transaction id instead. The creation-time id must never be
+   * overwritten, so every other reference is kept in payment.metadata and
+   * matched here as well.
+   */
+  findPaymentForOrder(
+    payments: Array<{
+      id: string;
+      provider: string;
+      providerPaymentId: string | null;
+      status: PaymentStatus;
+      metadata: unknown;
+    }>,
+    references: string[],
+    provider?: string,
+  ) {
+    const refs = references.filter(Boolean);
+    const metadataRefs = (metadata: unknown): string[] => {
+      if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return [];
+      const record = metadata as Record<string, unknown>;
+      return [
+        record.razorpayOrderId,
+        record.razorpayPaymentId,
+        record.paypalOrderId,
+        record.paypalCaptureId,
+        record.txHash,
+      ].filter((value): value is string => typeof value === 'string' && value.length > 0);
+    };
+
+    return (
+      payments.find((p) => p.providerPaymentId !== null && refs.includes(p.providerPaymentId)) ||
+      payments.find((p) => metadataRefs(p.metadata).some((ref) => refs.includes(ref))) ||
+      // Fallback: the only not-yet-paid payment for this order (optionally
+      // restricted to the provider that reported the event).
+      payments.find(
+        (p) => p.status !== PaymentStatus.PAID && (!provider || p.provider === provider),
+      ) ||
+      payments.find((p) => !provider || p.provider === provider) ||
+      null
+    );
+  }
+
+  /** Resolve an internal order id from a stored provider reference (e.g. a PayPal order id). */
+  async findOrderIdByProviderReference(referenceId: string): Promise<string | null> {
+    if (!referenceId) return null;
+    const payment = await this.prisma.payment.findFirst({
+      where: { providerPaymentId: referenceId },
+      select: { orderId: true },
+    });
+    return payment?.orderId ?? null;
+  }
+
+  /**
    * Handle successful payment
    * CRITICAL: This is where inventory is decremented!
    */
@@ -85,6 +142,8 @@ export class WebhookService {
     paymentIntentId: string;
     amount: number;
     currency: string;
+    provider?: string;
+    providerReferenceIds?: string[];
   }): Promise<void> {
     const order = await this.prisma.order.findUnique({
       where: { id: data.orderId },
@@ -98,9 +157,15 @@ export class WebhookService {
       throw new NotFoundException(`Order ${data.orderId} not found`);
     }
 
-    // Find the payment record
-    const payment = order.payments.find(
-      (p) => p.providerPaymentId === data.paymentIntentId,
+    // Find the payment record by any known provider reference. Never rely on
+    // a single id shape: Razorpay webhooks carry the provider order id,
+    // the verify endpoint carries the payment id, PayPal webhooks carry the
+    // capture id while capture carries the PayPal order id, and crypto
+    // carries the transaction hash.
+    const payment = this.findPaymentForOrder(
+      order.payments,
+      [data.paymentIntentId, ...(data.providerReferenceIds ?? [])],
+      data.provider,
     );
 
     if (!payment) {
@@ -108,6 +173,15 @@ export class WebhookService {
         `Payment with intent ${data.paymentIntentId} not found for order ${data.orderId}`,
       );
       throw new NotFoundException('Payment not found');
+    }
+
+    // Idempotent: a duplicate verify/webhook for an already-paid order is a
+    // success, not an error (both channels race to confirm the same payment).
+    if (payment.status === PaymentStatus.PAID) {
+      this.logger.log(
+        `Payment for order ${order.orderNumber} already marked PAID; skipping duplicate success event`,
+      );
+      return;
     }
 
     // Use transaction to ensure atomicity
@@ -149,6 +223,9 @@ export class WebhookService {
                 stockQty: {
                   decrement: item.quantity,
                 },
+                // Settle the reservation made at checkout so reserved stock
+                // does not leak (available = stockQty - reservedQty).
+                reservedQty: Math.max(0, variant.reservedQty - item.quantity),
               },
             });
 
@@ -197,6 +274,8 @@ export class WebhookService {
     orderId: string;
     paymentIntentId: string;
     reason: string;
+    provider?: string;
+    providerReferenceIds?: string[];
   }): Promise<void> {
     const order = await this.prisma.order.findUnique({
       where: { id: data.orderId },
@@ -207,12 +286,22 @@ export class WebhookService {
       throw new NotFoundException(`Order ${data.orderId} not found`);
     }
 
-    const payment = order.payments.find(
-      (p) => p.providerPaymentId === data.paymentIntentId,
+    const payment = this.findPaymentForOrder(
+      order.payments,
+      [data.paymentIntentId, ...(data.providerReferenceIds ?? [])],
+      data.provider,
     );
 
     if (!payment) {
       throw new NotFoundException('Payment not found');
+    }
+
+    // A late failure event must not undo a payment that already succeeded.
+    if (payment.status === PaymentStatus.PAID) {
+      this.logger.log(
+        `Ignoring failure event for already-paid order ${order.orderNumber}`,
+      );
+      return;
     }
 
     await this.prisma.$transaction([

@@ -48,6 +48,20 @@ export class PaymentsController {
     );
 
     if (!payment) {
+      // The Razorpay webhook may have confirmed this payment first. That is
+      // a successful payment, not an error for the customer.
+      const alreadyPaid = order.payments.find(
+        (item) => item.provider === 'razorpay' && item.status === PaymentStatus.PAID,
+      );
+      if (alreadyPaid) {
+        return {
+          success: true,
+          verified: true,
+          alreadyProcessed: true,
+          paymentId: body.razorpayPaymentId,
+          orderId: order.id,
+        };
+      }
       throw new BadRequestException('Razorpay payment is not pending for this order');
     }
 
@@ -56,7 +70,13 @@ export class PaymentsController {
     }
 
     if (await this.webhooks.isEventProcessed('razorpay', body.razorpayPaymentId)) {
-      throw new BadRequestException('This Razorpay payment has already been processed');
+      return {
+        success: true,
+        verified: true,
+        alreadyProcessed: true,
+        paymentId: body.razorpayPaymentId,
+        orderId: order.id,
+      };
     }
 
     const verified = this.payments.verifyRazorpaySignature(
@@ -82,15 +102,19 @@ export class PaymentsController {
     });
 
     try {
-      await this.payments.updateStatus(
-        payment.id,
-        PaymentStatus.PENDING,
-        body.razorpayPaymentId,
-      );
+      // Keep providerPaymentId as the Razorpay ORDER id (webhooks look the
+      // payment up by it). Record the payment id in metadata instead of
+      // overwriting it — overwriting caused "Payment not found" whenever the
+      // webhook arrived after this verify call.
+      await this.payments.mergeMetadata(payment.id, {
+        razorpayPaymentId: body.razorpayPaymentId,
+      });
 
       await this.webhooks.handlePaymentSuccess({
         orderId: order.id,
-        paymentIntentId: body.razorpayPaymentId,
+        paymentIntentId: body.razorpayOrderId,
+        provider: 'razorpay',
+        providerReferenceIds: [body.razorpayPaymentId],
         amount: Number(payment.amount),
         currency: order.currency,
       });
@@ -131,6 +155,18 @@ export class PaymentsController {
     );
 
     if (!payment) {
+      const alreadyPaid = order.payments.find(
+        (item) => item.provider === 'paypal' && item.status === PaymentStatus.PAID,
+      );
+      if (alreadyPaid) {
+        return {
+          success: true,
+          captured: true,
+          alreadyProcessed: true,
+          paypalOrderId: body.paypalOrderId,
+          orderId: order.id,
+        };
+      }
       throw new BadRequestException('PayPal payment is not pending for this order');
     }
 
@@ -155,7 +191,14 @@ export class PaymentsController {
     }
 
     if (await this.webhooks.isEventProcessed('paypal', captureId)) {
-      throw new BadRequestException('This PayPal capture has already been processed');
+      return {
+        success: true,
+        captured: true,
+        alreadyProcessed: true,
+        captureId,
+        paypalOrderId: body.paypalOrderId,
+        orderId: order.id,
+      };
     }
 
     await this.webhooks.recordWebhookEvent({
@@ -172,9 +215,15 @@ export class PaymentsController {
     });
 
     try {
+      await this.payments.mergeMetadata(payment.id, {
+        paypalCaptureId: captureId,
+      });
+
       await this.webhooks.handlePaymentSuccess({
         orderId: order.id,
         paymentIntentId: body.paypalOrderId,
+        provider: 'paypal',
+        providerReferenceIds: [captureId],
         amount: Number(payment.amount),
         currency: order.currency,
       });
@@ -203,8 +252,12 @@ export class PaymentsController {
     if (!body.orderId || !body.txHash || !body.network || !body.asset) throw new BadRequestException('orderId, txHash, network and asset are required');
     const order = req.user?.id ? await this.orders.findOneForUser(body.orderId, req.user.id) : await this.orders.findOneForGuest(body.orderId, body.accessToken || '');
     const payment = order.payments.find((item) => item.provider === 'crypto' && item.status !== 'PAID');
-    if (!payment) throw new BadRequestException('Crypto payment is not pending for this order');
-    if (await this.webhooks.isEventProcessed('crypto', body.txHash)) throw new BadRequestException('This transaction has already been processed');
+    if (!payment) {
+      const alreadyPaid = order.payments.find((item) => item.provider === 'crypto' && item.status === 'PAID');
+      if (alreadyPaid) return { success: true, verified: true, alreadyProcessed: true, txHash: body.txHash };
+      throw new BadRequestException('Crypto payment is not pending for this order');
+    }
+    if (await this.webhooks.isEventProcessed('crypto', body.txHash)) return { success: true, verified: true, alreadyProcessed: true, txHash: body.txHash };
     const metadata = payment.metadata && typeof payment.metadata === 'object' && !Array.isArray(payment.metadata) ? payment.metadata as Record<string, unknown> : {};
     const expectedNetwork = String(metadata.network || '').toLowerCase();
     const expectedAsset = String(metadata.asset || '').toUpperCase();
@@ -215,8 +268,8 @@ export class PaymentsController {
     if (!verification.verified) throw new BadRequestException('Blockchain payment could not be verified');
     await this.webhooks.recordWebhookEvent({ provider: 'crypto', eventType: 'payment.verified', eventId: body.txHash, payload: { orderId: order.id, txHash: body.txHash, network: expectedNetwork, asset: expectedAsset, amountReceived: verification.amountReceived }, status: 'processing' });
     try {
-      await this.payments.updateStatus(payment.id, PaymentStatus.PENDING, body.txHash);
-      await this.webhooks.handlePaymentSuccess({ orderId: order.id, paymentIntentId: body.txHash, amount: verification.amountReceived, currency: order.currency });
+      await this.payments.mergeMetadata(payment.id, { txHash: body.txHash });
+      await this.webhooks.handlePaymentSuccess({ orderId: order.id, paymentIntentId: body.txHash, provider: 'crypto', amount: verification.amountReceived, currency: order.currency });
       await this.webhooks.markEventProcessed('crypto', body.txHash);
     } catch (error) {
       await this.webhooks.markEventFailed('crypto', body.txHash, error instanceof Error ? error.message : 'Crypto verification processing failed');

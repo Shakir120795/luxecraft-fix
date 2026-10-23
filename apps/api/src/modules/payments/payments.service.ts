@@ -185,6 +185,35 @@ export class PaymentsService {
     return this.razorpayProvider.verifyPayment(orderId, paymentId, signature);
   }
 
+  /**
+   * Merge provider references (payment id, capture id, tx hash, ...) into a
+   * payment's metadata WITHOUT touching providerPaymentId. providerPaymentId
+   * always stays the provider order id created at checkout; overwriting it
+   * with a later payment/capture id breaks webhook lookups that still carry
+   * the original order id ("Payment not found").
+   */
+  async mergeMetadata(
+    paymentId: string,
+    patch: Record<string, unknown>,
+  ): Promise<Payment> {
+    const existing = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+    });
+    if (!existing) {
+      throw new BadRequestException(`Payment ${paymentId} not found.`);
+    }
+    const current =
+      existing.metadata && typeof existing.metadata === 'object' && !Array.isArray(existing.metadata)
+        ? (existing.metadata as Record<string, unknown>)
+        : {};
+    return this.prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        metadata: { ...current, ...patch } as Prisma.InputJsonValue,
+      },
+    });
+  }
+
   async updateStatus(
     paymentId: string,
     status: PaymentStatus,
