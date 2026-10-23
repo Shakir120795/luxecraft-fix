@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 const ORDER_STATUS_VALUES = [
   'PENDING',
@@ -25,4 +25,19 @@ export class UpdateAdminOrderStatusDto {
   @IsString()
   @IsIn(['UNFULFILLED', 'PARTIALLY_FULFILLED', 'FULFILLED', 'CANCELLED'])
   fulfillmentStatus?: 'UNFULFILLED' | 'PARTIALLY_FULFILLED' | 'FULFILLED' | 'CANCELLED';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  courierName?: string | null;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  trackingNumber?: string | null;
+
+  @IsOptional()
+  @IsUrl({ protocols: ['https'], require_protocol: true })
+  @MaxLength(1000)
+  trackingUrl?: string | null;
 }
