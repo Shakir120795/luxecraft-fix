@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getOrders, getFreshCurrentUser, Order, cancelOrder, reconcileOrderPayment } from '@/lib/api';
+import { getOrders, getFreshCurrentUser, Order, cancelOrder, reconcileOrderPayment, getCarrierTrackingDashboardUrl } from '@/lib/api';
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -24,6 +24,10 @@ export default function OrdersPage() {
     }
 
     void loadAuthenticatedOrders();
+    const refreshTimer = window.setInterval(() => {
+      void getOrders().then(setOrders);
+    }, 60_000);
+    return () => window.clearInterval(refreshTimer);
   }, []);
 
   async function loadOrders() {
@@ -77,8 +81,8 @@ export default function OrdersPage() {
       PENDING: 'Placed',
       PAYMENT_CONFIRMED: 'Placed',
       PROCESSING: 'Processing',
-      READY_TO_SHIP: 'Processing',
-      SHIPPED: 'Shipped',
+      READY_TO_SHIP: 'Ready to Dispatch',
+      SHIPPED: 'Shipped / Dispatched',
       OUT_FOR_DELIVERY: 'Out for Delivery',
       DELIVERED: 'Delivered',
       CANCELLED: 'Cancelled',
@@ -229,6 +233,23 @@ export default function OrdersPage() {
                         <span>Payment: <strong className="font-medium text-[#302b35]">{order.paymentStatus}</strong></span>
                         <span>Fulfillment: <strong className="font-medium text-[#302b35]">{order.fulfillmentStatus || 'UNFULFILLED'}</strong></span>
                       </div>
+                      {(order.courierName || order.trackingNumber) && (
+                        <div className="mt-4 border-l-2 border-[#c99545] bg-[#faf9f7] px-4 py-3">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#8a837c]">Shipment</p>
+                          {order.courierName && <p className="mt-1 text-sm font-semibold text-[#302b35]">{order.courierName}</p>}
+                          {order.trackingNumber && <p className="mt-1 break-all font-mono text-xs text-[#67625c]">AWB: {order.trackingNumber}</p>}
+                          {((order.trackingUrl && order.trackingUrl.startsWith('https://')) || getCarrierTrackingDashboardUrl(order.courierName)) && (
+                            <a
+                              href={(order.trackingUrl && order.trackingUrl.startsWith('https://')) ? order.trackingUrl : getCarrierTrackingDashboardUrl(order.courierName) || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-3 inline-flex text-[10px] font-semibold uppercase tracking-[0.14em] text-[#2f6b36] underline underline-offset-4"
+                            >
+                              Track shipment ↗
+                            </a>
+                          )}
+                        </div>
+                      )}
                       {reconcileMessages[order.id] && (
                         <p role="status" className="mt-3 text-sm text-[#7a5a2c]">
                           {reconcileMessages[order.id]}
