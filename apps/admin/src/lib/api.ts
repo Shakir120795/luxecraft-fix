@@ -339,6 +339,11 @@ export interface Order {
   billingAddressId: string;
   createdAt: string;
   updatedAt: string;
+  courierName?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
   user?: {
     id: string;
     email: string;
@@ -1256,8 +1261,20 @@ export async function getOrder(id: string): Promise<Order> {
   return mapOrder(await adminApi.get<any>(`/admin/orders/${id}`));
 }
 
-export async function updateOrderStatus(id: string, status: string): Promise<Order> {
-  return adminApi.patch<Order>(`/admin/orders/${id}/status`, { orderStatus: status });
+export type AdminOrderUpdate = {
+  orderStatus?: string;
+  fulfillmentStatus?: string;
+  courierName?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+};
+
+export async function updateOrderStatus(
+  id: string,
+  update: string | AdminOrderUpdate,
+): Promise<Order> {
+  const body = typeof update === 'string' ? { orderStatus: update } : update;
+  return adminApi.patch<Order>(`/admin/orders/${id}/status`, body);
 }
 
 // ============================================================================
