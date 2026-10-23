@@ -1,5 +1,13 @@
 # Task Queue
 
+## Checkout Address Flow and Floating Offer Tab — 2026-10-24
+
+- [x] Remove invalid nested checkout forms and wire the Continue button to address validation.
+- [x] Add checkout address editing and auto-select addresses after successful save/update.
+- [x] Wire profile Edit to preload and update the selected saved address.
+- [x] Collapse the floating offer tab by default; expand on desktop hover, tap, or briefly during mobile scroll.
+- [ ] Build storefront and verify address create/edit/select/continue plus offer tab on desktop/mobile before AWS deployment.
+
 ## Admin Product Image Upload Authorization — 2026-10-16
 
 - [x] Reuse the shared admin access-token/refresh flow for product image uploads.
