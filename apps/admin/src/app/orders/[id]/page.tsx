@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { AdminLayout } from '@/components/AdminLayout';
 import { getOrder, updateOrderStatus, Order } from '@/lib/api';
 
-const statusOptions = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
+const statusOptions = ['PENDING', 'PROCESSING', 'READY_TO_SHIP', 'SHIPPED', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED'];
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
@@ -24,6 +24,9 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [newStatus, setNewStatus] = useState('');
+  const [courierName, setCourierName] = useState('');
+  const [trackingNumber, setTrackingNumber] = useState('');
+  const [trackingUrl, setTrackingUrl] = useState('');
 
   useEffect(() => {
     loadOrder();
@@ -34,6 +37,9 @@ export default function OrderDetailPage() {
       const data = await getOrder(orderId);
       setOrder(data);
       setNewStatus(data.status);
+      setCourierName(data.courierName ?? '');
+      setTrackingNumber(data.trackingNumber ?? '');
+      setTrackingUrl(data.trackingUrl ?? '');
     } catch (error) {
       console.error('Failed to load order:', error);
     } finally {
@@ -42,16 +48,35 @@ export default function OrderDetailPage() {
   }
 
   async function handleStatusUpdate() {
-    if (!order || newStatus === order.status) return;
+    if (!order) return;
+    const nextCourierName = courierName.trim() || null;
+    const nextTrackingNumber = trackingNumber.trim() || null;
+    const nextTrackingUrl = trackingUrl.trim() || null;
+    const hasChanges =
+      newStatus !== order.status ||
+      nextCourierName !== (order.courierName ?? null) ||
+      nextTrackingNumber !== (order.trackingNumber ?? null) ||
+      nextTrackingUrl !== (order.trackingUrl ?? null);
+
+    if (!hasChanges) return;
 
     setUpdating(true);
     try {
-      const updated = await updateOrderStatus(orderId, newStatus);
+      const updated = await updateOrderStatus(orderId, {
+        orderStatus: newStatus,
+        courierName: nextCourierName,
+        trackingNumber: nextTrackingNumber,
+        trackingUrl: nextTrackingUrl,
+      });
       setOrder(updated);
-      alert('Order status updated successfully');
+      setNewStatus(updated.status);
+      setCourierName(updated.courierName ?? '');
+      setTrackingNumber(updated.trackingNumber ?? '');
+      setTrackingUrl(updated.trackingUrl ?? '');
+      alert('Order status and tracking details saved successfully');
     } catch (error) {
-      console.error('Failed to update status:', error);
-      alert('Failed to update order status');
+      console.error('Failed to update status or tracking:', error);
+      alert('Failed to save order status or tracking details. Please check the tracking URL uses https://.');
     } finally {
       setUpdating(false);
     }
@@ -248,10 +273,15 @@ export default function OrderDetailPage() {
                 </select>
                 <button
                   onClick={handleStatusUpdate}
-                  disabled={updating || newStatus === order.status}
+                  disabled={updating || (
+                    newStatus === order.status &&
+                    courierName.trim() === (order.courierName ?? '') &&
+                    trackingNumber.trim() === (order.trackingNumber ?? '') &&
+                    trackingUrl.trim() === (order.trackingUrl ?? '')
+                  )}
                   className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-strong)] text-white px-6 py-2 text-sm uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {updating ? 'Updating...' : 'Update Status'}
+                  {updating ? 'Saving...' : 'Save Status & Tracking'}
                 </button>
               </div>
 
@@ -260,10 +290,57 @@ export default function OrderDetailPage() {
                 <ul className="mt-2 space-y-1 ml-4">
                   <li> <strong>PENDING</strong> - Order received, awaiting processing</li>
                   <li> <strong>PROCESSING</strong> - Order is being prepared</li>
-                  <li> <strong>SHIPPED</strong> - Order has been shipped to customer</li>
+                  <li> <strong>READY_TO_SHIP</strong> - Packed and ready for courier pickup</li>
+                  <li> <strong>SHIPPED</strong> - Order handed over to courier</li>
+                  <li> <strong>OUT_FOR_DELIVERY</strong> - Courier is delivering today</li>
                   <li> <strong>DELIVERED</strong> - Order received by customer</li>
                   <li> <strong>CANCELLED</strong> - Order cancelled</li>
                 </ul>
+              </div>
+
+              <div className="mt-6 border-t border-[var(--color-border)] pt-6">
+                <h3 className="text-lg font-serif text-[var(--color-primary)]">Courier & Tracking</h3>
+                <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">
+                  Enter the courier name and AWB / tracking number manually. Customers will see these details in My Orders after you save.
+                </p>
+
+                <div className="mt-4 space-y-4">
+                  <div>
+                    <label htmlFor="courierName" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">Courier company</label>
+                    <input
+                      id="courierName"
+                      value={courierName}
+                      onChange={(event) => setCourierName(event.target.value)}
+                      maxLength={120}
+                      placeholder="FedEx, DHL, Blue Dart, DTDC…"
+                      className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="trackingNumber" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">AWB / Tracking ID</label>
+                    <input
+                      id="trackingNumber"
+                      value={trackingNumber}
+                      onChange={(event) => setTrackingNumber(event.target.value)}
+                      maxLength={120}
+                      placeholder="Enter courier-provided AWB / tracking number"
+                      className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="trackingUrl" className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-[var(--color-muted)]">Tracking dashboard URL (optional)</label>
+                    <input
+                      id="trackingUrl"
+                      type="url"
+                      value={trackingUrl}
+                      onChange={(event) => setTrackingUrl(event.target.value)}
+                      maxLength={1000}
+                      placeholder="https://…"
+                      className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+                    />
+                    <p className="mt-1 text-xs text-[var(--color-muted)]">Use the courier’s direct tracking URL if it supports a prefilled tracking number. Leave blank to use the standard courier dashboard link.</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
