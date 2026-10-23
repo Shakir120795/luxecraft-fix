@@ -105,11 +105,12 @@ export default function WishlistPage() {
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-[#f8f6f2] text-luxury-charcoal">
       {/* Header */}
-      <div className="bg-luxury-beige border-b border-luxury-sand py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-5xl font-serif font-light text-luxury-charcoal mb-3">My Wishlist</h1>
+      <div className="border-b border-[#ded8d0] bg-[#f1ede8] px-4 py-9 sm:px-6 sm:py-12 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-luxury-gold">Wolhomes / Account</p>
+          <h1 className="mb-3 font-serif text-3xl font-light tracking-tight text-luxury-charcoal sm:text-5xl">My Wishlist</h1>
           <p className="text-luxury-brown text-lg">
             {wishlist?.items.length || 0} {wishlist?.items.length === 1 ? 'item' : 'items'} saved
           </p>
@@ -126,8 +127,12 @@ export default function WishlistPage() {
         {!wishlist || wishlist.items.length === 0 ? (
           // Empty Wishlist State
           <div className="text-center py-20">
-            <div className="mb-8">
-              <span className="text-8xl"></span>
+            <div className="mb-8 flex justify-center">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#ded8d0] bg-white text-luxury-gold">
+                <svg viewBox="0 0 24 24" className="h-9 w-9" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="M20.8 8.7c0 5.5-8.8 10.3-8.8 10.3S3.2 14.2 3.2 8.7A4.7 4.7 0 0 1 12 6.1a4.7 4.7 0 0 1 8.8 2.6Z" />
+                </svg>
+              </div>
             </div>
             <h2 className="text-3xl font-serif font-light text-luxury-charcoal mb-4">Your wishlist is empty</h2>
             <p className="text-luxury-brown mb-8 text-lg max-w-md mx-auto">
@@ -156,29 +161,32 @@ export default function WishlistPage() {
             </div>
 
             {/* Wishlist Items Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {wishlist.items.map((item) => {
                 const mainImage = item.product.media?.find((m) => m.isMain) || item.product.media?.[0];
-                const displayPrice = parseFloat(String(item.product.salePrice || item.product.regularPrice));
-                const regularPrice = parseFloat(String(item.product.regularPrice));
-                const hasDiscount = item.product.salePrice && parseFloat(String(item.product.salePrice)) < regularPrice;
+                const regularPrice = Number(item.variant?.regularPrice ?? item.product.regularPrice ?? 0);
+                const salePrice = item.variant?.salePrice ?? item.product.salePrice;
+                const displayPrice = Number(salePrice ?? regularPrice);
+                const hasDiscount = salePrice != null && displayPrice < regularPrice;
                 const isProcessing = processingItems.has(item.id);
 
                 return (
                   <div
                     key={item.id}
-                    className={`border border-luxury-sand bg-luxury-beige transition-opacity ${
+                    className={`group overflow-hidden rounded-xl border border-[#ded8d0] bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-luxury-gold/60 hover:shadow-[0_14px_40px_rgba(48,43,53,0.08)] ${
                       isProcessing ? 'opacity-50' : ''
                     }`}
                   >
                     {/* Product Image */}
-                    <Link href={`/products/${item.product.slug}`} className="block relative">
-                      <div className="aspect-square overflow-hidden bg-luxury-cream">
+                    <Link href={`/products/${item.product.slug}`} className="group relative block">
+                      <div className="aspect-[4/5] overflow-hidden bg-[#f1ede8]">
                         {mainImage?.url ? (
                           <img
                             src={mainImage.url}
                             alt={mainImage.altText || item.product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-luxury-beige to-luxury-sand flex items-center justify-center">
@@ -194,12 +202,12 @@ export default function WishlistPage() {
                     </Link>
 
                     {/* Product Info */}
-                    <div className="p-4">
+                    <div className="p-4 sm:p-5">
                       <Link
                         href={`/products/${item.product.slug}`}
-                        className="block mb-3"
+                        className="mb-3 block"
                       >
-                        <h3 className="text-lg font-serif text-luxury-charcoal mb-2 line-clamp-2 hover:text-luxury-brown transition-colors">
+                        <h3 className="mb-2 line-clamp-2 font-serif text-lg leading-snug text-luxury-charcoal transition-colors hover:text-luxury-brown">
                           {item.product.name}
                         </h3>
 
@@ -209,7 +217,7 @@ export default function WishlistPage() {
                           </p>
                         )}
 
-                        <div className="flex items-baseline gap-2">
+                        <div className="flex flex-wrap items-baseline gap-2">
                           <span className="text-xl font-serif text-luxury-charcoal">
                             ${displayPrice.toFixed(2)}
                           </span>
@@ -222,7 +230,7 @@ export default function WishlistPage() {
                       </Link>
 
                       {/* Actions */}
-                      <div className="flex gap-2 mt-4">
+                      <div className="mt-4 flex gap-2">
                         <button
                           onClick={() => handleMoveToCart(item.id)}
                           disabled={isProcessing}
@@ -236,7 +244,9 @@ export default function WishlistPage() {
                           className="border border-luxury-sand bg-luxury-cream px-3 py-2 hover:border-luxury-terracotta transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Remove from wishlist"
                         >
-                          <span className="text-luxury-terracotta"></span>
+                          <svg viewBox="0 0 24 24" className="h-4 w-4 text-luxury-terracotta" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true">
+                            <path d="M4 7h16M9 7V4h6v3m-9 0 1 13h10l1-13M10 11v5m4-5v5" />
+                          </svg>
                         </button>
                       </div>
                     </div>
