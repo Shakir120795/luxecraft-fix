@@ -7,7 +7,8 @@
 - [x] Fix checkout address add/edit (nested-form root cause removed, edit support, auto-select saved address, 2-letter country code).
 - [x] Fix payment confirmation chain for Razorpay + PayPal (provider id overwrite removed, webhook lookup fixed, idempotent verify/webhook, checkout returns Razorpay public key); crypto verify kept on the same unified lookup.
 - [ ] After deploying this slice, run one live test payment per provider (Razorpay, PayPal) and confirm the order appears as PAYMENT_CONFIRMED/PAID in admin.
-- [ ] External "15% OFF" side tab + chat widget on wolhomes.com are not part of this codebase (no such component/script in the repo); identify the injecting service (tag manager / third-party dashboard) and restyle/move it there so it stops covering order-summary content on mobile.
+- [x] "15% OFF" side tab covering content: live inspection (2026-10-24) proved the tab and the support-chat button are the site's own components, NOT third-party widgets — but neither exists anywhere in this repo's git history, i.e. the live deployment is running code that was never pushed here. Added a redesigned first-party `OfferTab` to this repo instead: slim 36px edge tab, dismissible per session, expands in place with copyable FIRST15 code, and fully hidden on /cart and /checkout so it can never cover the order summary again.
+- [ ] Reconcile the live deployment with this repo: find the code the live site is actually built from (it contains the coupon tab + support chat + a different checkout UI) and either push it here or deploy this repo, otherwise fixes in this repo will not match live behavior.
 
 ## Active — Workflow repair and production completion (2026-09-02)
 

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
+import { OfferTab } from '@/components/OfferTab';
 import { CmsPageOverride } from '@/components/CmsPageOverride';
 import { Cormorant_Garamond, Playfair_Display, Inter } from 'next/font/google';
 
@@ -48,6 +49,7 @@ export default function RootLayout({
     >
       <body>
         <SiteHeader />
+        <OfferTab />
         <CmsPageOverride>{children}</CmsPageOverride>
         <SiteFooter />
       </body>
