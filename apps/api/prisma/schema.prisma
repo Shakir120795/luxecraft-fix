@@ -51,7 +51,7 @@ model User {
 model Session {
   id           String    @id @default(cuid())
   userId       String
-  refreshToken String    @unique
+  refreshToken String    @unique @map("refreshTokenHash")
   userAgent    String?
   ipAddress    String?
   expiresAt    DateTime
@@ -69,7 +69,7 @@ model OtpCode {
   id        String     @id @default(cuid())
   userId    String?
   email     String
-  code      String
+  code      String     @map("codeHash")
   purpose   OtpPurpose
   used      Boolean    @default(false)
   attempts  Int        @default(0)
@@ -87,7 +87,7 @@ model OtpCode {
 model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String
-  token     String    @unique
+  token     String    @unique @map("tokenHash")
   used      Boolean   @default(false)
   expiresAt DateTime
   createdAt DateTime  @default(now())
@@ -145,7 +145,7 @@ model AdminUser {
 model AdminSession {
   id           String    @id @default(cuid())
   adminId      String
-  refreshToken String    @unique
+  refreshToken String    @unique @map("refreshTokenHash")
   userAgent    String?
   ipAddress    String?
   expiresAt    DateTime
@@ -226,6 +226,7 @@ model Product {
   shippingInfo         String?
   returnsInfo          String?
   careInstructions     String?
+  filterData           Json?
   origin                String?
   productNote           String?
   regularPrice         Decimal                      @db.Decimal(12, 2)
@@ -587,6 +588,7 @@ model Payment {
   orderId           String
   provider          String
   providerPaymentId String?
+  cryptoTransactionHash String?
   amount            Decimal       @db.Decimal(12, 2)
   currency          String        @default("USD")
   status            PaymentStatus @default(PENDING)
@@ -727,6 +729,7 @@ model Coupon {
   validFrom            DateTime
   validTo              DateTime?
   isActive             Boolean   @default(true)
+  showOnHome           Boolean   @default(false)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -866,6 +869,7 @@ enum OtpPurpose {
 
 enum AdminRole {
   SUPER_ADMIN
+  ADMIN
 }
 
 enum AdminStatus {
@@ -1055,6 +1059,9 @@ model FaqItem {
 model AppSetting {
   id             String   @id @default(cuid())
   defaultCurrency String  @default("USD")
+  homepageVideos Json?
+  productFilters Json?
+  sitePages      Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
