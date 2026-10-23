@@ -126,6 +126,146 @@ export class PaymentsController {
   }
 
   @UseGuards(OptionalJwtAuthGuard)
+  @Post('reconcile')
+  async reconcilePayment(
+    @Body() body: { orderId: string },
+    @Req() req: Request & { user?: { id: string } },
+  ) {
+    if (!body.orderId) {
+      throw new BadRequestException('orderId is required');
+    }
+
+    const order = req.user?.id
+      ? await this.orders.findOneForUser(body.orderId, req.user.id)
+      : await this.orders.findOneForGuest(
+          body.orderId,
+          req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
+        );
+
+    if (order.paymentStatus === PaymentStatus.PAID) {
+      return { success: true, alreadyProcessed: true, orderId: order.id };
+    }
+
+    const payment = order.payments.find(
+      (item) =>
+        ['razorpay', 'paypal'].includes(item.provider) &&
+        [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED].includes(item.status),
+    );
+
+    if (!payment) {
+      throw new BadRequestException('No pending card payment is available to reconcile for this order.');
+    }
+
+    const metadata =
+      payment.metadata &&
+      typeof payment.metadata === 'object' &&
+      !Array.isArray(payment.metadata)
+        ? (payment.metadata as Record<string, unknown>)
+        : {};
+
+    let paymentIntentId = '';
+    let capturedAmount = 0;
+    let capturedCurrency = '';
+    let captureReference = '';
+
+    if (payment.provider === 'razorpay') {
+      const razorpayOrderId = String(metadata.razorpayOrderId || '');
+      const razorpayPaymentId = String(payment.providerPaymentId || '');
+
+      if (!razorpayOrderId || !razorpayPaymentId || razorpayPaymentId === razorpayOrderId) {
+        throw new BadRequestException(
+          'Razorpay has not provided a captured payment reference yet. Wait briefly and check again; do not pay again.',
+        );
+      }
+
+      const providerPayment = await this.payments.fetchRazorpayPayment(razorpayPaymentId);
+      if (
+        providerPayment.orderId !== razorpayOrderId ||
+        providerPayment.status !== 'captured'
+      ) {
+        throw new BadRequestException(
+          'No captured Razorpay payment was found for this order. The order has not been marked as paid.',
+        );
+      }
+      if (
+        Math.abs(providerPayment.amount - Number(payment.amount)) > 0.01 ||
+        providerPayment.currency !== payment.currency.toUpperCase()
+      ) {
+        throw new BadRequestException('Razorpay payment amount or currency does not match this order.');
+      }
+
+      paymentIntentId = razorpayOrderId;
+      capturedAmount = providerPayment.amount;
+      capturedCurrency = providerPayment.currency;
+      captureReference = providerPayment.id;
+    } else {
+      const paypalOrderId = String(metadata.paypalOrderId || payment.providerPaymentId || '');
+      if (!paypalOrderId || payment.providerPaymentId !== paypalOrderId) {
+        throw new BadRequestException('The PayPal order reference is missing or does not match this order.');
+      }
+
+      const providerOrder = await this.payments.fetchPayPalOrder(paypalOrderId);
+      const purchaseUnits = Array.isArray(providerOrder.purchase_units)
+        ? providerOrder.purchase_units as Array<Record<string, unknown>>
+        : [];
+      const captures = purchaseUnits.flatMap((unit) => {
+        const unitPayments = unit.payments as Record<string, unknown> | undefined;
+        return Array.isArray(unitPayments?.captures)
+          ? (unitPayments.captures as Array<Record<string, unknown>>).map((capture) => ({
+              capture,
+              unit,
+            }))
+          : [];
+      });
+      const completedCapture = captures.find(
+        ({ capture }) => String(capture.status || '').toUpperCase() === 'COMPLETED',
+      );
+
+      if (!completedCapture) {
+        throw new BadRequestException(
+          'No completed PayPal capture was found for this order. The order has not been marked as paid.',
+        );
+      }
+
+      const amount = completedCapture.capture.amount as Record<string, unknown> | undefined;
+      const capturedCustomId = String(
+        completedCapture.capture.custom_id || completedCapture.unit.custom_id || '',
+      );
+      capturedAmount = Number(amount?.value || 0);
+      capturedCurrency = String(amount?.currency_code || '').toUpperCase();
+      captureReference = String(completedCapture.capture.id || paypalOrderId);
+      paymentIntentId = paypalOrderId;
+
+      if (capturedCustomId && capturedCustomId !== order.id) {
+        throw new BadRequestException('The PayPal capture does not match this order.');
+      }
+      if (
+        !Number.isFinite(capturedAmount) ||
+        Math.abs(capturedAmount - Number(payment.amount)) > 0.01 ||
+        capturedCurrency !== payment.currency.toUpperCase()
+      ) {
+        throw new BadRequestException('PayPal captured amount or currency does not match this order.');
+      }
+    }
+
+    await this.webhooks.handlePaymentSuccess({
+      orderId: order.id,
+      paymentIntentId,
+      paymentId: payment.id,
+      amount: capturedAmount,
+      currency: capturedCurrency,
+    });
+
+    return {
+      success: true,
+      reconciled: true,
+      provider: payment.provider,
+      paymentReference: captureReference,
+      orderId: order.id,
+    };
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('razorpay/verify')
   async verifyRazorpayPayment(
     @Body() body: { orderId: string; razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string },
