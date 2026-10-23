@@ -14,6 +14,7 @@ const statusColors: Record<string, string> = {
   OUT_FOR_DELIVERY: 'bg-purple-100 text-purple-800',
   DELIVERED: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
+  FAILED: 'bg-red-100 text-red-800',
 };
 
 export default function OrdersPage() {
@@ -39,8 +40,7 @@ export default function OrdersPage() {
 
   const visibleOrders = orders.filter(order => {
     const status = String(order.status || '').toUpperCase();
-    const paymentStatus = String(order.paymentStatus || '').toUpperCase();
-    return paymentStatus === 'PAID' && status !== 'CANCELLED' && status !== 'REFUNDED';
+    return status !== 'CANCELLED' && status !== 'REFUNDED';
   });
 
   const filteredOrders = visibleOrders.filter(order => {
@@ -55,7 +55,9 @@ export default function OrdersPage() {
       filterStatus === 'all' ||
       (filterStatus === 'PLACED'
         ? paymentStatus === 'PAID' && ['PENDING', 'PAYMENT_CONFIRMED'].includes(status)
-        : status === filterStatus);
+        : filterStatus === 'PAYMENT_PENDING'
+          ? paymentStatus !== 'PAID' && !['CANCELLED', 'REFUNDED'].includes(status)
+          : status === filterStatus);
 
     return matchesSearch && matchesStatus;
   });
@@ -95,6 +97,7 @@ export default function OrdersPage() {
             >
               <option value="all">All Orders</option>
               <option value="PLACED">Placed</option>
+              <option value="PAYMENT_PENDING">Payment Pending</option>
               <option value="PROCESSING">Processing</option>
               <option value="SHIPPED">Shipped</option>
               <option value="DELIVERED">Delivered</option>
@@ -186,11 +189,12 @@ export default function OrdersPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-block px-2 py-1 text-xs font-medium ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>
-                          {String(order.paymentStatus).toUpperCase() === 'PAID' &&
-                          ['PENDING', 'PAYMENT_CONFIRMED'].includes(String(order.status).toUpperCase())
-                            ? 'PLACED'
-                            : order.status}
+                        <span className={`inline-block px-2 py-1 text-xs font-medium ${String(order.paymentStatus).toUpperCase() !== 'PAID' ? 'bg-amber-100 text-amber-800' : statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>
+                          {String(order.paymentStatus).toUpperCase() !== 'PAID'
+                            ? `PAYMENT ${String(order.paymentStatus || 'PENDING').replace(/_/g, ' ')}`
+                            : ['PENDING', 'PAYMENT_CONFIRMED'].includes(String(order.status).toUpperCase())
+                              ? 'PLACED'
+                              : order.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -214,7 +218,7 @@ export default function OrdersPage() {
           <div className="flex items-center justify-between text-sm text-[var(--color-muted)]">
             <div>Showing {filteredOrders.length} of {visibleOrders.length} orders</div>
             <div className="font-medium">
-              Total Revenue: ${visibleOrders.reduce((sum, o) => sum + Number(o.total), 0).toFixed(2)}
+              Total Revenue: ${visibleOrders.filter((order) => String(order.paymentStatus).toUpperCase() === 'PAID').reduce((sum, order) => sum + Number(order.total), 0).toFixed(2)}
             </div>
           </div>
         )}
