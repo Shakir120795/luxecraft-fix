@@ -1530,3 +1530,42 @@ export async function clearWishlist(): Promise<{ success: boolean; message?: str
 
 
 
+
+// ----- Support chat -----
+
+export interface SupportMessage {
+  id: string;
+  conversationId: string;
+  senderType: 'CUSTOMER' | 'ADMIN';
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export async function getSupportConversation(): Promise<{ messages: SupportMessage[] } | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/support-chat/conversation`, { headers, cache: 'no-store' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.success ? data.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function sendSupportMessage(body: string): Promise<SupportMessage | null> {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/support-chat/messages`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.success ? data.data : null;
+  } catch {
+    return null;
+  }
+}

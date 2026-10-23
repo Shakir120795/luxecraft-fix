@@ -1046,6 +1046,56 @@ export async function updateContactMessageStatus(
 ): Promise<ContactMessage> {
   return adminApi.patch<ContactMessage>(`/admin/contact-messages/${id}/status`, { status });
 }
+
+// ============================================================================
+// Support Chat Functions
+// ============================================================================
+
+export interface SupportChatMessage {
+  id: string;
+  conversationId: string;
+  senderType: 'CUSTOMER' | 'ADMIN';
+  body: string;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface SupportConversationSummary {
+  id: string;
+  status: string;
+  lastMessageAt: string;
+  createdAt: string;
+  user: { id: string; firstName: string | null; lastName: string | null; email: string };
+  lastMessage: SupportChatMessage | null;
+  messageCount: number;
+  unreadCount: number;
+}
+
+export interface SupportConversationDetail extends SupportConversationSummary {
+  messages: SupportChatMessage[];
+}
+
+export async function getSupportConversations(): Promise<SupportConversationSummary[]> {
+  return adminApi.get<SupportConversationSummary[]>('/admin/support-chat/conversations');
+}
+
+export async function getSupportConversation(id: string): Promise<SupportConversationDetail> {
+  return adminApi.get<SupportConversationDetail>(`/admin/support-chat/conversations/${id}`);
+}
+
+export async function replySupportMessage(
+  conversationId: string,
+  body: string,
+): Promise<SupportChatMessage> {
+  return adminApi.post<SupportChatMessage>(`/admin/support-chat/conversations/${conversationId}/messages`, { body });
+}
+
+export async function setSupportConversationStatus(
+  id: string,
+  status: string,
+): Promise<{ id: string; status: string }> {
+  return adminApi.patch<{ id: string; status: string }>(`/admin/support-chat/conversations/${id}/status`, { status });
+}
 // Custom Request Functions
 // ============================================================================
 

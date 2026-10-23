@@ -19,6 +19,7 @@ const navigation: NavItem[] = [
   { href: '/customers', label: 'Customers', icon: '' },
   { href: '/custom-requests', label: 'Custom Requests', icon: '' },
   { href: '/contact-messages', label: 'Contact Messages', icon: '' },
+  { href: '/support-chat', label: 'Support Chat', icon: '' },
   { href: '/faqs', label: 'FAQs', icon: '' },
   { href: '/site-pages', label: 'Site Pages', icon: '' },
   { href: '/settings', label: 'Settings', icon: '' },
