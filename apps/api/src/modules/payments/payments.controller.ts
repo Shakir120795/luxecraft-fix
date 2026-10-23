@@ -142,24 +142,39 @@ export class PaymentsController {
           req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
         );
 
-    if (order.paymentStatus !== PaymentStatus.PENDING) {
-      throw new BadRequestException('This order is no longer awaiting payment');
-    }
-
-    const payment = order.payments.find(
-      (item) => item.provider === 'razorpay' && item.status !== PaymentStatus.PAID,
-    );
+    const payment = order.payments.find((item) => {
+      if (item.provider !== 'razorpay') return false;
+      if (
+        item.providerPaymentId === body.razorpayOrderId ||
+        item.providerPaymentId === body.razorpayPaymentId
+      ) {
+        return true;
+      }
+      const metadata =
+        item.metadata &&
+        typeof item.metadata === 'object' &&
+        !Array.isArray(item.metadata)
+          ? (item.metadata as Record<string, unknown>)
+          : {};
+      return String(metadata.razorpayOrderId || '') === body.razorpayOrderId;
+    });
 
     if (!payment) {
       throw new BadRequestException('Razorpay payment is not pending for this order');
     }
 
-    if (payment.providerPaymentId !== body.razorpayOrderId) {
+    const paymentMetadata =
+      payment.metadata &&
+      typeof payment.metadata === 'object' &&
+      !Array.isArray(payment.metadata)
+        ? (payment.metadata as Record<string, unknown>)
+        : {};
+    if (
+      payment.providerPaymentId !== body.razorpayOrderId &&
+      payment.providerPaymentId !== body.razorpayPaymentId &&
+      String(paymentMetadata.razorpayOrderId || '') !== body.razorpayOrderId
+    ) {
       throw new BadRequestException('Razorpay order does not match this payment');
-    }
-
-    if (await this.webhooks.isEventProcessed('razorpay', body.razorpayPaymentId)) {
-      throw new BadRequestException('This Razorpay payment has already been processed');
     }
 
     const verified = this.payments.verifyRazorpaySignature(
@@ -190,6 +205,28 @@ export class PaymentsController {
       throw new BadRequestException('Razorpay payment amount or currency does not match the order');
     }
 
+    // The webhook may confirm the order before the browser callback returns.
+    if (
+      order.paymentStatus === PaymentStatus.PAID &&
+      payment.status === PaymentStatus.PAID
+    ) {
+      return {
+        success: true,
+        verified: true,
+        alreadyProcessed: true,
+        paymentId: body.razorpayPaymentId,
+        orderId: order.id,
+      };
+    }
+
+    if (order.paymentStatus !== PaymentStatus.PENDING) {
+      throw new BadRequestException('This order is no longer awaiting payment');
+    }
+
+    if (await this.webhooks.isEventProcessed('razorpay', body.razorpayPaymentId)) {
+      throw new BadRequestException('This Razorpay payment has already been processed');
+    }
+
     await this.webhooks.recordWebhookEvent({
       provider: 'razorpay',
       eventType: 'payment.verified',
@@ -212,6 +249,7 @@ export class PaymentsController {
       await this.webhooks.handlePaymentSuccess({
         orderId: order.id,
         paymentIntentId: body.razorpayOrderId,
+        paymentId: payment.id,
         amount: providerPayment.amount,
         currency: providerPayment.currency,
       });
