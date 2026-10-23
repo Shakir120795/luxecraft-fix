@@ -9,9 +9,9 @@
 - [ ] After deploying this slice, run one live test payment per provider (Razorpay, PayPal) and confirm the order appears as PAYMENT_CONFIRMED/PAID in admin.
 - [x] "15% OFF" side tab covering content: live inspection (2026-10-24) proved the tab and the support-chat button are the site's own components, NOT third-party widgets — but neither exists anywhere in this repo's git history, i.e. the live deployment is running code that was never pushed here. Added a redesigned first-party `OfferTab` to this repo instead: slim 36px edge tab, dismissible per session, expands in place with copyable FIRST15 code, and fully hidden on /cart and /checkout so it can never cover the order summary again.
 - [x] Reconcile the live deployment with this repo: DECIDED by owner (2026-10-24) — this repo is canonical and will be deployed live, replacing the divergent live build.
-- [ ] Deploy this repo to the VPS (`bash update.sh` after a database + live-code backup) and run the smoke tests above.
+- [x] Deploy this repo to the VPS (done 2026-10-24 on the AWS EC2 host: DB + .env.vps backups, branch switch to `main` @ d5117f4, all containers Up; wolhomes.com verified live from outside with the new OfferTab + SupportChat widget). Old live branch `safe-site-pages-cms-fix` preserved for rollback. Smoke tests below still open.
 - [x] Support chat ported into this repo (owner asked 2026-10-24): models + migration `20261024000000_add_support_chat`, API module, storefront widget, admin page.
-- [ ] Finish the live support-chat activation: production already had the tables, so after deploying the schema-aligned build run `prisma migrate resolve --applied 20261024000000_add_support_chat` in the api container, then verify one test message end-to-end (storefront widget → admin /support-chat → reply → customer thread).
+- [ ] Finish the live support-chat activation: migration resolved as applied on production (2026-10-24, tables pre-existed with 3 conversations / 13 messages of history, schema aligned in 7146a4a). Still to verify: one test message end-to-end (storefront widget → admin /support-chat → reply → customer thread).
 
 ## Active — Workflow repair and production completion (2026-09-02)
 
