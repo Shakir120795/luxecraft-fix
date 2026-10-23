@@ -35,6 +35,11 @@ export class WishlistService {
                 regularPrice: true,
                 salePrice: true,
                 status: true,
+                media: {
+                  where: { type: 'IMAGE' },
+                  orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+                  select: { id: true, url: true, altText: true, isMain: true, sortOrder: true },
+                },
               },
             },
             variant: {
@@ -65,6 +70,11 @@ export class WishlistService {
                   regularPrice: true,
                   salePrice: true,
                   status: true,
+                  media: {
+                    where: { type: 'IMAGE' },
+                    orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+                    select: { id: true, url: true, altText: true, isMain: true, sortOrder: true },
+                  },
                 },
               },
               variant: {
@@ -122,7 +132,8 @@ export class WishlistService {
     });
 
     if (existing) {
-      throw new BadRequestException('Item already in wishlist.');
+      // Make save-for-later and repeated add requests idempotent.
+      return existing;
     }
 
     // Add to wishlist
@@ -141,6 +152,11 @@ export class WishlistService {
             regularPrice: true,
             salePrice: true,
             status: true,
+            media: {
+              where: { type: 'IMAGE' },
+              orderBy: [{ isMain: 'desc' }, { sortOrder: 'asc' }],
+              select: { id: true, url: true, altText: true, isMain: true, sortOrder: true },
+            },
           },
         },
         variant: {
