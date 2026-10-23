@@ -30,7 +30,14 @@ export class AdminOrdersController {
 
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() data: UpdateAdminOrderStatusDto) {
-    return this.svc.updateStatus(id, data.orderStatus, data.fulfillmentStatus);
+    return this.svc.updateStatus(
+      id,
+      data.orderStatus,
+      data.fulfillmentStatus,
+      data.courierName,
+      data.trackingNumber,
+      data.trackingUrl,
+    );
   }
 
   @AdminRoles(AdminRole.SUPER_ADMIN)
