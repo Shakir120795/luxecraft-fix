@@ -18,7 +18,6 @@ export default function CartPage() {
   const [shippingAddressLabel, setShippingAddressLabel] = useState('');
   const [totals, setTotals] = useState<CartTotals | null>(null);
   const [estimatedDelivery, setEstimatedDelivery] = useState<number | null>(null);
-  const [shippingCurrency, setShippingCurrency] = useState('USD');
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponCode, setCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
@@ -85,7 +84,6 @@ export default function CartPage() {
         const available = methods.filter((method) => method.rate >= 0);
         const cheapest = [...available].sort((a, b) => a.rate - b.rate)[0];
         setEstimatedDelivery(cheapest?.estimatedDays ?? null);
-        setShippingCurrency(cheapest?.currency ?? cartTotals.currency ?? cart?.currency ?? 'USD');
       } catch (err) {
         if (cancelled) return;
         console.error('Failed to load shipping data:', err);
