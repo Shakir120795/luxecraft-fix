@@ -256,6 +256,9 @@ export class AdminOrdersService {
     id: string,
     orderStatus?: OrderStatus,
     fulfillmentStatus?: FulfillmentStatus,
+    courierName?: string | null,
+    trackingNumber?: string | null,
+    trackingUrl?: string | null,
   ): Promise<any> {
     const updates: Prisma.OrderUpdateInput = {};
 
@@ -271,6 +274,17 @@ export class AdminOrdersService {
         throw new BadRequestException(`Invalid fulfillment status: ${fulfillmentStatus}`);
       }
       updates.fulfillmentStatus = fulfillmentStatus;
+    }
+
+    if (courierName !== undefined) updates.courierName = courierName?.trim() || null;
+    if (trackingNumber !== undefined) updates.trackingNumber = trackingNumber?.trim() || null;
+    if (trackingUrl !== undefined) updates.trackingUrl = trackingUrl?.trim() || null;
+
+    if (orderStatus === OrderStatus.SHIPPED) {
+      updates.shippedAt = new Date();
+    }
+    if (orderStatus === OrderStatus.DELIVERED) {
+      updates.deliveredAt = new Date();
     }
 
     if (Object.keys(updates).length === 0) {
