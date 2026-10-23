@@ -1,0 +1,9 @@
+-- Alignment only, intentionally no DDL.
+-- The production database (built by the former live branch) already stores
+-- auth tokens in hashed-token columns: sessions."refreshTokenHash",
+-- admin_sessions."refreshTokenHash", otp_codes."codeHash",
+-- password_reset_tokens."tokenHash". The Prisma schema now maps its fields
+-- to those column names (@map), and also models production-only columns
+-- (app_settings homepageVideos/productFilters/sitePages, coupons.showOnHome,
+-- products.filterData, payments.cryptoTransactionHash) plus the ADMIN
+-- value of the AdminRole enum. Nothing to create or alter here.
