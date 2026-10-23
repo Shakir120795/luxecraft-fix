@@ -1,5 +1,15 @@
 # Task Queue
 
+## Manual Courier Tracking — 2026-10-24
+
+- [x] Add nullable courier company and custom tracking URL fields, plus a migration; reuse existing AWB and shipment timestamps.
+- [x] Add Admin order editor fields for courier name, AWB/tracking number, custom HTTPS tracking dashboard URL, and shipment statuses.
+- [x] Show courier/AWB/tracking link in My Orders and Order Details.
+- [x] Refresh customer order/shipment status every 60 seconds while order pages are open.
+- [ ] Run API/Admin/Storefront production builds and the order status DTO tests.
+- [ ] During deployment, run Prisma migration `20261024120000_add_manual_courier_tracking` before updating API traffic.
+- [ ] Verify admin save, customer list/detail display, external carrier links, and the mobile layout in browser.
+
 ## Wishlist, Cart Totals, and Payment Order Recovery — 2026-10-24
 
 - [x] Return product image media from wishlist APIs and read toggle API's `action` correctly.
