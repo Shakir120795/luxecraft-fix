@@ -1253,6 +1253,11 @@ export interface Order {
   total: number;
   currency: string;
   shippingMethodName?: string | null;
+  courierName?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  shippedAt?: string | null;
+  deliveredAt?: string | null;
   shippingAddress: any;
   billingAddress: any;
   items: any[];
@@ -1598,6 +1603,34 @@ export async function cancelOrder(orderId: string): Promise<{ success: boolean; 
     console.error('Failed to cancel order:', error);
     return { success: false, message: 'Unable to cancel order.' };
   }
+}
+
+export function getCarrierTrackingDashboardUrl(courierName?: string | null): string | null {
+  const carrier = (courierName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  if (carrier.includes('fedex') || carrier.includes('federalexpress')) {
+    return 'https://www.fedex.com/en-in/tracking.html';
+  }
+  if (carrier.includes('dhl')) {
+    return 'https://www.dhl.com/global-en/home/tracking.html';
+  }
+  if (carrier === 'ups' || carrier.includes('unitedparcelservice')) {
+    return 'https://www.ups.com/track?loc=en_IN';
+  }
+  if (carrier.includes('dtdc')) {
+    return 'https://www.dtdc.com/track-your-shipment/';
+  }
+  if (carrier.includes('shiprocket')) {
+    return 'https://www.shiprocket.in/shipment-tracking/';
+  }
+  if (carrier.includes('bluedart')) {
+    return 'https://www.bluedart.com/tracking';
+  }
+  if (carrier.includes('delhivery')) {
+    return 'https://www.delhivery.com/track/package';
+  }
+
+  return null;
 }
 
 export async function getOrder(orderId: string): Promise<Order | null> {
