@@ -1,5 +1,13 @@
 # Current State
 
+## Checkout Address Flow and Floating Offer Tab — 2026-10-24
+
+- Replaced the checkout address-step outer form with a non-form wrapper to prevent invalid nested forms when Add/Edit Address forms are open. The Continue action now calls the address validation/progression handler directly.
+- Checkout saved addresses can be edited with the shared address update API; adding/editing refreshes the list and selects the saved shipping/billing address where its type allows.
+- Profile address Edit now passes the selected address into the form, keys the form by address ID, uses the edit values, and displays an Edit Address heading.
+- Floating HomeCouponLabel is compact when idle (24px × 80px), expands on desktop hover, toggles on touch, and briefly expands during mobile scrolling before collapsing again.
+- Source/static checks completed on `safe-site-pages-cms-fix`; storefront production build and browser tests are pending before AWS deployment.
+
 ## Admin Product Image Upload Authorization — 2026-10-16
 
 - Root cause confirmed from logs and repository code: product creation returned HTTP 201, while `POST /api/v1/admin/uploads/products` returned 401.
