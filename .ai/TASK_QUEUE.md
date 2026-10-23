@@ -1,5 +1,19 @@
 # Task Queue
 
+## Wishlist, Cart Totals, and Payment Order Recovery — 2026-10-24
+
+- [x] Return product image media from wishlist APIs and read toggle API's `action` correctly.
+- [x] Persist product detail heart actions through the wishlist API and restyle wishlist cards in the Wolhomes theme.
+- [x] Use variant-aware cart price math; load cart totals without requiring an address and fall back to price snapshots when totals are unavailable.
+- [x] Wire Save for later to wishlist and remove from cart only after successful save.
+- [x] Correct Razorpay internal payment resolution and make browser/webhook success handling idempotent.
+- [x] Add PayPal completed-capture recovery and idempotent confirmation.
+- [x] Add authenticated/guest-safe provider reconciliation; show pending payment states in Admin and customer order history.
+- [x] Add no-new-charge Razorpay confirmation retry UI and an order-history payment-status check.
+- [ ] Run API, Admin, and Storefront production builds after the batch pull.
+- [ ] Verify wishlist add/remove/image, cart totals with and without saved address, Save for later, Razorpay and PayPal capture reconciliation, Admin order visibility, and My Orders statuses before live checkout.
+- [ ] On the previously affected paid-but-pending order, use "Check payment status" after deployment; do not initiate another charge before provider reconciliation.
+
 ## Checkout Address Flow and Floating Offer Tab — 2026-10-24
 
 - [x] Remove invalid nested checkout forms and wire the Continue button to address validation.
