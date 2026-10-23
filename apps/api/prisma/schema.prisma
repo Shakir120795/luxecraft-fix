@@ -556,7 +556,9 @@ model Order {
   total              Decimal           @db.Decimal(12, 2)
   shippingMethodId   String?
   shippingMethodName String?
+  courierName        String?
   trackingNumber     String?
+  trackingUrl        String?
   customerNotes      String?
   adminNotes         String?
   createdAt          DateTime          @default(now())
