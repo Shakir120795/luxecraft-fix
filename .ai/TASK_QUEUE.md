@@ -562,3 +562,15 @@ LuxeCraft is fully implemented and production-ready:
 - Admin: 15 pages ✅
 - TypeScript: All passing ✅
 - Production builds: All successful ✅
+
+
+---
+
+## User-Reported Fix Batch — Pending Combined Deployment (2026-10-25)
+
+- [x] Stop negative reservation values from inflating available stock; guard stock deduction with a row lock.
+- [x] Make admin stock counts refresh automatically and expose per-size available stock.
+- [x] Prevent product edits from overwriting inventory with stale stock quantities.
+- [x] Apply numeric ascending ordering to Size filter values and product variants across admin and storefront.
+- [ ] Run API/admin/storefront builds and browser smoke checks after all requested fixes are complete.
+- [ ] Pull and deploy once only after the user confirms the remaining issue list is complete.
