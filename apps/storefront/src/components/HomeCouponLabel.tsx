@@ -31,12 +31,27 @@ export function HomeCouponLabel() {
   useEffect(() => {
     let mounted = true;
 
-    getHomeCouponLabel().then((data) => {
+    const refreshCoupon = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const data = await getHomeCouponLabel();
       if (mounted) setCoupon(data);
-    });
+    };
+
+    void refreshCoupon();
+    const interval = window.setInterval(() => void refreshCoupon(), 30_000);
+    const handleFocus = () => void refreshCoupon();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void refreshCoupon();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       mounted = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, []);
 
