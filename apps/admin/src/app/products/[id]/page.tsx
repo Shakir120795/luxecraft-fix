@@ -1037,19 +1037,24 @@ export default function ProductEditPage() {
     [variants],
   );
 
-  const totalVariantStock = useMemo(
-    () =>
-      variants.reduce(
-        (total, variant) =>
-          total + Math.max(
-            0,
-            Math.max(0, Number(variant.stockQty || 0)) -
-              Math.max(0, Number(variant.reservedQty || 0)),
-          ),
-        0,
-      ),
-    [variants],
-  );
+  const totalVariantStock = useMemo(() => {
+    const hasNamedSizeVariants = variants.some(
+      (variant) => variant.name.trim().toLowerCase() !== 'default',
+    );
+    const variantsForStock = hasNamedSizeVariants
+      ? variants.filter((variant) => variant.name.trim().toLowerCase() !== 'default')
+      : variants;
+
+    return variantsForStock.reduce(
+      (total, variant) =>
+        total + Math.max(
+          0,
+          Math.max(0, Number(variant.stockQty || 0)) -
+            Math.max(0, Number(variant.reservedQty || 0)),
+        ),
+      0,
+    );
+  }, [variants]);
 
   if (loading) {
     return (
