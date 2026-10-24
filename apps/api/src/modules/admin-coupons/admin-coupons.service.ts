@@ -141,10 +141,26 @@ export class AdminCouponsService {
         });
       }
 
-      return tx.coupon.update({
+      const updatedCoupon = await tx.coupon.update({
         where: { id },
         data,
       });
+
+      // If an admin backfills historical redemptions or lowers the global
+      // limit below the already-used/reserved count, deactivate the exhausted
+      // coupon and clear its homepage flag immediately.
+      if (
+        updatedCoupon.maxUsageCount != null &&
+        updatedCoupon.usedCount + updatedCoupon.reservedCount >= updatedCoupon.maxUsageCount &&
+        updatedCoupon.isActive
+      ) {
+        return tx.coupon.update({
+          where: { id },
+          data: { isActive: false, showOnHome: false },
+        });
+      }
+
+      return updatedCoupon;
     });
   }
 
