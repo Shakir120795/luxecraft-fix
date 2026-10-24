@@ -8,6 +8,32 @@ import { ProductRecommendations } from '@/components/ProductRecommendations';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
 
+function parseSizeDimensions(value: string): [number, number] | null {
+  const match = String(value || '').trim().match(/(\d+(?:\.\d+)?)\s*(?:ft|feet|foot|')?\s*[x×*]\s*(\d+(?:\.\d+)?)/i);
+  if (!match) return null;
+  const first = Number(match[1]);
+  const second = Number(match[2]);
+  return Number.isFinite(first) && Number.isFinite(second) ? [first, second] : null;
+}
+
+function compareSizeLabels(a: string, b: string): number {
+  const sizeA = parseSizeDimensions(a);
+  const sizeB = parseSizeDimensions(b);
+  if (sizeA && sizeB) {
+    return sizeA[0] - sizeB[0] || sizeA[1] - sizeB[1] ||
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }
+  if (sizeA) return -1;
+  if (sizeB) return 1;
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+function getAvailableStock(variant: Product['variants'][number]): number {
+  const stockQty = Math.max(0, Number(variant.stockQty) || 0);
+  const reservedQty = Math.max(0, Number(variant.reservedQty) || 0);
+  return Math.max(0, stockQty - reservedQty);
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -47,11 +73,12 @@ export default function ProductDetailPage() {
         setProduct(data.data);
 
         if (data.data.variants && data.data.variants.length > 0) {
-          const firstSizeVariant =
-            data.data.variants.find(
-              (variant: { name?: string }) =>
-                variant.name?.trim().toLowerCase() !== 'default',
-            ) ?? data.data.variants[0];
+          const namedSizeVariants = data.data.variants
+            .filter((variant: { name?: string }) => variant.name?.trim().toLowerCase() !== 'default')
+            .sort((a: { name?: string }, b: { name?: string }) =>
+              compareSizeLabels(a.name || '', b.name || ''),
+            );
+          const firstSizeVariant = namedSizeVariants[0] ?? data.data.variants[0];
           setSelectedVariant(firstSizeVariant.id);
         }
 
@@ -173,10 +200,9 @@ export default function ProductDetailPage() {
     );
   }
 
-  const sizeVariants =
-    product.variants?.filter(
-      (variant) => variant.name?.trim().toLowerCase() !== 'default',
-    ) ?? [];
+  const sizeVariants = [...(product.variants ?? [])]
+    .filter((variant) => variant.name?.trim().toLowerCase() !== 'default')
+    .sort((a, b) => compareSizeLabels(a.name || '', b.name || ''));
   const configuredSizeLabels = product.filterData?.size ?? [];
   const configuredSingleSize =
     configuredSizeLabels.length === 1
@@ -272,7 +298,7 @@ export default function ProductDetailPage() {
 
     const unavailable =
       variant.trackInventory === true &&
-      variant.stockQty <= 0 &&
+      getAvailableStock(variant) <= 0 &&
       variant.allowBackorder !== true;
 
     if (unavailable) return;
@@ -302,7 +328,7 @@ export default function ProductDetailPage() {
   const selectedVariantUnavailable =
     !!selectedSizeVariant &&
     selectedSizeVariant.trackInventory === true &&
-    selectedSizeVariant.stockQty <= 0 &&
+    getAvailableStock(selectedSizeVariant) <= 0 &&
     selectedSizeVariant.allowBackorder !== true;
 
   const validateSelectedQuantity = () => {
@@ -310,10 +336,10 @@ export default function ProductDetailPage() {
       selectedSizeVariant &&
       selectedSizeVariant.trackInventory === true &&
       selectedSizeVariant.allowBackorder !== true &&
-      quantity > Math.max(0, selectedSizeVariant.stockQty)
+      quantity > getAvailableStock(selectedSizeVariant)
     ) {
       alert(
-        `Only ${Math.max(0, selectedSizeVariant.stockQty)} item(s) are available for this size.`,
+        `Only ${getAvailableStock(selectedSizeVariant)} item(s) are available for this size.`,
       );
       return false;
     }
@@ -682,7 +708,7 @@ export default function ProductDetailPage() {
                       {sizeVariants.map((variant) => {
                         const isUnavailable =
                           variant.trackInventory === true &&
-                          variant.stockQty <= 0 &&
+                          getAvailableStock(variant) <= 0 &&
                           variant.allowBackorder !== true;
 
                         return (
@@ -745,7 +771,7 @@ export default function ProductDetailPage() {
                         setQuantity((current) =>
                           Math.min(
                             current + 1,
-                            Math.max(0, selectedSizeVariant.stockQty),
+                            getAvailableStock(selectedSizeVariant),
                           ),
                         );
                         return;
@@ -757,7 +783,7 @@ export default function ProductDetailPage() {
                       !!selectedSizeVariant &&
                       selectedSizeVariant.trackInventory === true &&
                       selectedSizeVariant.allowBackorder !== true &&
-                      quantity >= Math.max(0, selectedSizeVariant.stockQty)
+                      quantity >= getAvailableStock(selectedSizeVariant)
                     }
                     className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-r-md border-2 border-[#c6534c] bg-[#c6534c] text-2xl font-bold text-white hover:bg-[#b94740] disabled:cursor-not-allowed disabled:opacity-50"
                   >
@@ -769,7 +795,7 @@ export default function ProductDetailPage() {
                   selectedSizeVariant.trackInventory === true &&
                   selectedSizeVariant.allowBackorder !== true && (
                     <p className="mt-1 text-[10px] text-luxury-brown/60">
-                      {Math.max(0, selectedSizeVariant.stockQty)} available
+                      {getAvailableStock(selectedSizeVariant)} available
                     </p>
                   )}
               </div>
