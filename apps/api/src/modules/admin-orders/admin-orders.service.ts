@@ -291,6 +291,10 @@ export class AdminOrdersService {
       throw new BadRequestException('At least one order or fulfillment status is required.');
     }
 
+    if (orderStatus === OrderStatus.CANCELLED) {
+      return this.cancelOrder(id);
+    }
+
     return this.prisma.order.update({
       where: { id },
       data: updates,
@@ -298,9 +302,35 @@ export class AdminOrdersService {
   }
 
   async cancelOrder(id: string): Promise<any> {
-    return this.prisma.order.update({
-      where: { id },
-      data: { orderStatus: OrderStatus.CANCELLED, cancelledAt: new Date() },
+    return this.prisma.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({ where: { id } });
+      if (!order) throw new NotFoundException(`Order ${id} not found.`);
+
+      if (order.couponId && order.couponUsageStatus === 'RESERVED') {
+        // Conditional state change makes duplicate cancel calls idempotent.
+        const releasedOrder = await tx.order.updateMany({
+          where: { id, couponUsageStatus: 'RESERVED' },
+          data: {
+            orderStatus: OrderStatus.CANCELLED,
+            cancelledAt: new Date(),
+            couponUsageStatus: 'RELEASED',
+          },
+        });
+
+        if (releasedOrder.count > 0) {
+          await tx.coupon.updateMany({
+            where: { id: order.couponId, reservedCount: { gt: 0 } },
+            data: { reservedCount: { decrement: 1 } },
+          });
+        }
+
+        return tx.order.findUnique({ where: { id } });
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: { orderStatus: OrderStatus.CANCELLED, cancelledAt: new Date() },
+      });
     });
   }
 
