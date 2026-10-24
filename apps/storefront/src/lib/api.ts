@@ -86,6 +86,7 @@ export interface ProductVariant {
   name: string;
   sku: string;
   stockQty: number;
+  reservedQty?: number;
   regularPrice: number | null;
   salePrice?: number | null;
   weightKg?: number | null;
@@ -125,6 +126,7 @@ export interface ProductVariant {
   name: string;
   sku: string;
   stockQty: number;
+  reservedQty?: number;
   regularPrice: number | null;
   salePrice?: number | null;
   weightKg?: number | null;
