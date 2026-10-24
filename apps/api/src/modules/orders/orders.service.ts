@@ -261,14 +261,20 @@ export class OrdersService {
         data: { status: PaymentStatus.CANCELLED },
       });
 
-      const releaseCoupon = Boolean(
-        order.couponId && order.couponUsageStatus === 'RESERVED',
-      );
-      if (releaseCoupon && order.couponId) {
-        await tx.coupon.updateMany({
-          where: { id: order.couponId, reservedCount: { gt: 0 } },
-          data: { reservedCount: { decrement: 1 } },
+      if (order.couponId) {
+        // Transition the reservation only once so concurrent cancel requests
+        // cannot decrement capacity reserved by another order.
+        const releasedCouponUse = await tx.order.updateMany({
+          where: { id: order.id, couponUsageStatus: 'RESERVED' },
+          data: { couponUsageStatus: 'RELEASED' },
         });
+
+        if (releasedCouponUse.count > 0) {
+          await tx.coupon.updateMany({
+            where: { id: order.couponId, reservedCount: { gt: 0 } },
+            data: { reservedCount: { decrement: 1 } },
+          });
+        }
       }
 
       return tx.order.update({
@@ -276,7 +282,6 @@ export class OrdersService {
         data: {
           orderStatus: OrderStatus.CANCELLED,
           paymentStatus: order.paymentStatus === PaymentStatus.FAILED ? PaymentStatus.FAILED : PaymentStatus.CANCELLED,
-          ...(releaseCoupon && { couponUsageStatus: 'RELEASED' }),
           customerNotes: 'Cancelled by customer',
           cancelledAt: new Date(),
         },
