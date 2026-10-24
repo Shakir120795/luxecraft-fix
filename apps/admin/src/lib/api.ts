@@ -1696,7 +1696,7 @@ export async function createCoupon(data: CouponRequest): Promise<Coupon> {
 
 export async function updateCoupon(
   id: string,
-  data: Partial<CouponRequest> & { isActive?: boolean },
+  data: Partial<CouponRequest> & { isActive?: boolean; usedCount?: number },
 ): Promise<Coupon> {
   return adminApi.patch<Coupon>(`/admin/coupons/${id}`, data);
 }
