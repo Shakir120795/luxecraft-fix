@@ -15,6 +15,31 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+function isSizeFilter(attribute: { slug?: string; name?: string }): boolean {
+  return String(attribute.slug || '').trim().toLowerCase() === 'size' ||
+    String(attribute.name || '').trim().toLowerCase() === 'size';
+}
+
+function parseSizeDimensions(value: string): [number, number] | null {
+  const match = String(value || '').trim().match(/(\\d+(?:\\.\\d+)?)\\s*(?:ft|feet|foot|')?\\s*[x×*]\\s*(\\d+(?:\\.\\d+)?)/i);
+  if (!match) return null;
+  const first = Number(match[1]);
+  const second = Number(match[2]);
+  return Number.isFinite(first) && Number.isFinite(second) ? [first, second] : null;
+}
+
+function compareSizeLabels(a: string, b: string): number {
+  const sizeA = parseSizeDimensions(a);
+  const sizeB = parseSizeDimensions(b);
+  if (sizeA && sizeB) {
+    return sizeA[0] - sizeB[0] || sizeA[1] - sizeB[1] ||
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }
+  if (sizeA) return -1;
+  if (sizeB) return 1;
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
 function blankAttribute(sortOrder: number): ProductFilterSetting {
   return {
     slug: '',
@@ -123,20 +148,30 @@ export function ProductFilterManager() {
   function normalizeBeforeSave() {
     return filters
       .filter((attribute) => attribute.name.trim())
-      .map((attribute, index) => ({
-        ...attribute,
-        slug: slugify(attribute.slug || attribute.name),
-        sortOrder: index,
-        values: attribute.values
+      .map((attribute, index) => {
+        const values = attribute.values
           .filter((value) => value.label.trim())
           .map((value, valueIndex) => ({
             ...value,
             slug: slugify(value.slug || value.label),
             sortOrder: valueIndex,
             isActive: value.isActive !== false,
+          }));
+        const orderedValues = isSizeFilter(attribute)
+          ? values.sort((a, b) => compareSizeLabels(a.label, b.label))
+          : values;
+
+        return {
+          ...attribute,
+          slug: slugify(attribute.slug || attribute.name),
+          sortOrder: index,
+          values: orderedValues.map((value, valueIndex) => ({
+            ...value,
+            sortOrder: valueIndex,
           })),
-        isActive: attribute.isActive !== false,
-      }));
+          isActive: attribute.isActive !== false,
+        };
+      });
   }
 
   async function save() {
@@ -280,15 +315,20 @@ export function ProductFilterManager() {
                     No values yet.
                   </div>
                 ) : (
-                  attribute.values.map((value, valueIndex) => (
+                  (isSizeFilter(attribute)
+                    ? attribute.values
+                        .map((value, originalIndex) => ({ value, originalIndex }))
+                        .sort((a, b) => compareSizeLabels(a.value.label, b.value.label))
+                    : attribute.values.map((value, originalIndex) => ({ value, originalIndex }))
+                  ).map(({ value, originalIndex }) => (
                     <div
-                      key={valueIndex}
+                      key={originalIndex}
                       className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]"
                     >
                       <input
                         value={value.label}
                         onChange={(event) =>
-                          updateValue(attributeIndex, valueIndex, {
+                          updateValue(attributeIndex, originalIndex, {
                             label: event.target.value,
                           })
                         }
@@ -298,7 +338,7 @@ export function ProductFilterManager() {
                       <input
                         value={value.slug}
                         onChange={(event) =>
-                          updateValue(attributeIndex, valueIndex, {
+                          updateValue(attributeIndex, originalIndex, {
                             slug: event.target.value,
                           })
                         }
@@ -310,7 +350,7 @@ export function ProductFilterManager() {
                           type="checkbox"
                           checked={value.isActive}
                           onChange={(event) =>
-                            updateValue(attributeIndex, valueIndex, {
+                            updateValue(attributeIndex, originalIndex, {
                               isActive: event.target.checked,
                             })
                           }
@@ -319,7 +359,7 @@ export function ProductFilterManager() {
                       </label>
                       <button
                         type="button"
-                        onClick={() => removeValue(attributeIndex, valueIndex)}
+                        onClick={() => removeValue(attributeIndex, originalIndex)}
                         className="px-2 text-xs font-semibold uppercase tracking-wider text-red-700"
                       >
                         Remove
