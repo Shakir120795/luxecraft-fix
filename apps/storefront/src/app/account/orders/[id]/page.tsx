@@ -35,6 +35,32 @@ export default function OrderDetailPage() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewMessage, setReviewMessage] = useState<string | null>(null);
   const [reviewSubmittedProductIds, setReviewSubmittedProductIds] = useState<string[]>([]);
+  const [copiedTrackingField, setCopiedTrackingField] = useState<string | null>(null);
+  const [copyTrackingError, setCopyTrackingError] = useState<string | null>(null);
+
+  async function copyTrackingValue(value: string, field: string) {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = value;
+        input.setAttribute('readonly', '');
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(input);
+        if (!copied) throw new Error('Clipboard copy failed');
+      }
+      setCopiedTrackingField(field);
+      setCopyTrackingError(null);
+    } catch {
+      setCopiedTrackingField(null);
+      setCopyTrackingError('Could not copy automatically. Please select and copy the value manually.');
+    }
+  }
 
   useEffect(() => {
     async function loadAuthenticatedOrder() {
@@ -394,24 +420,54 @@ export default function OrderDetailPage() {
               {(order.courierName || order.trackingNumber || order.trackingUrl) && (
                 <div className="mt-6 rounded-lg border border-[#e0dbd6] bg-[#faf9f7] p-5 sm:p-6">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a837c]">Shipment Details</p>
-                  <h3 className="mt-1 font-serif text-xl text-[#302b35]">
-                    {order.courierName || 'Courier details'}
-                  </h3>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <h3 className="font-serif text-xl text-[#302b35]">
+                      {order.courierName || 'Courier details'}
+                    </h3>
+                    {order.courierName && (
+                      <button
+                        type="button"
+                        onClick={() => void copyTrackingValue(order.courierName as string, 'courier')}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-[#d9c6a1] bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#66502d] transition hover:bg-[#f6eddf] focus:outline-none focus:ring-2 focus:ring-[#c99545]/40"
+                        aria-label="Copy courier name"
+                      >
+                        {copiedTrackingField === 'courier' ? '✓ Copied' : 'Copy courier'}
+                      </button>
+                    )}
+                  </div>
                   {order.trackingNumber && (
                     <div className="mt-4">
                       <p className="text-xs text-[#8a837c]">AWB / Tracking ID</p>
-                      <p className="mt-1 break-all font-mono text-sm font-semibold text-[#302b35]">{order.trackingNumber}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-3">
+                        <p className="break-all font-mono text-sm font-semibold text-[#302b35]">{order.trackingNumber}</p>
+                        <button
+                          type="button"
+                          onClick={() => void copyTrackingValue(order.trackingNumber as string, 'tracking')}
+                          className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-[#d9c6a1] bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#66502d] transition hover:bg-[#f6eddf] focus:outline-none focus:ring-2 focus:ring-[#c99545]/40"
+                          aria-label="Copy AWB or tracking ID"
+                        >
+                          {copiedTrackingField === 'tracking' ? '✓ Copied' : 'Copy ID'}
+                        </button>
+                      </div>
                     </div>
                   )}
+                  {copyTrackingError && (
+                    <p role="status" className="mt-3 text-xs text-[#a13c36]">{copyTrackingError}</p>
+                  )}
                   {carrierTrackingUrl && (
-                    <a
-                      href={carrierTrackingUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 inline-flex items-center justify-center rounded-md bg-[#302b35] px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#211e24]"
-                    >
-                      Track with {order.courierName || 'courier'} ↗
-                    </a>
+                    <div className="mt-4">
+                      <p className="mb-2 text-xs leading-5 text-[#8a837c]">
+                        First copy the tracking ID. Then open the courier page and paste it into the tracking field.
+                      </p>
+                      <a
+                        href={carrierTrackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center rounded-md bg-[#302b35] px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-white transition hover:bg-[#211e24]"
+                      >
+                        Track with {order.courierName || 'courier'} ↗
+                      </a>
+                    </div>
                   )}
                   <p className="mt-3 text-xs leading-5 text-[#8a837c]">
                     Shipment status refreshes automatically while this page is open. Courier scans may take some time to appear on the carrier&apos;s dashboard.
