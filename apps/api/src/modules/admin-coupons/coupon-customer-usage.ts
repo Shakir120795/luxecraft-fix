@@ -6,11 +6,17 @@ type CouponCustomerIdentity = {
   guestEmail?: string | null;
 };
 
-function normalizedIdentity(identity: CouponCustomerIdentity) {
+type NormalizedCouponCustomerIdentity =
+  | { kind: 'user'; userId: string }
+  | { kind: 'guest'; guestEmail: string };
+
+function normalizedIdentity(
+  identity: CouponCustomerIdentity,
+): NormalizedCouponCustomerIdentity | null {
   const userId = identity.userId?.trim();
-  if (userId) return { userId };
+  if (userId) return { kind: 'user', userId };
   const guestEmail = identity.guestEmail?.trim().toLowerCase();
-  if (guestEmail) return { guestEmail };
+  if (guestEmail) return { kind: 'guest', guestEmail };
   return null;
 }
 
@@ -35,7 +41,7 @@ export async function reserveCouponCustomerUsage(
     return;
   }
 
-  const usage = identity.userId
+  const usage = identity.kind === 'user'
     ? await tx.couponCustomerUsage.upsert({
         where: {
           couponId_userId: { couponId, userId: identity.userId },
