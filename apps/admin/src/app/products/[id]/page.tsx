@@ -100,6 +100,7 @@ type VariantDraft = {
   widthCm: string;
   heightCm: string;
   stockQty: string;
+  stockQtyDirty?: boolean;
   lowStockAt: string;
   trackInventory: boolean;
   allowBackorder: boolean;
@@ -236,6 +237,54 @@ export default function ProductEditPage() {
     void loadInitialData();
   }, [productId]);
 
+  // Keep live inventory visible while this editor is open, without replacing
+  // unsaved product fields or intentional manual stock edits.
+  useEffect(() => {
+    if (isNew || loading || saving) return;
+
+    let active = true;
+    let refreshing = false;
+
+    async function refreshVariantStock() {
+      if (refreshing || document.visibilityState !== 'visible') return;
+      refreshing = true;
+      try {
+        const freshProduct = await getProduct(productId);
+        if (!active) return;
+        const freshVariants = freshProduct.variants ?? [];
+        setSizes((current) =>
+          current.map((variant) => {
+            if (!variant.id || variant.stockQtyDirty) return variant;
+            const latest = freshVariants.find((item) => item.id === variant.id);
+            return latest
+              ? { ...variant, stockQty: String(latest.stockQty ?? 0) }
+              : variant;
+          }),
+        );
+      } catch (err) {
+        console.warn('Unable to refresh live variant stock:', err);
+      } finally {
+        refreshing = false;
+      }
+    }
+
+    const interval = window.setInterval(() => void refreshVariantStock(), 15000);
+    const handleFocus = () => void refreshVariantStock();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void refreshVariantStock();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [productId, isNew, loading, saving]);
+
   async function loadInitialData() {
     try {
       setLoading(true);
@@ -364,6 +413,7 @@ export default function ProductEditPage() {
         widthCm: item.widthCm == null ? '' : String(item.widthCm),
         heightCm: item.heightCm == null ? '' : String(item.heightCm),
         stockQty: String(item.stockQty ?? 0),
+        stockQtyDirty: false,
         lowStockAt:
           item.lowStockAt == null ? '' : String(item.lowStockAt),
         trackInventory: item.trackInventory !== false,
@@ -394,6 +444,30 @@ export default function ProductEditPage() {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  function parseSizeDimensions(value: string): [number, number] | null {
+    const match = String(value || '').trim().match(/(\\d+(?:\\.\\d+)?)\\s*(?:ft|feet|foot|')?\\s*[x×*]\\s*(\\d+(?:\\.\\d+)?)/i);
+    if (!match) return null;
+    const first = Number(match[1]);
+    const second = Number(match[2]);
+    return Number.isFinite(first) && Number.isFinite(second) ? [first, second] : null;
+  }
+
+  function compareSizeLabels(a: string, b: string): number {
+    const normalizedA = a.trim().toLowerCase();
+    const normalizedB = b.trim().toLowerCase();
+    if (normalizedA === 'default' && normalizedB !== 'default') return 1;
+    if (normalizedB === 'default' && normalizedA !== 'default') return -1;
+    const sizeA = parseSizeDimensions(a);
+    const sizeB = parseSizeDimensions(b);
+    if (sizeA && sizeB) {
+      return sizeA[0] - sizeB[0] || sizeA[1] - sizeB[1] ||
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    }
+    if (sizeA) return -1;
+    if (sizeB) return 1;
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
   }
 
   function normalizeSizeKey(value: string) {
@@ -550,9 +624,12 @@ export default function ProductEditPage() {
   }
 
   function updateVariant(index: number, changes: Partial<VariantDraft>) {
+    const nextChanges = changes.stockQty !== undefined
+      ? { ...changes, stockQtyDirty: true }
+      : changes;
     setSizes((current) =>
       current.map((variant, variantIndex) =>
-        variantIndex === index ? { ...variant, ...changes } : variant,
+        variantIndex === index ? { ...variant, ...nextChanges } : variant,
       ),
     );
   }
@@ -784,7 +861,9 @@ export default function ProductEditPage() {
           variant.name.trim().toLowerCase() !== 'default',
       );
       const variantsToSave = hasNamedSizeVariants
-        ? variants.filter((variant) => variant.name.trim().toLowerCase() !== 'default')
+        ? variants
+            .filter((variant) => variant.name.trim().toLowerCase() !== 'default')
+            .sort((a, b) => compareSizeLabels(a.name, b.name))
         : variants;
       const defaultVariantIdsToRemove = hasNamedSizeVariants
         ? variants
@@ -810,7 +889,10 @@ export default function ProductEditPage() {
           lengthCm: nonNegativeNumber(item.lengthCm),
           widthCm: nonNegativeNumber(item.widthCm),
           heightCm: nonNegativeNumber(item.heightCm),
-          stockQty: Math.max(0, Math.floor(Number(item.stockQty || 0))),
+          // Existing stock is not sent unless an admin intentionally edits it.
+          ...(item.id && item.stockQtyDirty !== true
+            ? {}
+            : { stockQty: Math.max(0, Math.floor(Number(item.stockQty || 0))) }),
           lowStockAt:
             item.lowStockAt.trim() === ''
               ? undefined
@@ -941,6 +1023,13 @@ export default function ProductEditPage() {
       setActionBusy(false);
     }
   }
+
+  const sortedVariantDrafts = useMemo(
+    () => variants
+      .map((variant, index) => ({ variant, index }))
+      .sort((a, b) => compareSizeLabels(a.variant.name, b.variant.name)),
+    [variants],
+  );
 
   const totalVariantStock = useMemo(
     () =>
@@ -1611,14 +1700,14 @@ export default function ProductEditPage() {
             )}
 
             <div className="space-y-5">
-              {variants.map((variant, index) => (
+              {sortedVariantDrafts.map(({ variant, index }, displayIndex) => (
                 <div
                   key={variant.id ?? `variant-${index}`}
                   className="border border-[var(--color-border)] bg-[var(--color-bg)] p-5"
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <h3 className="font-serif text-xl">
-                      Size {index + 1}
+                      Size {displayIndex + 1}
                     </h3>
 
                     <button
