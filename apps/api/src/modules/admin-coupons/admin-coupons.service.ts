@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -107,6 +107,29 @@ export class AdminCouponsService {
   }
 
   async update(id: string, data: any): Promise<any> {
+    if (
+      data?.usedCount !== undefined &&
+      (!Number.isInteger(Number(data.usedCount)) || Number(data.usedCount) < 0)
+    ) {
+      throw new BadRequestException('Already redeemed uses must be a non-negative whole number.');
+    }
+
+    if (
+      data?.maxUsageCount !== undefined &&
+      data.maxUsageCount !== null &&
+      (!Number.isInteger(Number(data.maxUsageCount)) || Number(data.maxUsageCount) < 1)
+    ) {
+      throw new BadRequestException('Maximum uses must be a positive whole number or blank.');
+    }
+
+    if (
+      data?.maxPerCustomer !== undefined &&
+      data.maxPerCustomer !== null &&
+      (!Number.isInteger(Number(data.maxPerCustomer)) || Number(data.maxPerCustomer) < 1)
+    ) {
+      throw new BadRequestException('Uses per customer must be a positive whole number or blank.');
+    }
+
     return this.prisma.$transaction(async (tx) => {
       if (data.showOnHome === true) {
         await tx.coupon.updateMany({
