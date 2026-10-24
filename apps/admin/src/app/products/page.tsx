@@ -10,7 +10,13 @@ function ProductStockCell({ product }: { product: Product }) {
   const namedVariants = listedVariants.filter(
     (variant) => variant.name?.trim().toLowerCase() !== 'default',
   );
-  const variants = namedVariants.length > 0 ? namedVariants : listedVariants;
+  const variants = (namedVariants.length > 0 ? namedVariants : listedVariants)
+    .sort((a, b) =>
+      (a.name || '').localeCompare(b.name || '', undefined, {
+        numeric: true,
+        sensitivity: 'base',
+      }),
+    );
   const trackedVariants = variants.filter((variant) => variant.trackInventory !== false);
 
   if (trackedVariants.length === 0) {
