@@ -59,14 +59,29 @@ export class AdminCouponsService {
         discountType: true,
         discountValue: true,
         currency: true,
+        maxUsageCount: true,
+        usedCount: true,
+        reservedCount: true,
       },
     });
 
     if (!coupon) return null;
 
+    // Hide exhausted offers as soon as their final use has been redeemed or
+    // reserved by a pending checkout.
+    if (
+      coupon.maxUsageCount != null &&
+      coupon.usedCount + coupon.reservedCount >= coupon.maxUsageCount
+    ) {
+      return null;
+    }
+
     return {
-      ...coupon,
+      id: coupon.id,
+      code: coupon.code,
+      discountType: coupon.discountType,
       discountValue: Number(coupon.discountValue),
+      currency: coupon.currency,
     };
   }
 
