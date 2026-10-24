@@ -574,3 +574,17 @@ LuxeCraft is fully implemented and production-ready:
 - [x] Apply numeric ascending ordering to Size filter values and product variants across admin and storefront.
 - [ ] Run API/admin/storefront builds and browser smoke checks after all requested fixes are complete.
 - [ ] Pull and deploy once only after the user confirms the remaining issue list is complete.
+
+
+---
+
+## User-Reported Fix Batch — Coupon Limits + Custom Design (2026-10-25)
+
+- [x] Atomically reserve global coupon capacity during checkout and commit redemption only when payment succeeds.
+- [x] Release coupon reservation for payment failure, customer cancellation, admin cancellation, or checkout creation failure.
+- [x] Enforce per-customer coupon limits for signed-in customers and guests.
+- [x] Hide exhausted/reserved-out homepage coupons and refresh offer visibility.
+- [x] Add admin correction for historical coupon uses that were not recorded before the fix.
+- [x] Replace legacy custom-design token refresh/localStorage assumptions with shared HttpOnly-cookie auth; use the same flow for reference uploads/messages.
+- [ ] Run API/admin/storefront builds and browser smoke checks after all requested fixes are complete.
+- [ ] Pull and deploy the combined batch once the user confirms the remaining issue list is complete.
