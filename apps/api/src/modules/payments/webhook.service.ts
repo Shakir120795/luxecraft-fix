@@ -361,7 +361,10 @@ export class WebhookService {
     let processed = false;
     await this.prisma.$transaction(async (tx) => {
       const failedUpdate = await tx.payment.updateMany({
-        where: { id: payment.id, status: { not: PaymentStatus.PAID } },
+        where: {
+          id: payment.id,
+          status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
+        },
         data: {
           status: PaymentStatus.FAILED,
           failedAt: new Date(),
