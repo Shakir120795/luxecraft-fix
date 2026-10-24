@@ -101,6 +101,7 @@ type VariantDraft = {
   heightCm: string;
   stockQty: string;
   stockQtyDirty?: boolean;
+  reservedQty?: number;
   lowStockAt: string;
   trackInventory: boolean;
   allowBackorder: boolean;
@@ -257,7 +258,11 @@ export default function ProductEditPage() {
             if (!variant.id || variant.stockQtyDirty) return variant;
             const latest = freshVariants.find((item) => item.id === variant.id);
             return latest
-              ? { ...variant, stockQty: String(latest.stockQty ?? 0) }
+              ? {
+                  ...variant,
+                  stockQty: String(latest.stockQty ?? 0),
+                  reservedQty: Math.max(0, Number(latest.reservedQty ?? 0)),
+                }
               : variant;
           }),
         );
@@ -414,6 +419,7 @@ export default function ProductEditPage() {
         heightCm: item.heightCm == null ? '' : String(item.heightCm),
         stockQty: String(item.stockQty ?? 0),
         stockQtyDirty: false,
+        reservedQty: Math.max(0, Number(item.reservedQty ?? 0)),
         lowStockAt:
           item.lowStockAt == null ? '' : String(item.lowStockAt),
         trackInventory: item.trackInventory !== false,
@@ -1035,7 +1041,11 @@ export default function ProductEditPage() {
     () =>
       variants.reduce(
         (total, variant) =>
-          total + Math.max(0, Number(variant.stockQty || 0)),
+          total + Math.max(
+            0,
+            Math.max(0, Number(variant.stockQty || 0)) -
+              Math.max(0, Number(variant.reservedQty || 0)),
+          ),
         0,
       ),
     [variants],
@@ -1430,7 +1440,7 @@ export default function ProductEditPage() {
                     {totalVariantStock}
                   </p>
                   <p className="mt-1 text-xs text-[var(--color-muted)]">
-                    Total stock across all variants
+                    Available stock across all variants
                   </p>
                 </div>
               )}
