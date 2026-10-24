@@ -945,3 +945,6 @@ Changes are committed on `safe-site-pages-cms-fix`; still **pending combined dep
 - Added migration `20261025180000_coupon_usage_reservations`. Production migration is still pending.
 - Important: orders created before this fix did not persist the coupon code, so their exact coupon usage cannot be inferred safely. Before reactivating/using an old one-time coupon after deployment, edit that coupon and set **Already redeemed uses** to the known historical count (e.g. `1` for an already-redeemed single-use code).
 - Build/typecheck/browser verification and AWS deployment remain pending. Do not deploy until the user says the remaining fix list is complete.
+
+
+Additional coupon behavior: when the last allowed use is successfully redeemed, the backend now sets `isActive=false` and `showOnHome=false`. If an admin corrects historical `usedCount` and that reaches the global limit, saving the coupon also deactivates it and clears the homepage flag. Existing historical orders still cannot be matched to a particular coupon automatically because old order rows did not retain coupon IDs.
