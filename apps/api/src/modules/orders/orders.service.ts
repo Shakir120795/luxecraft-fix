@@ -277,7 +277,9 @@ export class OrdersService {
     if (!order || !this.verifyGuestAccessToken(order.id, order.guestEmail, accessToken)) {
       throw new NotFoundException(`Order ${id} not found.`);
     }
-    return order;
+    // Keep guest order details consistent with authenticated order responses,
+    // including current product images and safe snapshot fallbacks.
+    return (await this.attachProductDetails([order]))[0] as Order & { payments: Payment[] };
   }
 
   async findByOrderNumber(orderNumber: string): Promise<Order> {
