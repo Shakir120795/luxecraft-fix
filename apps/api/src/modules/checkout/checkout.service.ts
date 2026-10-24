@@ -186,14 +186,18 @@ export class CheckoutService {
     // Validate any coupon against the authoritative server-side cart values.
     // The browser never supplies a trusted discount amount.
     let discountAmount = 0;
+    let couponId: string | undefined;
     if (input.dto.couponCode?.trim()) {
       const coupon = await this.cart.validateCoupon(
         input.dto.couponCode,
         subtotal,
         cartItems.map((item) => item.productId),
         cart.currency,
+        input.userId,
+        input.dto.guestEmail?.trim().toLowerCase(),
       );
       discountAmount = coupon.discountAmount;
+      couponId = coupon.couponId;
     }
 
     const discountedSubtotal = Math.max(0, subtotal - discountAmount);
@@ -275,10 +279,22 @@ export class CheckoutService {
       throw new BadRequestException('Failed to reserve inventory. Please try again.');
     }
 
-    // 3. Create order with reserved stock
+    // 3. Reserve coupon capacity atomically before creating the pending order.
+    // Each reservation is either converted to a use after payment succeeds or
+    // released if order/payment creation fails or the payment is cancelled.
+    let couponUsageReserved = false;
     let order, payment, clientSecret, approveUrl, publicKey, cryptoPaymentDetails;
 
     try {
+      if (couponId) {
+        await this.reserveCouponUsage(
+          couponId,
+          input.userId,
+          input.dto.guestEmail?.trim().toLowerCase(),
+        );
+        couponUsageReserved = true;
+      }
+
       order = await this.orders.create({
         userId: input.userId,
         guestEmail: input.userId ? undefined : input.dto.guestEmail?.toLowerCase(),
@@ -292,6 +308,8 @@ export class CheckoutService {
         taxAmount,
         subtotal,
         discountAmount,
+        couponId,
+        couponUsageStatus: couponId ? 'RESERVED' : undefined,
         total,
         currency: cart.currency,
       });
@@ -318,9 +336,20 @@ export class CheckoutService {
       this.logger.log(`Payment created for ${order.orderNumber}: ${payment.provider}`);
 
     } catch (error) {
-      // If order/payment creation fails, release reserved stock
-      this.logger.error(`Order creation failed, releasing reserved stock: ${error.message}`);
+      // If order/payment creation fails, release the coupon reservation too.
+      this.logger.error(`Order creation failed, releasing reservations: ${error instanceof Error ? error.message : 'unknown error'}`);
 
+      if (couponUsageReserved && couponId) {
+        try {
+          await this.releaseCouponReservation(couponId, order?.id);
+        } catch (releaseError) {
+          this.logger.error(
+            `Failed to release coupon reservation for ${couponId}: ${releaseError instanceof Error ? releaseError.message : 'unknown error'}`,
+          );
+        }
+      }
+
+      // Also release reserved stock if order/payment creation fails.
       for (const reserved of reservedItems) {
         try {
           await this.inventory.release(
@@ -349,6 +378,97 @@ export class CheckoutService {
       ...(payment?.provider === 'crypto' && cryptoPaymentDetails ? { crypto: cryptoPaymentDetails } : {}),
       ...(!input.userId ? { guestAccessToken: this.orders.createGuestAccessToken(order) } : {}),
     };
+  }
+
+  private async reserveCouponUsage(
+    couponId: string,
+    userId?: string,
+    guestEmail?: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      // Serialize reservations for the same coupon so concurrent checkouts
+      // cannot exceed a single-use/global maximum.
+      const rows = await tx.$queryRaw<Array<{
+        id: string;
+        isActive: boolean;
+        validFrom: Date;
+        validTo: Date | null;
+        maxUsageCount: number | null;
+        usedCount: number;
+        reservedCount: number;
+        maxPerCustomer: number | null;
+      }>>`
+        SELECT
+          "id", "isActive", "validFrom", "validTo", "maxUsageCount",
+          "usedCount", "reservedCount", "maxPerCustomer"
+        FROM "coupons"
+        WHERE "id" = ${couponId}
+        FOR UPDATE
+      `;
+
+      const coupon = rows[0];
+      const now = new Date();
+      if (
+        !coupon ||
+        !coupon.isActive ||
+        coupon.validFrom > now ||
+        (coupon.validTo && coupon.validTo <= now)
+      ) {
+        throw new BadRequestException('This coupon is no longer available.');
+      }
+
+      if (
+        coupon.maxUsageCount != null &&
+        Number(coupon.usedCount) + Number(coupon.reservedCount) >= coupon.maxUsageCount
+      ) {
+        throw new BadRequestException('This coupon has reached its usage limit.');
+      }
+
+      if (coupon.maxPerCustomer != null && (userId || guestEmail)) {
+        const customerUsageCount = await tx.order.count({
+          where: {
+            couponId: coupon.id,
+            couponUsageStatus: { in: ['RESERVED', 'USED'] },
+            ...(userId
+              ? { userId }
+              : { guestEmail: guestEmail!.trim().toLowerCase() }),
+          },
+        });
+
+        if (customerUsageCount >= coupon.maxPerCustomer) {
+          throw new BadRequestException('You have already reached the usage limit for this coupon.');
+        }
+      }
+
+      await tx.coupon.update({
+        where: { id: coupon.id },
+        data: { reservedCount: { increment: 1 } },
+      });
+    });
+  }
+
+  private async releaseCouponReservation(
+    couponId: string,
+    orderId?: string,
+  ): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      if (orderId) {
+        const releasedOrder = await tx.order.updateMany({
+          where: {
+            id: orderId,
+            couponId,
+            couponUsageStatus: 'RESERVED',
+          },
+          data: { couponUsageStatus: 'RELEASED' },
+        });
+        if (releasedOrder.count === 0) return;
+      }
+
+      await tx.coupon.updateMany({
+        where: { id: couponId, reservedCount: { gt: 0 } },
+        data: { reservedCount: { decrement: 1 } },
+      });
+    });
   }
 
   private async resolveBillingAddress(
