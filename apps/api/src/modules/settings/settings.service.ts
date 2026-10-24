@@ -44,6 +44,31 @@ export interface HomepageVideoSetting {
   isActive: boolean;
 }
 
+function isSizeFilter(attribute: { slug?: string; name?: string }): boolean {
+  return String(attribute.slug || '').trim().toLowerCase() === 'size' ||
+    String(attribute.name || '').trim().toLowerCase() === 'size';
+}
+
+function parseSizeDimensions(value: string): [number, number] | null {
+  const match = String(value || '').trim().match(/(\\d+(?:\\.\\d+)?)\\s*(?:ft|feet|foot|')?\\s*[x×*]\\s*(\\d+(?:\\.\\d+)?)/i);
+  if (!match) return null;
+  const first = Number(match[1]);
+  const second = Number(match[2]);
+  return Number.isFinite(first) && Number.isFinite(second) ? [first, second] : null;
+}
+
+function compareSizeLabels(a: string, b: string): number {
+  const sizeA = parseSizeDimensions(a);
+  const sizeB = parseSizeDimensions(b);
+  if (sizeA && sizeB) {
+    return sizeA[0] - sizeB[0] || sizeA[1] - sizeB[1] ||
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }
+  if (sizeA) return -1;
+  if (sizeB) return 1;
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
 const DEFAULT_PRODUCT_FILTERS: ProductFilterSetting[] = [
   {
     slug: 'style',
@@ -391,16 +416,20 @@ export class SettingsService {
         };
       })
       .sort((a, b) => a.sortOrder - b.sortOrder)
-      .map((attribute, index) => ({
-        ...attribute,
-        sortOrder: index,
-        values: attribute.values
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-          .map((value, valueIndex) => ({
+      .map((attribute, index) => {
+        const orderedValues = isSizeFilter(attribute)
+          ? [...attribute.values].sort((a, b) => compareSizeLabels(a.label, b.label))
+          : [...attribute.values].sort((a, b) => a.sortOrder - b.sortOrder);
+
+        return {
+          ...attribute,
+          sortOrder: index,
+          values: orderedValues.map((value, valueIndex) => ({
             ...value,
             sortOrder: valueIndex,
           })),
-      }));
+        };
+      });
   }
 
   private normalizeHomepageVideos(
