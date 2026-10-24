@@ -231,7 +231,17 @@ export function SiteHeader() {
           <button
             type="button"
             className="inline-flex h-11 w-11 shrink-0 items-center justify-center text-black transition-all duration-200 hover:-translate-y-0.5 hover:text-[#2f6b36] lg:hidden"
-            onClick={() => setMenuOpen((open) => !open)}
+            onClick={() => {
+              const nextOpen = !menuOpen;
+              setMenuOpen(nextOpen);
+              if (nextOpen) {
+                setMobileSearchOpen(false);
+                setAccountOpen(false);
+              }
+              window.dispatchEvent(
+                new CustomEvent('wolhomes:mobile-menu-state', { detail: { open: nextOpen } }),
+              );
+            }}
             aria-label="Toggle navigation"
             aria-expanded={menuOpen}
           >
