@@ -929,3 +929,19 @@ Changes committed to `safe-site-pages-cms-fix`; **do not deploy this batch until
 - Product editor refreshes server inventory without replacing unsaved form fields; existing stock is only sent when an administrator explicitly edits it.
 - Size values and size variants are ordered numerically by dimensions (for example, `4x8` is placed between `4x6` and `5x8`) in admin settings, admin product editing, and storefront filters/product selectors.
 - Runtime/build verification for this batch remains pending; no AWS pull/deployment has been done for these fixes.
+
+
+---
+
+## Recent Fix Batch — Coupon Limits + Custom Design Auth (2026-10-25)
+
+Changes are committed on `safe-site-pages-cms-fix`; still **pending combined deployment**.
+
+- Added coupon usage reservations so global limits are enforced at checkout, including concurrent checkouts. A coupon reservation becomes a redemption only when payment is confirmed; failed/cancelled orders release the reservation.
+- Enforced `maxPerCustomer` against this customer's reserved/used coupon orders.
+- Homepage offer lookup now hides a coupon once its usage limit is consumed or fully reserved; the home offer component refreshes on focus/visibility and every 30 seconds.
+- Added an admin-only-by-role correction field, **Already redeemed uses**, so the known historic use count can be backfilled for coupons used before this tracking existed.
+- Custom Design now uses the shared HttpOnly-cookie auth refresh flow, not legacy `localStorage` refresh/access tokens. Reference file uploads and follow-up messages use the same credentialed API helper and handle wrapped upload responses.
+- Added migration `20261025180000_coupon_usage_reservations`. Production migration is still pending.
+- Important: orders created before this fix did not persist the coupon code, so their exact coupon usage cannot be inferred safely. Before reactivating/using an old one-time coupon after deployment, edit that coupon and set **Already redeemed uses** to the known historical count (e.g. `1` for an already-redeemed single-use code).
+- Build/typecheck/browser verification and AWS deployment remain pending. Do not deploy until the user says the remaining fix list is complete.
