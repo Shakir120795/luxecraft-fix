@@ -211,40 +211,41 @@ export class WebhookService {
 
           this.logger.log(`Decrementing stock for variant ${variant.id}: ${item.quantity} units`);
 
-          // Apply stock deduction atomically and clamp both values at zero.
-          // Reservations are optional in the current checkout flow; decrementing
-          // reservedQty by the full order quantity unconditionally can make it
-          // negative and incorrectly report stock as available later.
-          const stockChanges = await tx.$queryRaw<
-            Array<{ qtyBefore: number; qtyAfter: number }>
+          // Lock the current inventory row so concurrent paid orders cannot
+          // deduct from the same stale stock snapshot.
+          const currentVariants = await tx.$queryRaw<
+            Array<{ stockQty: number; reservedQty: number }>
           >`
-            WITH target AS (
-              SELECT "id", "stockQty" AS "qtyBefore"
-              FROM "product_variants"
-              WHERE "id" = ${variant.id}
-              FOR UPDATE
-            )
-            UPDATE "product_variants" AS current_variant
-            SET
-              "stockQty" = GREATEST(0, current_variant."stockQty" - ${item.quantity}),
-              "reservedQty" = GREATEST(0, current_variant."reservedQty" - ${item.quantity}),
-              "updatedAt" = CURRENT_TIMESTAMP
-            FROM target
-            WHERE current_variant."id" = target."id"
-            RETURNING target."qtyBefore" AS "qtyBefore",
-                      current_variant."stockQty" AS "qtyAfter"
+            SELECT "stockQty", "reservedQty"
+            FROM "product_variants"
+            WHERE "id" = ${variant.id}
+            FOR UPDATE
           `;
+          const currentVariant = currentVariants[0];
+          if (!currentVariant) continue;
 
-          const stockChange = stockChanges[0];
-          if (!stockChange) continue;
+          // Checkout does not always create a reservation. Clamp old negative
+          // reservation values and never let either stock field go below zero.
+          const qtyBefore = Math.max(0, Number(currentVariant.stockQty) || 0);
+          const qtyAfter = Math.max(0, qtyBefore - item.quantity);
+          const reservedBefore = Math.max(0, Number(currentVariant.reservedQty) || 0);
+          const reservedAfter = Math.max(0, reservedBefore - item.quantity);
+
+          await tx.productVariant.update({
+            where: { id: variant.id },
+            data: {
+              stockQty: qtyAfter,
+              reservedQty: reservedAfter,
+            },
+          });
 
           await tx.inventoryLog.create({
             data: {
               variantId: item.variantId,
               changeType: 'ORDER_DEDUCT',
-              delta: -item.quantity,
-              qtyBefore: Number(stockChange.qtyBefore),
-              qtyAfter: Number(stockChange.qtyAfter),
+              delta: qtyAfter - qtyBefore,
+              qtyBefore,
+              qtyAfter,
               reason: `Order ${order.orderNumber} - Payment confirmed`,
               reference: order.id,
             },
