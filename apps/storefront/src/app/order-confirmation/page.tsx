@@ -160,8 +160,8 @@ export default function OrderConfirmationPage() {
   const currency = order.currency || 'USD';
   const items = Array.isArray(order.items) ? order.items : [];
   const orderDate = formatOrderDate(order.createdAt);
-  const paymentStatus = String(order.paymentStatus || 'PENDING').replaceAll('_', ' ');
-  const orderStatus = String(order.orderStatus || order.status || 'CONFIRMED').replaceAll('_', ' ');
+  const paymentStatus = String(order.paymentStatus || 'PENDING').replace(/_/g, ' ');
+  const orderStatus = String(order.orderStatus || order.status || 'CONFIRMED').replace(/_/g, ' ');
   const address = order.shippingAddress;
   const addressLines = address
     ? [
