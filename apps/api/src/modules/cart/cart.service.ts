@@ -118,9 +118,12 @@ export class CartService {
         throw new BadRequestException(`Variant ${variantId} is not available.`);
       }
 
+      // Legacy successful payments could leave reservedQty negative. Treat
+      // reservations as non-negative so old rows never inflate sellable stock.
+      const activeReservedQty = Math.max(0, Number(variant.reservedQty) || 0);
       const availableStock = Math.max(
         0,
-        variant.stockQty - variant.reservedQty,
+        Number(variant.stockQty) - activeReservedQty,
       );
 
       if (
