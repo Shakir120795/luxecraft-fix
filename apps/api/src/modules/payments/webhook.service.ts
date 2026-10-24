@@ -201,13 +201,26 @@ export class WebhookService {
           });
 
           if (consumedCouponUse.count > 0) {
-            await tx.coupon.update({
+            const updatedCoupon = await tx.coupon.update({
               where: { id: order.couponId },
               data: {
                 reservedCount: { decrement: 1 },
                 usedCount: { increment: 1 },
               },
             });
+
+            // Once the global limit is consumed, also deactivate it in the
+            // admin list and remove its homepage-label flag. Failed payment
+            // reservations are released elsewhere and do not deactivate it.
+            if (
+              updatedCoupon.maxUsageCount != null &&
+              updatedCoupon.usedCount + updatedCoupon.reservedCount >= updatedCoupon.maxUsageCount
+            ) {
+              await tx.coupon.update({
+                where: { id: updatedCoupon.id },
+                data: { isActive: false, showOnHome: false },
+              });
+            }
           }
         }
 
