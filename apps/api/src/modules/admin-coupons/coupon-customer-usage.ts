@@ -35,7 +35,7 @@ export async function reserveCouponCustomerUsage(
     return;
   }
 
-  const usage = 'userId' in identity
+  const usage = identity.userId
     ? await tx.couponCustomerUsage.upsert({
         where: {
           couponId_userId: { couponId, userId: identity.userId },
@@ -117,7 +117,7 @@ export async function redeemCouponCustomerUsage(
 
   // Backward-compatible recovery for a paid RESERVED order that predates these
   // aggregate rows. Order-level RESERVED -> USED remains the idempotency guard.
-  if ('userId' in identity) {
+  if (identity.userId) {
     await tx.couponCustomerUsage.upsert({
       where: {
         couponId_userId: { couponId, userId: identity.userId },
