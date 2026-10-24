@@ -192,11 +192,28 @@ export class WebhookService {
         if (paidUpdate.count === 0) return;
         processed = true;
 
+        const consumesReservedCoupon = Boolean(
+          order.couponId && order.couponUsageStatus === 'RESERVED',
+        );
+
+        if (consumesReservedCoupon && order.couponId) {
+          // This is inside the same idempotent payment transaction. Only the
+          // successful payment transition can convert one reservation to a use.
+          await tx.coupon.update({
+            where: { id: order.couponId },
+            data: {
+              reservedCount: { decrement: 1 },
+              usedCount: { increment: 1 },
+            },
+          });
+        }
+
         await tx.order.update({
           where: { id: order.id },
           data: {
             orderStatus: OrderStatus.PAYMENT_CONFIRMED,
             paymentStatus: PaymentStatus.PAID,
+            ...(consumesReservedCoupon && { couponUsageStatus: 'USED' }),
           },
         });
 
@@ -343,13 +360,25 @@ export class WebhookService {
       if (failedUpdate.count === 0) return;
       processed = true;
 
+      const releasesReservedCoupon = Boolean(
+        order.couponId && order.couponUsageStatus === 'RESERVED',
+      );
+
       await tx.order.update({
         where: { id: order.id },
         data: {
           orderStatus: OrderStatus.FAILED,
           paymentStatus: PaymentStatus.FAILED,
+          ...(releasesReservedCoupon && { couponUsageStatus: 'RELEASED' }),
         },
       });
+
+      if (releasesReservedCoupon && order.couponId) {
+        await tx.coupon.updateMany({
+          where: { id: order.couponId, reservedCount: { gt: 0 } },
+          data: { reservedCount: { decrement: 1 } },
+        });
+      }
 
       for (const item of order.items) {
         if (!item.variantId) continue;
