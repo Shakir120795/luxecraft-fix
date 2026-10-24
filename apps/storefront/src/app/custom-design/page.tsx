@@ -3,35 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { createCustomRequest, isAuthenticated } from '@/lib/api';
+import { apiFetch, createCustomRequest, getAuthHeaders } from '@/lib/api';
 
-async function getCustomDesignToken(): Promise<string | null> {
-  const accessToken = localStorage.getItem('accessToken');
-  const refreshToken = localStorage.getItem('refreshToken');
-
-  if (!accessToken || !refreshToken) return null;
-
-
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
-    const response = await fetch(`${apiUrl}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-
-    const data = await response.json();
-    if (!response.ok || !data.success || !data.data?.accessToken) return null;
-
-    localStorage.setItem('accessToken', data.data.accessToken);
-    if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
-    if (data.data.user) localStorage.setItem('user', JSON.stringify(data.data.user));
-
-    return data.data.accessToken;
-  } catch {
-    return null;
-  }
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
 
 export default function CustomDesignPage() {
   const router = useRouter();
@@ -97,63 +71,66 @@ export default function CustomDesignPage() {
   async function uploadReferenceFiles(requestId: string) {
     if (!selectedFiles.length) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
-    const token = localStorage.getItem('accessToken');
-
-    if (!token) {
-      throw new Error('Authentication token is missing.');
-    }
-
+    // Use the shared HttpOnly-cookie refresh flow instead of reading an old
+    // access token from localStorage (the current login flow stores no token there).
+    const headers = await getAuthHeaders();
     const formData = new FormData();
     selectedFiles.forEach(file => formData.append('files', file));
 
-    const uploadResponse = await fetch(
-      `${apiUrl}/custom-requests/${requestId}/files`,
+    const uploadResponse = await apiFetch(
+      `${API_URL}/custom-requests/${requestId}/files`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers,
         body: formData,
-      }
+        cache: 'no-store',
+      },
     );
 
-    const uploadData = await uploadResponse.json();
+    const uploadData = await uploadResponse.json().catch(() => null);
 
     if (!uploadResponse.ok) {
       throw new Error(
-        Array.isArray(uploadData.message)
+        Array.isArray(uploadData?.message)
           ? uploadData.message.join(', ')
-          : uploadData.message || 'Failed to upload reference files.'
+          : uploadData?.message || 'Failed to upload reference files.'
       );
     }
 
-    const attachments = Array.isArray(uploadData)
-      ? uploadData.map((item: { url: string }) => item.url)
-      : [];
+    const fileRecords = Array.isArray(uploadData)
+      ? uploadData
+      : Array.isArray(uploadData?.data)
+        ? uploadData.data
+        : Array.isArray(uploadData?.files)
+          ? uploadData.files
+          : [];
+    const attachments = fileRecords
+      .filter((item: { url?: string }) => typeof item?.url === 'string' && item.url.trim())
+      .map((item: { url: string }) => item.url);
 
     if (!attachments.length) return;
 
-    const messageResponse = await fetch(
-      `${apiUrl}/custom-requests/${requestId}/messages`,
+    const messageResponse = await apiFetch(
+      `${API_URL}/custom-requests/${requestId}/messages`,
       {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          ...headers,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           message: 'Reference files attached.',
           attachments,
         }),
-      }
+        cache: 'no-store',
+      },
     );
 
-    const messageData = await messageResponse.json();
+    const messageData = await messageResponse.json().catch(() => null);
 
     if (!messageResponse.ok) {
       throw new Error(
-        messageData.message || 'Files uploaded but could not be attached to the conversation.'
+        messageData?.message || 'Files uploaded but could not be attached to the conversation.'
       );
     }
   }
@@ -168,48 +145,64 @@ export default function CustomDesignPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
-    // Check authentication
-    if (!isAuthenticated()) {
-      router.push('/auth/login?redirect=/custom-design');
-      return;
-    }
+    if (submitting) return;
 
     setError(null);
-
-    const token = await getCustomDesignToken();
-    if (!token) {
-      setError('Your session has expired. Please log in again.');
-      setSubmitting(false);
-      return;
-    }
     setSubmitting(true);
 
-    const result = await createCustomRequest({
-      title: formData.title,
-      description: formData.description,
-      productCategory: formData.productCategory || undefined,
-      desiredDimensions: formData.desiredDimensions || undefined,
-      preferredColors: formData.preferredColors || undefined,
-      preferredMaterials: formData.preferredMaterials || undefined,
-      quantity: formData.quantity,
-      estimatedBudget: formData.estimatedBudget ? parseFloat(formData.estimatedBudget) : undefined,
-    });
+    try {
+      // Refresh using the same HttpOnly-cookie auth mechanism as the rest of
+      // the storefront; do not infer a valid session from a cached user label.
+      const authHeaders = await getAuthHeaders();
+      const hasAuthorization = Object.entries(authHeaders as Record<string, string>)
+        .some(([key, value]) => key.toLowerCase() === 'authorization' && Boolean(value));
 
-    if (result.success && result.data) {
+      if (!hasAuthorization) {
+        setError('Your session has expired. Please log in again.');
+        router.push('/auth/login?redirect=/custom-design');
+        return;
+      }
+
+      const result = await createCustomRequest({
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        productCategory: formData.productCategory || undefined,
+        desiredDimensions: formData.desiredDimensions || undefined,
+        preferredColors: formData.preferredColors || undefined,
+        preferredMaterials: formData.preferredMaterials || undefined,
+        quantity: formData.quantity,
+        estimatedBudget: formData.estimatedBudget ? parseFloat(formData.estimatedBudget) : undefined,
+      });
+
+      if (!result.success || !result.data) {
+        const message = result.message || 'Failed to submit request';
+        setError(message);
+
+        if (/unauthori[sz]ed|invalid or expired.*token|session expired/i.test(message)) {
+          router.push('/auth/login?redirect=/custom-design');
+        }
+        return;
+      }
+
       try {
         await uploadReferenceFiles(result.data.id);
-        router.push(`/custom-design/requests/${result.data.id}`);
       } catch (uploadError) {
         setError(
           uploadError instanceof Error
-            ? uploadError.message
-            : 'Request was created, but the reference files could not be uploaded.'
+            ? `Request was created, but the reference files could not be uploaded: ${uploadError.message}`
+            : 'Request was created, but the reference files could not be uploaded.',
         );
-        setSubmitting(false);
+        return;
       }
-    } else {
-      setError(result.message || 'Failed to submit request');
+
+      router.push(`/custom-design/requests/${result.data.id}`);
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Failed to submit your custom design request. Please try again.',
+      );
+    } finally {
       setSubmitting(false);
     }
   }
