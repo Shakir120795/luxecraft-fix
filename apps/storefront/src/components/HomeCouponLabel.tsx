@@ -69,7 +69,7 @@ export function HomeCouponLabel() {
       setOpen(true);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = setTimeout(() => {
-        setOpen(manuallyOpenedRef.current || mobileMenuOpenRef.current ? false : true);
+        setOpen(manuallyOpenedRef.current);
       }, 900);
     };
 
