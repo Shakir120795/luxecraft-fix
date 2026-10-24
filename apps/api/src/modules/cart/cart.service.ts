@@ -456,7 +456,15 @@ export class CartService {
 
   //  Calculate cart totals 
 
-  async validateCoupon(code: string, subtotal: number, productIds: string[], currency?: string): Promise<{
+  async validateCoupon(
+    code: string,
+    subtotal: number,
+    productIds: string[],
+    currency?: string,
+    userId?: string,
+    guestEmail?: string,
+  ): Promise<{
+    couponId: string;
     code: string;
     discountType: string;
     discountValue: number;
@@ -475,8 +483,27 @@ export class CartService {
       throw new BadRequestException('This coupon is not currently valid.');
     }
 
-    if (coupon.maxUsageCount != null && coupon.usedCount >= coupon.maxUsageCount) {
+    if (
+      coupon.maxUsageCount != null &&
+      coupon.usedCount + coupon.reservedCount >= coupon.maxUsageCount
+    ) {
       throw new BadRequestException('This coupon has reached its usage limit.');
+    }
+
+    if (coupon.maxPerCustomer != null && (userId || guestEmail?.trim())) {
+      const customerUsageCount = await this.prisma.order.count({
+        where: {
+          couponId: coupon.id,
+          couponUsageStatus: { in: ['RESERVED', 'USED'] },
+          ...(userId
+            ? { userId }
+            : { guestEmail: guestEmail!.trim().toLowerCase() }),
+        },
+      });
+
+      if (customerUsageCount >= coupon.maxPerCustomer) {
+        throw new BadRequestException('You have already reached the usage limit for this coupon.');
+      }
     }
 
     const orderSubtotal = Math.max(0, Number(subtotal) || 0);
@@ -512,6 +539,7 @@ export class CartService {
     discountAmount = Math.min(Math.max(0, discountAmount), orderSubtotal);
 
     return {
+      couponId: coupon.id,
       code: coupon.code,
       discountType: coupon.discountType,
       discountValue: Number(coupon.discountValue),
