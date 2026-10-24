@@ -445,6 +445,21 @@ export interface CartTotals {
 let refreshPromise: Promise<string | null> | null = null;
 let refreshBlocked = false;
 
+function notifyAuthStateChanged(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('wolhomes:auth-state'));
+  }
+}
+
+// Keep other open tabs in sync with successful login/logout and stale-session cleanup.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key !== 'user') return;
+    accessToken = null;
+    refreshBlocked = !event.newValue;
+  });
+}
+
 function isTokenExpiringSoon(token: string, withinSeconds = 60): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1] || ''));
@@ -471,17 +486,29 @@ async function refreshAccessToken(): Promise<string | null> {
 
         if (!res.ok || !auth?.accessToken) {
           accessToken = null;
-          refreshBlocked = res.status === 401 || !auth?.accessToken;
+          const invalidSession = res.status === 401 || res.status === 403;
+          refreshBlocked = invalidSession;
+
+          if (invalidSession && typeof window !== 'undefined') {
+            localStorage.removeItem('user');
+            notifyAuthStateChanged();
+          }
           return null;
         }
 
         accessToken = auth.accessToken as string;
         refreshBlocked = false;
-        if (auth.user) localStorage.setItem('user', JSON.stringify(auth.user));
+        if (auth.user) {
+          localStorage.setItem('user', JSON.stringify(auth.user));
+          notifyAuthStateChanged();
+        }
         return accessToken;
       } catch (error) {
         console.error('Failed to refresh access token:', error);
         accessToken = null;
+        // Network/server failures are transient; allow the next protected action
+        // to try the refresh cookie again.
+        refreshBlocked = false;
         return null;
       } finally {
         refreshPromise = null;
@@ -504,6 +531,47 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
   }
 
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * Fetches a protected resource and, after a real 401, rotates the HttpOnly
+ * refresh cookie once and retries the original request once.
+ */
+export async function apiFetchAuthenticated(
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+): Promise<Response> {
+  const firstHeaders = new Headers(init.headers);
+  firstHeaders.delete('Authorization');
+  const currentAuth = new Headers(await getAuthHeaders());
+  const currentAuthorization = currentAuth.get('Authorization');
+  if (currentAuthorization) firstHeaders.set('Authorization', currentAuthorization);
+
+  const response = await apiFetch(input, { ...init, headers: firstHeaders });
+  if (response.status !== 401) return response;
+
+  // The access token may have expired or been rotated elsewhere. Try the
+  // existing cookie-based session flow once, then replay this request once.
+  accessToken = null;
+  refreshBlocked = false;
+  const refreshedToken = await refreshAccessToken();
+  if (!refreshedToken) return response;
+
+  const retryHeaders = new Headers(init.headers);
+  retryHeaders.delete('Authorization');
+  retryHeaders.set('Authorization', `Bearer ${refreshedToken}`);
+  const retryResponse = await apiFetch(input, { ...init, headers: retryHeaders });
+
+  if (retryResponse.status === 401) {
+    accessToken = null;
+    refreshBlocked = true;
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+      notifyAuthStateChanged();
+    }
+  }
+
+  return retryResponse;
 }
 
 function getSessionId(): string {
@@ -808,6 +876,7 @@ export async function login(params: {
       accessToken = data.data.accessToken;
       refreshBlocked = false;
       localStorage.setItem('user', JSON.stringify(data.data.user));
+      notifyAuthStateChanged();
       
       // Merge guest cart if exists
       const guestSessionId = localStorage.getItem('guestSessionId');
@@ -850,6 +919,7 @@ export async function logout(): Promise<{ success: boolean }> {
   accessToken = null;
   refreshBlocked = true;
   if (typeof window !== 'undefined') localStorage.removeItem('user');
+  notifyAuthStateChanged();
   return { success: true };
 }
 
@@ -1006,6 +1076,7 @@ export async function getFreshCurrentUser(): Promise<User | null> {
       accessToken = null;
       refreshBlocked = true;
       localStorage.removeItem('user');
+      notifyAuthStateChanged();
       return null;
     }
 
@@ -1751,16 +1822,19 @@ export async function createCustomRequest(params: {
   preferredMaterials?: string;
   quantity: number;
   estimatedBudget?: number;
+  submissionKey: string;
   referenceFiles?: string[];
-}): Promise<{ success: boolean; data?: CustomRequest; message?: string }> {
+}): Promise<{
+  success: boolean;
+  data?: CustomRequest;
+  message?: string;
+  status?: number;
+  authError?: boolean;
+}> {
   try {
-    const headers = await getAuthHeaders();
-    const res = await apiFetch(`${API_URL}/custom-requests`, {
+    const res = await apiFetchAuthenticated(`${API_URL}/custom-requests`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title: params.title,
         description: params.description,
@@ -1770,16 +1844,22 @@ export async function createCustomRequest(params: {
         materialPreference: params.preferredMaterials,
         quantityRequested: params.quantity,
         budgetRange: params.estimatedBudget?.toString(),
+        submissionKey: params.submissionKey,
       }),
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => null);
     
-    if (res.ok && data.success) {
-      return { success: true, data: mapCustomRequest(data.data) };
+    if (res.ok && data?.success) {
+      return { success: true, data: mapCustomRequest(data.data), status: res.status };
     }
 
-    return { success: false, message: data.message || 'Failed to create request' };
+    return {
+      success: false,
+      message: data?.message || 'Failed to create request',
+      status: res.status,
+      authError: res.status === 401,
+    };
   } catch (error) {
     console.error('Failed to create custom request:', error);
     return { success: false, message: 'Failed to create request' };

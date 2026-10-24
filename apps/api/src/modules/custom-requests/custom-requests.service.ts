@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { CustomRequest, CustomRequestStatus, Prisma } from '@prisma/client';
@@ -16,6 +16,7 @@ export class CustomRequestsService {
     userId: string;
     title: string;
     description: string;
+    submissionKey?: string;
     dimensions?: string;
     designNotes?: string;
     preferredColors?: string;
@@ -25,6 +26,19 @@ export class CustomRequestsService {
     productId?: string;
     categoryId?: string;
   }): Promise<CustomRequest> {
+    if (data.submissionKey) {
+      const existing = await this.prisma.customRequest.findUnique({
+        where: { submissionKey: data.submissionKey },
+        select: { id: true, userId: true },
+      });
+      if (existing) {
+        if (existing.userId !== data.userId) {
+          throw new ConflictException('This submission key is already associated with another customer.');
+        }
+        return this.findOneForUser(existing.id, data.userId);
+      }
+    }
+
     let customRequest: CustomRequest | undefined;
 
     for (let attempt = 0; attempt < 10 && !customRequest; attempt += 1) {
@@ -34,6 +48,7 @@ export class CustomRequestsService {
         customRequest = await this.prisma.customRequest.create({
           data: {
         customRequestNumber,
+        submissionKey: data.submissionKey,
         userId: data.userId,
         title: data.title,
         description: data.description,
@@ -50,11 +65,24 @@ export class CustomRequestsService {
           include: { messages: true, quotes: true, designs: true },
         });
       } catch (error) {
-        const isNumberConflict =
+        const isUniqueConflict =
           error instanceof Prisma.PrismaClientKnownRequestError &&
           error.code === 'P2002';
 
-        if (!isNumberConflict || attempt === 9) {
+        if (isUniqueConflict && data.submissionKey) {
+          const existing = await this.prisma.customRequest.findUnique({
+            where: { submissionKey: data.submissionKey },
+            select: { id: true, userId: true },
+          });
+          if (existing) {
+            if (existing.userId !== data.userId) {
+              throw new ConflictException('This submission key is already associated with another customer.');
+            }
+            return this.findOneForUser(existing.id, data.userId);
+          }
+        }
+
+        if (!isUniqueConflict || attempt === 9) {
           throw error;
         }
 
@@ -75,16 +103,23 @@ export class CustomRequestsService {
     });
 
     if (admin) {
-      await this.notifications.send({
-        recipientId: admin.id,
-        type: 'CUSTOM_REQUEST',
-        title: `New Custom Request: ${customRequest.customRequestNumber}`,
-        message:
-          `Title: ${customRequest.title}\n` +
-          `Status: ${customRequest.status}\n` +
-          `Description: ${customRequest.description}`,
-        relatedId: customRequest.id,
-      });
+      try {
+        await this.notifications.send({
+          recipientId: admin.id,
+          type: 'CUSTOM_REQUEST',
+          title: `New Custom Request: ${customRequest.customRequestNumber}`,
+          message:
+            `Title: ${customRequest.title}\n` +
+            `Status: ${customRequest.status}\n` +
+            `Description: ${customRequest.description}`,
+          relatedId: customRequest.id,
+        });
+      } catch (error) {
+        // A notification outage must not report failure after the request was saved.
+        this.logger.error(
+          `Custom request ${customRequest.customRequestNumber} was created but its admin notification failed: ${error instanceof Error ? error.message : 'unknown error'}`,
+        );
+      }
     }
 
     return customRequest;

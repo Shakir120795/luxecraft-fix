@@ -82,6 +82,7 @@ export function SiteHeader() {
     const syncAuth = () => setIsAuth(isAuthenticated());
     syncAuth();
     window.addEventListener('storage', syncAuth);
+    window.addEventListener('wolhomes:auth-state', syncAuth);
 
     const interval = setInterval(loadCartCount, 5000);
     const handleCartUpdated = () => {
@@ -93,6 +94,7 @@ export function SiteHeader() {
       clearInterval(interval);
       window.removeEventListener('wolhomes:cart-updated', handleCartUpdated);
       window.removeEventListener('storage', syncAuth);
+      window.removeEventListener('wolhomes:auth-state', syncAuth);
     };
   }, []);
 

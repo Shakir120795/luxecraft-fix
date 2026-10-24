@@ -1,11 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch, createCustomRequest, getAuthHeaders } from '@/lib/api';
+import { apiFetchAuthenticated, createCustomRequest } from '@/lib/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3001/api/v1';
+const CUSTOM_DESIGN_SUBMISSION_KEY = 'wolhomes_custom_design_submission_key_v1';
+
+function createSubmissionKey(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+    const random = Math.random() * 16 | 0;
+    return (char === 'x' ? random : (random & 0x3) | 0x8).toString(16);
+  });
+}
 
 export default function CustomDesignPage() {
   const router = useRouter();
@@ -23,6 +34,21 @@ export default function CustomDesignPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [submissionKey, setSubmissionKey] = useState('');
+  const [needsLogin, setNeedsLogin] = useState(false);
+  const [submittedRequest, setSubmittedRequest] = useState<{ id: string; requestNumber: string } | null>(null);
+  const submittingLockRef = useRef(false);
+
+  useEffect(() => {
+    try {
+      const savedKey = sessionStorage.getItem(CUSTOM_DESIGN_SUBMISSION_KEY);
+      const key = savedKey || createSubmissionKey();
+      sessionStorage.setItem(CUSTOM_DESIGN_SUBMISSION_KEY, key);
+      setSubmissionKey(key);
+    } catch {
+      setSubmissionKey(createSubmissionKey());
+    }
+  }, []);
 
   const allowedExtensions = new Set([
     'jpg', 'jpeg', 'png', 'webp', 'gif', 'avif',
@@ -73,15 +99,13 @@ export default function CustomDesignPage() {
 
     // Use the shared HttpOnly-cookie refresh flow instead of reading an old
     // access token from localStorage (the current login flow stores no token there).
-    const headers = await getAuthHeaders();
     const formData = new FormData();
     selectedFiles.forEach(file => formData.append('files', file));
 
-    const uploadResponse = await apiFetch(
+    const uploadResponse = await apiFetchAuthenticated(
       `${API_URL}/custom-requests/${requestId}/files`,
       {
         method: 'POST',
-        headers,
         body: formData,
         cache: 'no-store',
       },
@@ -110,14 +134,11 @@ export default function CustomDesignPage() {
 
     if (!attachments.length) return;
 
-    const messageResponse = await apiFetch(
+    const messageResponse = await apiFetchAuthenticated(
       `${API_URL}/custom-requests/${requestId}/messages`,
       {
         method: 'POST',
-        headers: {
-          ...headers,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: 'Reference files attached.',
           attachments,
@@ -145,24 +166,16 @@ export default function CustomDesignPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (submitting) return;
+    if (submittingLockRef.current || submitting || submittedRequest || !submissionKey) return;
 
+    submittingLockRef.current = true;
     setError(null);
+    setNeedsLogin(false);
     setSubmitting(true);
 
     try {
-      // Refresh using the same HttpOnly-cookie auth mechanism as the rest of
-      // the storefront; do not infer a valid session from a cached user label.
-      const authHeaders = await getAuthHeaders();
-      const hasAuthorization = Object.entries(authHeaders as Record<string, string>)
-        .some(([key, value]) => key.toLowerCase() === 'authorization' && Boolean(value));
-
-      if (!hasAuthorization) {
-        setError('Your session has expired. Please log in again.');
-        router.push('/auth/login?redirect=/custom-design');
-        return;
-      }
-
+      // Let the protected API confirm the session. It can refresh once on an
+      // actual 401, instead of redirecting on an empty in-memory token header.
       const result = await createCustomRequest({
         title: formData.title.trim(),
         description: formData.description.trim(),
@@ -170,31 +183,42 @@ export default function CustomDesignPage() {
         desiredDimensions: formData.desiredDimensions || undefined,
         preferredColors: formData.preferredColors || undefined,
         preferredMaterials: formData.preferredMaterials || undefined,
-        quantity: formData.quantity,
+        quantity: Number(formData.quantity),
         estimatedBudget: formData.estimatedBudget ? parseFloat(formData.estimatedBudget) : undefined,
+        submissionKey,
       });
 
       if (!result.success || !result.data) {
-        const message = result.message || 'Failed to submit request';
-        setError(message);
-
-        if (/unauthori[sz]ed|invalid or expired.*token|session expired/i.test(message)) {
-          router.push('/auth/login?redirect=/custom-design');
+        if (result.authError) {
+          setNeedsLogin(true);
+          setError('We could not verify your login session. Your form and selected files are still here. Sign in in a new tab, return here, and submit again.');
+        } else {
+          setError(result.message || 'Failed to submit request');
         }
         return;
       }
 
+      setSubmittedRequest({
+        id: result.data.id,
+        requestNumber: result.data.requestNumber || result.data.id,
+      });
+
       try {
         await uploadReferenceFiles(result.data.id);
       } catch (uploadError) {
+        const uploadMessage = uploadError instanceof Error
+          ? uploadError.message
+          : 'Reference file upload failed.';
+        if (/unauthori[sz]ed|invalid or expired.*token|session expired/i.test(uploadMessage)) {
+          setNeedsLogin(true);
+        }
         setError(
-          uploadError instanceof Error
-            ? `Request was created, but the reference files could not be uploaded: ${uploadError.message}`
-            : 'Request was created, but the reference files could not be uploaded.',
+          `Request ${result.data.requestNumber || result.data.id} was created, but the reference files could not be uploaded: ${uploadMessage}`,
         );
         return;
       }
 
+      sessionStorage.removeItem(CUSTOM_DESIGN_SUBMISSION_KEY);
       router.push(`/custom-design/requests/${result.data.id}`);
     } catch (submitError) {
       setError(
@@ -203,6 +227,7 @@ export default function CustomDesignPage() {
           : 'Failed to submit your custom design request. Please try again.',
       );
     } finally {
+      submittingLockRef.current = false;
       setSubmitting(false);
     }
   }
@@ -271,7 +296,32 @@ export default function CustomDesignPage() {
 
           {error && (
             <div className="mb-8 border border-luxury-terracotta/50 bg-luxury-terracotta/10 px-6 py-4 text-luxury-charcoal">
-              {error}
+              <p>{error}</p>
+              {needsLogin && (
+                <p className="mt-3 text-sm">
+                  <Link
+                    href="/auth/login?redirect=/custom-design"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold underline underline-offset-4"
+                  >
+                    Sign in again in a new tab
+                  </Link>
+                  {' '}then return here and retry.
+                </p>
+              )}
+              {submittedRequest && (
+                <p className="mt-3 text-sm">
+                  Request <strong>{submittedRequest.requestNumber}</strong> already exists.{' '}
+                  <Link
+                    href={`/custom-design/requests/${submittedRequest.id}`}
+                    onClick={() => sessionStorage.removeItem(CUSTOM_DESIGN_SUBMISSION_KEY)}
+                    className="font-semibold underline underline-offset-4"
+                  >
+                    Open your request
+                  </Link>
+                </p>
+              )}
             </div>
           )}
 
@@ -482,10 +532,16 @@ export default function CustomDesignPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !submissionKey || Boolean(submittedRequest)}
               className="w-full rounded-md bg-[#302b35] px-8 py-4 text-sm font-semibold uppercase tracking-[0.14em] text-white transition hover:bg-[#211e24] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Submitting Request...' : 'Submit Design Request '}
+              {submitting
+                ? 'Submitting Request...'
+                : submittedRequest
+                  ? 'Request Created'
+                  : !submissionKey
+                    ? 'Preparing Request...'
+                    : 'Submit Design Request '}
             </button>
 
             <p className="text-xs text-luxury-brown/70 text-center">

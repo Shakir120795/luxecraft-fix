@@ -17,6 +17,7 @@ import { mkdirSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { CustomRequestsService } from './custom-requests.service';
+import { CreateCustomRequestDto } from './dto/create-custom-request.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CustomMessagesService } from '../custom-messages/custom-messages.service';
@@ -40,8 +41,9 @@ export class CustomRequestsController {
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@CurrentUser() user: { id: string }, @Body() data: any) {
-    return this.svc.create({ userId: user.id, ...data });
+  create(@CurrentUser() user: { id: string }, @Body() data: CreateCustomRequestDto) {
+    // The authenticated user is always the owner; client fields cannot override it.
+    return this.svc.create({ ...data, userId: user.id });
   }
 
   @Get()
