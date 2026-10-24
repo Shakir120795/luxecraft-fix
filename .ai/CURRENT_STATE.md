@@ -915,3 +915,17 @@ Do not start Phase 4 until explicitly instructed.
 - API-first for future iOS/Android
 - Docker, cloud/VPS portable
 - PostgreSQL + Prisma + Redis + BullMQ
+
+
+---
+
+## Recent Fix Batch — Inventory + Size Ordering (2026-10-25)
+
+Changes committed to `safe-site-pages-cms-fix`; **do not deploy this batch until the user finishes reporting the remaining issues**.
+
+- Payment success now locks the variant inventory row before deductions, clamps stock and reservation values at zero, and logs the actual stock delta.
+- Cart and storefront availability treat legacy negative `reservedQty` as zero so it cannot inflate sellable stock.
+- Admin Products list refreshes inventory every 15 seconds and on focus/visibility changes, and displays total available quantity with per-size counts.
+- Product editor refreshes server inventory without replacing unsaved form fields; existing stock is only sent when an administrator explicitly edits it.
+- Size values and size variants are ordered numerically by dimensions (for example, `4x8` is placed between `4x6` and `5x8`) in admin settings, admin product editing, and storefront filters/product selectors.
+- Runtime/build verification for this batch remains pending; no AWS pull/deployment has been done for these fixes.
