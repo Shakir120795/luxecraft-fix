@@ -20,6 +20,7 @@ type CouponForm = {
   minOrderAmount: string;
   maxUsageCount: string;
   maxPerCustomer: string;
+  usedCount: string;
   showOnHome: boolean;
 };
 
@@ -32,6 +33,7 @@ const emptyForm: CouponForm = {
   minOrderAmount: '',
   maxUsageCount: '',
   maxPerCustomer: '',
+  usedCount: '0',
   showOnHome: false,
 };
 
@@ -88,6 +90,7 @@ export default function CouponsPage() {
         coupon.maxUsageCount === null ? '' : String(coupon.maxUsageCount),
       maxPerCustomer:
         coupon.maxPerCustomer === null ? '' : String(coupon.maxPerCustomer),
+      usedCount: String(coupon.usedCount ?? 0),
       showOnHome: coupon.showOnHome,
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -136,7 +139,12 @@ export default function CouponsPage() {
       setSaving(true);
 
       if (editingId) {
-        await updateCoupon(editingId, payload);
+        // Legacy purchases were not recorded by the previous implementation.
+        // Let admins backfill the known redeemed count when correcting a coupon.
+        await updateCoupon(editingId, {
+          ...payload,
+          usedCount: Math.max(0, Math.floor(Number(form.usedCount || 0))),
+        });
       } else {
         await createCoupon(payload);
       }
@@ -292,6 +300,24 @@ export default function CouponsPage() {
               placeholder="Uses per customer"
               className="border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
             />
+            {editingId && (
+              <div>
+                <label className="mb-1 block text-xs uppercase tracking-wider text-[var(--color-muted)]">
+                  Already redeemed uses
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.usedCount}
+                  onChange={(e) => setForm({ ...form, usedCount: e.target.value })}
+                  className="w-full border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-sm outline-none focus:border-[var(--color-accent)]"
+                />
+                <p className="mt-1 text-[10px] text-[var(--color-muted)]">
+                  Correct the count for purchases made before automatic tracking was added.
+                </p>
+              </div>
+            )}
             <label className="flex min-h-[58px] items-center gap-3 border border-[var(--color-accent)] bg-[var(--color-bg)] px-4 py-3 text-sm text-[var(--color-primary)] lg:col-span-4">
               <input
                 type="checkbox"
