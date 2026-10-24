@@ -23,7 +23,9 @@ function getDiscountText(coupon: HomeCouponData) {
 export function HomeCouponLabel() {
   const [coupon, setCoupon] = useState<HomeCouponData | null>(null);
   const [open, setOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const manuallyOpenedRef = useRef(false);
+  const mobileMenuOpenRef = useRef(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -39,15 +41,35 @@ export function HomeCouponLabel() {
   }, []);
 
   useEffect(() => {
+    const handleMobileMenuState = (event: Event) => {
+      const nextOpen = Boolean((event as CustomEvent<{ open?: boolean }>).detail?.open);
+      mobileMenuOpenRef.current = nextOpen;
+      setMobileMenuOpen(nextOpen);
+
+      if (nextOpen) {
+        manuallyOpenedRef.current = false;
+      }
+      setOpen(false);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+    };
+
+    window.addEventListener('wolhomes:mobile-menu-state', handleMobileMenuState);
+    return () => window.removeEventListener('wolhomes:mobile-menu-state', handleMobileMenuState);
+  }, []);
+
+  useEffect(() => {
     const isTouchLayout = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
     if (!isTouchLayout) return;
 
     const handleScroll = () => {
-      if (manuallyOpenedRef.current) return;
+      if (manuallyOpenedRef.current || mobileMenuOpenRef.current) return;
       setOpen(true);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = setTimeout(() => {
-        setOpen(manuallyOpenedRef.current);
+        setOpen(manuallyOpenedRef.current || mobileMenuOpenRef.current ? false : true);
       }, 900);
     };
 
@@ -58,7 +80,7 @@ export function HomeCouponLabel() {
     };
   }, []);
 
-  if (!coupon) return null;
+  if (!coupon || mobileMenuOpen) return null;
 
   const discountText = getDiscountText(coupon);
 
