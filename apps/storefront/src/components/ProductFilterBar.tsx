@@ -13,6 +13,31 @@ type Props = {
   onClear: () => void;
 };
 
+function isSizeFilter(filter: { slug?: string; name?: string }): boolean {
+  return String(filter.slug || '').trim().toLowerCase() === 'size' ||
+    String(filter.name || '').trim().toLowerCase() === 'size';
+}
+
+function parseSizeDimensions(value: string): [number, number] | null {
+  const match = String(value || '').trim().match(/(\d+(?:\.\d+)?)\s*(?:ft|feet|foot|')?\s*[x×*]\s*(\d+(?:\.\d+)?)/i);
+  if (!match) return null;
+  const first = Number(match[1]);
+  const second = Number(match[2]);
+  return Number.isFinite(first) && Number.isFinite(second) ? [first, second] : null;
+}
+
+function compareSizeLabels(a: string, b: string): number {
+  const sizeA = parseSizeDimensions(a);
+  const sizeB = parseSizeDimensions(b);
+  if (sizeA && sizeB) {
+    return sizeA[0] - sizeB[0] || sizeA[1] - sizeB[1] ||
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+  }
+  if (sizeA) return -1;
+  if (sizeB) return 1;
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
 function ChevronIcon() {
   return (
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-4 w-4 transition-transform duration-200">
@@ -49,7 +74,10 @@ export function ProductFilterBar({
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   function getOptions(filter: ProductFilterSetting) {
-    return valueOptions[filter.slug] ?? filter.values;
+    const options = [...(valueOptions[filter.slug] ?? filter.values)];
+    return isSizeFilter(filter)
+      ? options.sort((a, b) => compareSizeLabels(a.label, b.label))
+      : options;
   }
 
   function getSelectedLabel(filter: ProductFilterSetting) {
