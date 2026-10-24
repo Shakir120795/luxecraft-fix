@@ -1,34 +1,83 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/AdminLayout';
 import { getProducts, deleteProduct, Product } from '@/lib/api';
+
+function ProductStockCell({ product }: { product: Product }) {
+  const listedVariants = Array.isArray(product.variants) ? product.variants : [];
+  const namedVariants = listedVariants.filter(
+    (variant) => variant.name?.trim().toLowerCase() !== 'default',
+  );
+  const variants = namedVariants.length > 0 ? namedVariants : listedVariants;
+  const trackedVariants = variants.filter((variant) => variant.trackInventory !== false);
+
+  if (trackedVariants.length === 0) {
+    return <span className="text-xs text-[var(--color-muted)]">Not tracked</span>;
+  }
+
+  const stock = trackedVariants.map((variant) => ({
+    name: variant.name?.trim() || 'Default',
+    available: Math.max(
+      0,
+      Number(variant.stockQty || 0) - Math.max(0, Number(variant.reservedQty || 0)),
+    ),
+  }));
+  const totalAvailable = stock.reduce((total, variant) => total + variant.available, 0);
+
+  return (
+    <div className="min-w-[130px]">
+      <span className={totalAvailable > 0 ? 'font-medium text-[var(--color-text)]' : 'font-semibold text-red-600'}>
+        {totalAvailable} available
+      </span>
+      {stock.length > 1 && (
+        <p className="mt-1 max-w-[240px] text-[10px] leading-4 text-[var(--color-muted)]">
+          {stock.map((variant) => `${variant.name}: ${variant.available}`).join(' · ')}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const loadInFlightRef = useRef(false);
 
   useEffect(() => {
-    loadProducts();
+    void loadProducts();
+
+    const refreshVisibleStock = () => {
+      if (document.visibilityState === 'visible') void loadProducts(true);
+    };
+    const interval = window.setInterval(refreshVisibleStock, 15000);
+    window.addEventListener('focus', refreshVisibleStock);
+    document.addEventListener('visibilitychange', refreshVisibleStock);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshVisibleStock);
+      document.removeEventListener('visibilitychange', refreshVisibleStock);
+    };
   }, []);
 
-  async function loadProducts() {
+  async function loadProducts(silent = false) {
+    if (loadInFlightRef.current) return;
+    loadInFlightRef.current = true;
+    if (!silent) setLoading(true);
+
     try {
-      console.log('[ADMIN PRODUCTS] Loading...');
       const data = await getProducts();
-
-      console.log('[ADMIN PRODUCTS] Received:', data);
-      console.log('[ADMIN PRODUCTS] Count:', data?.length);
-
       setProducts(data);
     } catch (error) {
-      console.error('[ADMIN PRODUCTS] FAILED:', error);
-      setProducts([]);
+      console.error('[ADMIN PRODUCTS] Failed to refresh product stock:', error);
+      if (!silent) setProducts([]);
     } finally {
-      setLoading(false);
+      loadInFlightRef.current = false;
+      if (!silent) setLoading(false);
     }
   }
 
@@ -62,6 +111,9 @@ export default function ProductsPage() {
             <h1 className="text-3xl font-serif text-[var(--color-primary)]">Products</h1>
             <p className="text-[var(--color-muted)] mt-1">
               Manage your product catalog
+            </p>
+            <p className="mt-1 text-[10px] text-[var(--color-muted)]">
+              Available stock and per-size counts refresh automatically every 15 seconds.
             </p>
           </div>
           <Link
@@ -189,9 +241,7 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-sm text-[var(--color-text)]">
-                        <span className={product.stockQuantity > 0 ? '' : 'text-red-600'}>
-                          {product.stockQuantity} units
-                        </span>
+                        <ProductStockCell product={product} />
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-block px-2 py-1 text-xs font-medium ${
