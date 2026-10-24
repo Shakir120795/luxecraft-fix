@@ -3,6 +3,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
 import { Order, Payment, OrderStatus, PaymentStatus, FulfillmentStatus, Prisma } from '@prisma/client';
+import { releaseCouponCustomerUsage } from '../admin-coupons/coupon-customer-usage';
 
 @Injectable()
 export class OrdersService {
@@ -274,6 +275,12 @@ export class OrdersService {
             where: { id: order.couponId, reservedCount: { gt: 0 } },
             data: { reservedCount: { decrement: 1 } },
           });
+          await releaseCouponCustomerUsage(
+            tx,
+            order.couponId,
+            order.userId,
+            order.guestEmail,
+          );
         }
       }
 

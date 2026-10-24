@@ -8,6 +8,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { InventoryService } from '../inventory/inventory.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutOrderDto, GuestCheckoutAddressDto } from './dto/create-checkout-order.dto';
+import { reserveCouponCustomerUsage, releaseCouponCustomerUsage } from '../admin-coupons/coupon-customer-usage';
 
 @Injectable()
 export class CheckoutService {
@@ -341,7 +342,12 @@ export class CheckoutService {
 
       if (couponUsageReserved && couponId) {
         try {
-          await this.releaseCouponReservation(couponId, order?.id);
+          await this.releaseCouponReservation(
+            couponId,
+            order?.id,
+            input.userId,
+            input.dto.guestEmail?.trim().toLowerCase(),
+          );
         } catch (releaseError) {
           this.logger.error(
             `Failed to release coupon reservation for ${couponId}: ${releaseError instanceof Error ? releaseError.message : 'unknown error'}`,
@@ -424,21 +430,15 @@ export class CheckoutService {
         throw new BadRequestException('This coupon has reached its usage limit.');
       }
 
-      if (coupon.maxPerCustomer != null && (userId || guestEmail)) {
-        const customerUsageCount = await tx.order.count({
-          where: {
-            couponId: coupon.id,
-            couponUsageStatus: { in: ['RESERVED', 'USED'] },
-            ...(userId
-              ? { userId }
-              : { guestEmail: guestEmail!.trim().toLowerCase() }),
-          },
-        });
-
-        if (customerUsageCount >= coupon.maxPerCustomer) {
-          throw new BadRequestException('You have already reached the usage limit for this coupon.');
-        }
-      }
+      // Record a customer-level reservation before the order row is created.
+      // This prevents parallel/double-submit requests from both passing the cap.
+      await reserveCouponCustomerUsage(
+        tx,
+        coupon.id,
+        userId,
+        guestEmail,
+        coupon.maxPerCustomer,
+      );
 
       await tx.coupon.update({
         where: { id: coupon.id },
@@ -450,6 +450,8 @@ export class CheckoutService {
   private async releaseCouponReservation(
     couponId: string,
     orderId?: string,
+    userId?: string,
+    guestEmail?: string,
   ): Promise<void> {
     await this.prisma.$transaction(async (tx) => {
       if (orderId) {
@@ -468,6 +470,7 @@ export class CheckoutService {
         where: { id: couponId, reservedCount: { gt: 0 } },
         data: { reservedCount: { decrement: 1 } },
       });
+      await releaseCouponCustomerUsage(tx, couponId, userId, guestEmail);
     });
   }
 

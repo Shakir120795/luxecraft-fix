@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OrderStatus, PaymentStatus, FulfillmentStatus, Prisma } from '@prisma/client';
 import { PaymentsService } from '../payments/payments.service';
 import { AdminRefundMode, ProcessAdminRefundDto } from './dto/process-admin-refund.dto';
+import { releaseCouponCustomerUsage } from '../admin-coupons/coupon-customer-usage';
 
 @Injectable()
 export class AdminOrdersService {
@@ -338,6 +339,12 @@ export class AdminOrdersService {
             where: { id: order.couponId, reservedCount: { gt: 0 } },
             data: { reservedCount: { decrement: 1 } },
           });
+          await releaseCouponCustomerUsage(
+            tx,
+            order.couponId,
+            order.userId,
+            order.guestEmail,
+          );
         }
 
         return tx.order.findUnique({ where: { id } });

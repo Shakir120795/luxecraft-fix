@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, BadRequestException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentStatus, OrderStatus } from '@prisma/client';
 import { InventoryService } from '../inventory/inventory.service';
+import { redeemCouponCustomerUsage, releaseCouponCustomerUsage } from '../admin-coupons/coupon-customer-usage';
 
 /**
  * Webhook Service
@@ -201,6 +202,7 @@ export class WebhookService {
           });
 
           if (consumedCouponUse.count > 0) {
+            await redeemCouponCustomerUsage(tx, order.couponId, order.userId, order.guestEmail);
             const updatedCoupon = await tx.coupon.update({
               where: { id: order.couponId },
               data: {
@@ -393,6 +395,7 @@ export class WebhookService {
         });
 
         if (releasedCouponUse.count > 0) {
+          await releaseCouponCustomerUsage(tx, order.couponId, order.userId, order.guestEmail);
           await tx.coupon.updateMany({
             where: { id: order.couponId, reservedCount: { gt: 0 } },
             data: { reservedCount: { decrement: 1 } },

@@ -798,10 +798,28 @@ model Coupon {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   orders               Order[]
+  customerUsages       CouponCustomerUsage[]
 
   @@index([code])
   @@index([isActive])
   @@map("coupons")
+}
+
+model CouponCustomerUsage {
+  id            String   @id @default(cuid())
+  couponId      String
+  userId        String?
+  guestEmail    String?
+  reservedCount Int      @default(0)
+  usedCount     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  coupon        Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+
+  @@unique([couponId, userId])
+  @@unique([couponId, guestEmail])
+  @@index([couponId])
+  @@map("coupon_customer_usages")
 }
 
 /// Review. Customer product review.

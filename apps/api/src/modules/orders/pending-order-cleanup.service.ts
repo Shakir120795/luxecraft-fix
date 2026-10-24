@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { releaseCouponCustomerUsage } from '../admin-coupons/coupon-customer-usage';
 
 const DEFAULT_EXPIRY_MINUTES = 30;
 const DEFAULT_INTERVAL_MINUTES = 5;
@@ -73,7 +74,12 @@ export class PendingOrderCleanupService implements OnModuleInit, OnModuleDestroy
 
         if (!isExpired) continue;
 
-        const didCleanup = await this.cleanupOrder(order.id, order.items);
+        const didCleanup = await this.cleanupOrder(order.id, order.items, {
+          couponId: order.couponId,
+          couponUsageStatus: order.couponUsageStatus,
+          userId: order.userId,
+          guestEmail: order.guestEmail,
+        });
         if (didCleanup) cleaned += 1;
       }
 
@@ -99,6 +105,12 @@ export class PendingOrderCleanupService implements OnModuleInit, OnModuleDestroy
       variantId: string | null;
       quantity: number;
     }>,
+    couponUsage: {
+      couponId: string | null;
+      couponUsageStatus: string | null;
+      userId: string | null;
+      guestEmail: string | null;
+    },
   ): Promise<boolean> {
     return this.prisma.$transaction(async (tx) => {
       // Claim the pending payment first. A concurrent successful payment
@@ -132,6 +144,26 @@ export class PendingOrderCleanupService implements OnModuleInit, OnModuleDestroy
       });
 
       if (orderClaim.count === 0) return false;
+
+      if (couponUsage.couponId && couponUsage.couponUsageStatus === 'RESERVED') {
+        const releasedCouponUse = await tx.order.updateMany({
+          where: { id: orderId, couponUsageStatus: 'RESERVED' },
+          data: { couponUsageStatus: 'RELEASED' },
+        });
+
+        if (releasedCouponUse.count > 0) {
+          await tx.coupon.updateMany({
+            where: { id: couponUsage.couponId, reservedCount: { gt: 0 } },
+            data: { reservedCount: { decrement: 1 } },
+          });
+          await releaseCouponCustomerUsage(
+            tx,
+            couponUsage.couponId,
+            couponUsage.userId,
+            couponUsage.guestEmail,
+          );
+        }
+      }
 
       for (const item of items) {
         if (!item.variantId || item.quantity <= 0) continue;
