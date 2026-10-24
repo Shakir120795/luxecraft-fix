@@ -50,7 +50,7 @@ function isSizeFilter(attribute: { slug?: string; name?: string }): boolean {
 }
 
 function parseSizeDimensions(value: string): [number, number] | null {
-  const match = String(value || '').trim().match(/(\\d+(?:\\.\\d+)?)\\s*(?:ft|feet|foot|')?\\s*[x×*]\\s*(\\d+(?:\\.\\d+)?)/i);
+  const match = String(value || '').trim().match(/(\d+(?:\.\d+)?)\s*(?:ft|feet|foot|')?\s*[x×*]\s*(\d+(?:\.\d+)?)/i);
   if (!match) return null;
   const first = Number(match[1]);
   const second = Number(match[2]);
