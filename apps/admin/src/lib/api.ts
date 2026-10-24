@@ -210,6 +210,9 @@ export interface Admin {
   lastName: string;
   role: 'SUPER_ADMIN' | 'ADMIN';
   emailVerified: boolean;
+  /** Backend persists AdminStatus as ACTIVE or SUSPENDED. */
+  status?: 'ACTIVE' | 'SUSPENDED';
+  /** Normalized client-side flag derived from status by getAdminProfile(). */
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -711,6 +714,9 @@ export interface Admin {
   lastName: string;
   role: 'SUPER_ADMIN' | 'ADMIN';
   emailVerified: boolean;
+  /** Backend persists AdminStatus as ACTIVE or SUSPENDED. */
+  status?: 'ACTIVE' | 'SUSPENDED';
+  /** Normalized client-side flag derived from status by getAdminProfile(). */
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -1084,7 +1090,16 @@ export async function adminLogout(): Promise<void> {
 }
 
 export async function getAdminProfile(): Promise<Admin> {
-  return adminApi.get<Admin>('/admin/auth/me');
+  const profile = await adminApi.get<Admin>('/admin/auth/me');
+
+  // The API returns AdminStatus ('ACTIVE' | 'SUSPENDED'), not an isActive
+  // boolean. Normalize that enum for the Settings page's existing UI field.
+  return {
+    ...profile,
+    isActive: profile.status
+      ? profile.status === 'ACTIVE'
+      : profile.isActive === true,
+  };
 }
 
 // ============================================================================
