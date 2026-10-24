@@ -27,6 +27,8 @@ export class OrdersService {
     taxAmount: number;
     subtotal: number;
     discountAmount?: number;
+    couponId?: string;
+    couponUsageStatus?: string;
     total: number;
     currency: string;
   }): Promise<Order> {
@@ -52,6 +54,8 @@ export class OrdersService {
         currency: data.currency,
         subtotal: data.subtotal,
         discountAmount: data.discountAmount ?? 0,
+        couponId: data.couponId,
+        couponUsageStatus: data.couponUsageStatus,
         shippingCost: data.shippingCost,
         taxAmount: data.taxAmount,
         total: data.total,
@@ -257,11 +261,22 @@ export class OrdersService {
         data: { status: PaymentStatus.CANCELLED },
       });
 
+      const releaseCoupon = Boolean(
+        order.couponId && order.couponUsageStatus === 'RESERVED',
+      );
+      if (releaseCoupon && order.couponId) {
+        await tx.coupon.updateMany({
+          where: { id: order.couponId, reservedCount: { gt: 0 } },
+          data: { reservedCount: { decrement: 1 } },
+        });
+      }
+
       return tx.order.update({
         where: { id: order.id },
         data: {
           orderStatus: OrderStatus.CANCELLED,
           paymentStatus: order.paymentStatus === PaymentStatus.FAILED ? PaymentStatus.FAILED : PaymentStatus.CANCELLED,
+          ...(releaseCoupon && { couponUsageStatus: 'RELEASED' }),
           customerNotes: 'Cancelled by customer',
           cancelledAt: new Date(),
         },
