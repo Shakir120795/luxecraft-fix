@@ -78,7 +78,17 @@ export default function ProductDetailPage() {
             .sort((a: { name?: string }, b: { name?: string }) =>
               compareSizeLabels(a.name || '', b.name || ''),
             );
-          const firstSizeVariant = namedSizeVariants[0] ?? data.data.variants[0];
+          const firstAvailableVariant = namedSizeVariants.find((variant: {
+            trackInventory?: boolean;
+            allowBackorder?: boolean;
+            stockQty?: number;
+            reservedQty?: number;
+          }) =>
+            variant.trackInventory !== true ||
+            variant.allowBackorder === true ||
+            Math.max(0, Number(variant.stockQty || 0) - Math.max(0, Number(variant.reservedQty || 0))) > 0,
+          );
+          const firstSizeVariant = firstAvailableVariant ?? namedSizeVariants[0] ?? data.data.variants[0];
           setSelectedVariant(firstSizeVariant.id);
         }
 
