@@ -306,6 +306,22 @@ export class AdminOrdersService {
       const order = await tx.order.findUnique({ where: { id } });
       if (!order) throw new NotFoundException(`Order ${id} not found.`);
 
+      const paidPayment = await tx.payment.findFirst({
+        where: {
+          orderId: id,
+          status: { in: [PaymentStatus.PAID, PaymentStatus.PARTIALLY_REFUNDED] },
+        },
+        select: { id: true },
+      });
+      if (paidPayment) {
+        throw new BadRequestException('A paid order must be refunded rather than cancelled.');
+      }
+
+      await tx.payment.updateMany({
+        where: { orderId: id, status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] } },
+        data: { status: PaymentStatus.CANCELLED },
+      });
+
       if (order.couponId && order.couponUsageStatus === 'RESERVED') {
         // Conditional state change makes duplicate cancel calls idempotent.
         const releasedOrder = await tx.order.updateMany({
