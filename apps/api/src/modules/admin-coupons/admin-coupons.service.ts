@@ -151,7 +151,7 @@ export class AdminCouponsService {
       // coupon and clear its homepage flag immediately.
       if (
         updatedCoupon.maxUsageCount != null &&
-        updatedCoupon.usedCount + updatedCoupon.reservedCount >= updatedCoupon.maxUsageCount &&
+        updatedCoupon.usedCount >= updatedCoupon.maxUsageCount &&
         updatedCoupon.isActive
       ) {
         return tx.coupon.update({
