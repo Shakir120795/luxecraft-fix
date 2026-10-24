@@ -214,7 +214,7 @@ export class WebhookService {
             // reservations are released elsewhere and do not deactivate it.
             if (
               updatedCoupon.maxUsageCount != null &&
-              updatedCoupon.usedCount + updatedCoupon.reservedCount >= updatedCoupon.maxUsageCount
+              updatedCoupon.usedCount >= updatedCoupon.maxUsageCount
             ) {
               await tx.coupon.update({
                 where: { id: updatedCoupon.id },
