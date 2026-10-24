@@ -211,21 +211,40 @@ export class WebhookService {
 
           this.logger.log(`Decrementing stock for variant ${variant.id}: ${item.quantity} units`);
 
-          await tx.productVariant.update({
-            where: { id: variant.id },
-            data: {
-              stockQty: { decrement: item.quantity },
-              reservedQty: { decrement: item.quantity },
-            },
-          });
+          // Apply stock deduction atomically and clamp both values at zero.
+          // Reservations are optional in the current checkout flow; decrementing
+          // reservedQty by the full order quantity unconditionally can make it
+          // negative and incorrectly report stock as available later.
+          const stockChanges = await tx.$queryRaw<
+            Array<{ qtyBefore: number; qtyAfter: number }>
+          >`
+            WITH target AS (
+              SELECT "id", "stockQty" AS "qtyBefore"
+              FROM "product_variants"
+              WHERE "id" = ${variant.id}
+              FOR UPDATE
+            )
+            UPDATE "product_variants" AS current_variant
+            SET
+              "stockQty" = GREATEST(0, current_variant."stockQty" - ${item.quantity}),
+              "reservedQty" = GREATEST(0, current_variant."reservedQty" - ${item.quantity}),
+              "updatedAt" = CURRENT_TIMESTAMP
+            FROM target
+            WHERE current_variant."id" = target."id"
+            RETURNING target."qtyBefore" AS "qtyBefore",
+                      current_variant."stockQty" AS "qtyAfter"
+          `;
+
+          const stockChange = stockChanges[0];
+          if (!stockChange) continue;
 
           await tx.inventoryLog.create({
             data: {
               variantId: item.variantId,
               changeType: 'ORDER_DEDUCT',
               delta: -item.quantity,
-              qtyBefore: variant.stockQty,
-              qtyAfter: variant.stockQty - item.quantity,
+              qtyBefore: Number(stockChange.qtyBefore),
+              qtyAfter: Number(stockChange.qtyAfter),
               reason: `Order ${order.orderNumber} - Payment confirmed`,
               reference: order.id,
             },
