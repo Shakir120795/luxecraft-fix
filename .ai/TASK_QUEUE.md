@@ -588,3 +588,6 @@ LuxeCraft is fully implemented and production-ready:
 - [x] Replace legacy custom-design token refresh/localStorage assumptions with shared HttpOnly-cookie auth; use the same flow for reference uploads/messages.
 - [ ] Run API/admin/storefront builds and browser smoke checks after all requested fixes are complete.
 - [ ] Pull and deploy the combined batch once the user confirms the remaining issue list is complete.
+
+
+- [x] Automatically deactivate a coupon and clear its homepage label after the global use limit is reached, including when legacy use counts are corrected by an admin.
