@@ -88,10 +88,14 @@ export async function releaseCouponCustomerUsage(
   const identity = normalizedIdentity({ userId, guestEmail });
   if (!identity) return;
 
+  const customerWhere = identity.kind === 'user'
+    ? { userId: identity.userId }
+    : { guestEmail: identity.guestEmail };
+
   await tx.couponCustomerUsage.updateMany({
     where: {
       couponId,
-      ...identity,
+      ...customerWhere,
       reservedCount: { gt: 0 },
     },
     data: { reservedCount: { decrement: 1 } },
@@ -108,10 +112,14 @@ export async function redeemCouponCustomerUsage(
   const identity = normalizedIdentity({ userId, guestEmail });
   if (!identity) return;
 
+  const customerWhere = identity.kind === 'user'
+    ? { userId: identity.userId }
+    : { guestEmail: identity.guestEmail };
+
   const converted = await tx.couponCustomerUsage.updateMany({
     where: {
       couponId,
-      ...identity,
+      ...customerWhere,
       reservedCount: { gt: 0 },
     },
     data: {
@@ -123,7 +131,7 @@ export async function redeemCouponCustomerUsage(
 
   // Backward-compatible recovery for a paid RESERVED order that predates these
   // aggregate rows. Order-level RESERVED -> USED remains the idempotency guard.
-  if (identity.userId) {
+  if (identity.kind === 'user') {
     await tx.couponCustomerUsage.upsert({
       where: {
         couponId_userId: { couponId, userId: identity.userId },
