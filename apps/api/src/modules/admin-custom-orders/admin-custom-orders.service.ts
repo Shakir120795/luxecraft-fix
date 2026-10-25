@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { CustomRequestStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -37,9 +38,25 @@ export class AdminCustomOrdersService {
   }
 
   async updateRequestStatus(id: string, status: string): Promise<any> {
+    // Accept legacy admin labels while persisting only valid database enum values.
+    const legacyStatusAliases: Record<string, CustomRequestStatus> = {
+      PENDING: CustomRequestStatus.SUBMITTED,
+      REVIEWING: CustomRequestStatus.UNDER_REVIEW,
+      ACCEPTED: CustomRequestStatus.APPROVED,
+    };
+    const normalizedStatus =
+      legacyStatusAliases[status] ??
+      (Object.values(CustomRequestStatus).includes(status as CustomRequestStatus)
+        ? (status as CustomRequestStatus)
+        : null);
+
+    if (!normalizedStatus) {
+      throw new BadRequestException('Invalid custom request status.');
+    }
+
     return this.prisma.customRequest.update({
       where: { id },
-      data: { status: status as any },
+      data: { status: normalizedStatus },
     });
   }
 }
