@@ -11,7 +11,16 @@ import {
   CustomRequest,
 } from '@/lib/api';
 
-const statusOptions = ['PENDING', 'REVIEWING', 'QUOTED', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+const statusOptions = [
+  { value: 'SUBMITTED', label: 'PENDING' },
+  { value: 'UNDER_REVIEW', label: 'REVIEWING' },
+  { value: 'QUOTED', label: 'QUOTED' },
+  { value: 'AWAITING_APPROVAL', label: 'AWAITING APPROVAL' },
+  { value: 'APPROVED', label: 'ACCEPTED' },
+  { value: 'IN_PROGRESS', label: 'IN_PROGRESS' },
+  { value: 'COMPLETED', label: 'COMPLETED' },
+  { value: 'CANCELLED', label: 'CANCELLED' },
+];
 
 export default function CustomRequestDetailPage() {
   const params = useParams();
@@ -152,7 +161,7 @@ export default function CustomRequestDetailPage() {
               </p>
             </div>
             <span className={`px-4 py-2 text-sm font-medium bg-blue-100 text-blue-800`}>
-              {request.status}
+              {statusOptions.find((option) => option.value === request.status)?.label ?? request.status}
             </span>
           </div>
         </div>
@@ -385,8 +394,8 @@ export default function CustomRequestDetailPage() {
                   onChange={(e) => setNewStatus(e.target.value)}
                   className="w-full px-4 py-2 border border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] text-sm focus:outline-none focus:border-[var(--color-accent)]"
                 >
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>{status}</option>
+                  {statusOptions.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
                 <button
