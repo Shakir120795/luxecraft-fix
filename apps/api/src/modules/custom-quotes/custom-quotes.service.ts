@@ -320,22 +320,32 @@ export class CustomQuotesService {
       if (provider !== 'paypal' && provider !== 'razorpay') {
         throw new BadRequestException('This order already has a pending payment using another method.');
       }
-      if (!providerOrderId) {
-        throw new BadRequestException('The pending payment reference is missing. Contact support before retrying payment.');
+
+      // Older PayPal payment rows may not contain an approval URL. In that case
+      // replace only the still-pending payment session so the customer can resume.
+      if (provider === 'paypal' && typeof metadata.approveUrl !== 'string') {
+        const cancelled = await this.payments.cancelPendingPayment(activePayment.id);
+        if (!cancelled) {
+          throw new BadRequestException('The previous payment is changing state. Refresh the quote before trying again.');
+        }
+      } else {
+        if (!providerOrderId) {
+          throw new BadRequestException('The pending payment reference is missing. Contact support before retrying payment.');
+        }
+        return {
+          success: true,
+          alreadyPaid: false,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          payment: activePayment,
+          provider,
+          providerOrderId,
+          publicKey: provider === 'razorpay' ? configuration.publicKey : this.paymentProviders.status(currency).publicKey,
+          approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
+          currency,
+          total: amount,
+        };
       }
-      return {
-        success: true,
-        alreadyPaid: false,
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        payment: activePayment,
-        provider,
-        providerOrderId,
-        publicKey: provider === 'razorpay' ? configuration.publicKey : this.paymentProviders.status(currency).publicKey,
-        approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
-        currency,
-        total: amount,
-      };
     }
 
     const result = await this.payments.createPayment({
