@@ -359,7 +359,7 @@ export class PaymentsController {
       };
     }
 
-    if (![PaymentStatus.PENDING, PaymentStatus.AUTHORIZED].includes(payment.status)) {
+    if (payment.status !== PaymentStatus.PENDING && payment.status !== PaymentStatus.AUTHORIZED) {
       throw new BadRequestException('This Razorpay checkout session is no longer active. Please continue with the currently selected payment method.');
     }
 
@@ -475,7 +475,7 @@ export class PaymentsController {
       };
     }
 
-    if (![PaymentStatus.PENDING, PaymentStatus.AUTHORIZED].includes(payment.status)) {
+    if (payment.status !== PaymentStatus.PENDING && payment.status !== PaymentStatus.AUTHORIZED) {
       throw new BadRequestException('This PayPal checkout session is no longer active. Please continue with the currently selected payment method.');
     }
 
@@ -644,7 +644,7 @@ export class PaymentsController {
     }
 
     const payment = order.payments.find(
-      (item) => item.provider === 'crypto' && [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED].includes(item.status),
+      (item) => item.provider === 'crypto' && (item.status === PaymentStatus.PENDING || item.status === PaymentStatus.AUTHORIZED),
     );
     if (!payment) {
       throw new BadRequestException('Crypto payment is not pending for this order');
