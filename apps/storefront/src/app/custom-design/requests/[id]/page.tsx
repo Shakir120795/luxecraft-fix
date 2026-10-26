@@ -774,10 +774,12 @@ export default function CustomRequestDetailPage() {
                               key={provider}
                               onClick={() => {
                                 if (quotePayment && quotePayment.provider !== provider) {
-                                  if (
-                                    quotePayment.provider === 'crypto' &&
-                                    !confirm('This quote has an active crypto payment session. If you already sent crypto, do not switch methods because the old payment may no longer be matched. Switch payment method anyway?')
-                                  ) return;
+                                  const previousMethod = quotePayment.provider === 'paypal'
+                                    ? 'PayPal'
+                                    : quotePayment.provider === 'razorpay'
+                                      ? 'Razorpay'
+                                      : 'Crypto';
+                                  if (!confirm(`This quote has an active ${previousMethod} checkout. Switch only if you have not approved or paid through it. The old checkout session will be retired. Continue?`)) return;
                                   setQuotePayment(null);
                                   setQuoteCryptoTxHash('');
                                   setQuotePaymentMessage(null);
