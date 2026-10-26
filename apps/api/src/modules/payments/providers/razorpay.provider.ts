@@ -65,8 +65,39 @@ export class RazorpayProvider {
         amount: Number(order.amount) / 100,
         currency: order.currency,
       };
-    } catch (error) {
-      this.logger.error(`Failed to create Razorpay order: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      // Razorpay SDK can reject with a plain object instead of an Error.
+      // Log only safe gateway diagnostics; never log credentials or headers.
+      const caught = error && typeof error === 'object'
+        ? error as {
+            message?: unknown;
+            stack?: unknown;
+            statusCode?: unknown;
+            code?: unknown;
+            description?: unknown;
+            reason?: unknown;
+            error?: { code?: unknown; description?: unknown; reason?: unknown };
+            response?: {
+              status?: unknown;
+              data?: { error?: { code?: unknown; description?: unknown; reason?: unknown } };
+            };
+          }
+        : {};
+      const gatewayError = caught.error ?? caught.response?.data?.error;
+      const details = {
+        statusCode: caught.statusCode ?? caught.response?.status,
+        code: gatewayError?.code ?? caught.code,
+        description: gatewayError?.description ?? caught.description,
+        reason: gatewayError?.reason ?? caught.reason,
+        message: typeof caught.message === 'string' ? caught.message : undefined,
+      };
+      const safeDetails = Object.fromEntries(
+        Object.entries(details).filter(([, value]) => value !== undefined && value !== null),
+      );
+      this.logger.error(
+        `Failed to create Razorpay order: ${JSON.stringify(safeDetails) || String(error)}`,
+        typeof caught.stack === 'string' ? caught.stack : undefined,
+      );
       throw new BadRequestException('Failed to create Razorpay order');
     }
   }
