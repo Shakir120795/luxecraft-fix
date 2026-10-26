@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CryptoProvider, CryptoPaymentOption } from './providers/crypto.provider';
+import { PayPalProvider } from './providers/paypal.provider';
 
 export type PaymentProviderStatus = {
   provider: string;
@@ -19,6 +20,7 @@ export class PaymentProviderService {
   constructor(
     private readonly config: ConfigService,
     private readonly cryptoProvider: CryptoProvider,
+    private readonly paypalProvider: PayPalProvider,
   ) {}
 
   status(currency: string): PaymentProviderStatus {
@@ -37,18 +39,30 @@ export class PaymentProviderService {
       ['USD'],
     );
 
+    const currencyCode = currency.toUpperCase();
     const providers = configuredProviders.filter((candidate) =>
       this.isConfigured(candidate) &&
-      (candidate.toLowerCase() !== 'crypto' || currency.toUpperCase() === 'USD'),
+      this.isCurrencySupported(candidate, currencyCode) &&
+      (candidate.toLowerCase() !== 'crypto' || currencyCode === 'USD'),
     );
+
+    const configuredProviderSupported =
+      this.isConfigured(configuredProvider) &&
+      this.isCurrencySupported(configuredProvider, currencyCode);
+    const effectiveProvider = configuredProviderSupported
+      ? configuredProvider
+      : providers[0] || configuredProvider;
+    const effectiveProviderConfigured =
+      this.isConfigured(effectiveProvider) &&
+      this.isCurrencySupported(effectiveProvider, currencyCode);
 
     let publicKey: string | undefined;
 
-    if (configuredProvider === 'razorpay') {
+    if (effectiveProvider === 'razorpay') {
       publicKey = this.config.get<string>(
         'commerce.payment.razorpayKeyId',
       );
-    } else if (configuredProvider === 'paypal') {
+    } else if (effectiveProvider === 'paypal') {
       publicKey = this.config.get<string>(
         'commerce.payment.paypalClientId',
       );
@@ -63,15 +77,26 @@ export class PaymentProviderService {
     );
 
     return {
-      provider: configuredProvider,
+      provider: effectiveProvider,
       providers,
-      configured: this.isConfigured(configuredProvider),
-      currencySupported: currencies.includes(currency.toUpperCase()),
+      configured: effectiveProviderConfigured,
+      currencySupported: currencies.includes(currencyCode),
       ...(publicKey ? { publicKey } : {}),
       ...(cryptoPaymentOptions.length > 0
         ? { cryptoNetworks, cryptoSupportedAssets, cryptoPaymentOptions }
         : {}),
     };
+  }
+
+  private isCurrencySupported(provider: string, currency: string): boolean {
+    switch (provider.toLowerCase()) {
+      case 'paypal':
+        return this.paypalProvider.isCurrencySupported(currency);
+      case 'crypto':
+        return currency === 'USD';
+      default:
+        return true;
+    }
   }
 
   private isConfigured(provider: string): boolean {
