@@ -151,7 +151,7 @@ export default function CustomRequestDetailPage() {
         .filter((provider): provider is 'paypal' | 'razorpay' =>
           provider === 'paypal' || provider === 'razorpay',
         );
-      const providers = configured.length
+      const providers: Array<'paypal' | 'razorpay'> = configured.length
         ? Array.from(new Set(configured))
         : configuration.configured &&
           (configuration.provider === 'paypal' || configuration.provider === 'razorpay')
