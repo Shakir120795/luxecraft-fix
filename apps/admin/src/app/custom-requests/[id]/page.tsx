@@ -76,18 +76,39 @@ export default function CustomRequestDetailPage() {
     }
   }
 
+  function openQuoteForm() {
+    setQuoteData({
+      amount: request?.quote ? Number(request.quote.amount) : 0,
+      description: request?.quote?.description ?? '',
+    });
+    setShowQuoteForm(true);
+  }
+
   async function handleCreateQuote(e: React.FormEvent) {
     e.preventDefault();
+    if (!Number.isFinite(quoteData.amount) || quoteData.amount <= 0) {
+      alert('Enter the final deal amount greater than zero.');
+      return;
+    }
+
+    const isRevision = Boolean(request?.quote);
     setCreatingQuote(true);
     try {
-      await createQuote(requestId, quoteData);
-      await loadRequest(); // Reload to get the quote
+      await createQuote(requestId, {
+        amount: Number(quoteData.amount.toFixed(2)),
+        description: quoteData.description.trim(),
+      });
+      await loadRequest();
       setShowQuoteForm(false);
       setQuoteData({ amount: 0, description: '' });
-      alert('Quote created successfully');
+      alert(
+        isRevision
+          ? 'Revised quote created. The customer must accept the new amount before paying.'
+          : 'Quote created successfully',
+      );
     } catch (error) {
       console.error('Failed to create quote:', error);
-      alert('Failed to create quote');
+      alert(error instanceof Error ? error.message : 'Failed to save quote');
     } finally {
       setCreatingQuote(false);
     }
@@ -204,17 +225,17 @@ export default function CustomRequestDetailPage() {
                 <h2 className="text-xl font-serif text-[var(--color-primary)]">
                   Quote
                 </h2>
-                {!request.quote && !showQuoteForm && (
+                {!showQuoteForm && (
                   <button
-                    onClick={() => setShowQuoteForm(true)}
+                    onClick={openQuoteForm}
                     className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-strong)] text-white px-4 py-2 text-sm uppercase tracking-wider transition-colors"
                   >
-                    Create Quote
+                    {request.quote ? 'Revise Quote' : 'Create Quote'}
                   </button>
                 )}
               </div>
 
-              {request.quote ? (
+              {request.quote && !showQuoteForm ? (
                 <div className="border border-[var(--color-border)] bg-[var(--color-bg)] p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div>
@@ -242,9 +263,14 @@ export default function CustomRequestDetailPage() {
                 </div>
               ) : showQuoteForm ? (
                 <form onSubmit={handleCreateQuote} className="space-y-4">
+                  {request.quote && (
+                    <p className="border border-[var(--color-border)] bg-[var(--color-bg)] p-3 text-sm text-[var(--color-muted)]">
+                      Saving a revision creates a new quote version and retires unpaid checkout sessions for the previous version. The customer must accept the updated total before payment.
+                    </p>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-[var(--color-text)] mb-2">
-                      Quote Amount ($) *
+                      Final Deal Amount (USD) *
                     </label>
                     <input
                       type="number"
@@ -275,7 +301,9 @@ export default function CustomRequestDetailPage() {
                       disabled={creatingQuote}
                       className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-strong)] text-white px-6 py-2 text-sm uppercase tracking-wider transition-colors disabled:opacity-50"
                     >
-                      {creatingQuote ? 'Creating...' : 'Create Quote'}
+                      {creatingQuote
+                        ? request.quote ? 'Saving Revision...' : 'Creating...'
+                        : request.quote ? 'Save Revised Quote' : 'Create Quote'}
                     </button>
                     <button
                       type="button"
