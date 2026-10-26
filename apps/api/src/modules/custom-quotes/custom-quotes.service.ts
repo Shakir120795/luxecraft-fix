@@ -190,7 +190,7 @@ export class CustomQuotesService {
       throw new BadRequestException('The quote total must be greater than zero before payment.');
     }
     const currency = quote.currency.toUpperCase();
-    const requested = requestedProvider.toLowerCase().trim();
+    const requested = String(requestedProvider || '').toLowerCase().trim();
     const configuration = this.paymentProviders.status(currency);
     const availableProviders = configuration.providers.length
       ? configuration.providers
@@ -340,7 +340,7 @@ export class CustomQuotesService {
           payment: activePayment,
           provider,
           providerOrderId,
-          publicKey: provider === 'razorpay' ? configuration.publicKey : this.paymentProviders.status(currency).publicKey,
+          publicKey: this.paymentProviders.publicKeyFor(provider),
           approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
           currency,
           total: amount,
