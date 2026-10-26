@@ -7,6 +7,7 @@ export default registerAs('commerce', () => ({
   defaultCurrency: process.env.DEFAULT_CURRENCY ?? 'USD',
   supportedCurrencies: csv(process.env.SUPPORTED_CURRENCIES, ['USD','INR','CAD','GBP','AUD','AED','EUR','JPY','SGD','NZD','CHF','CNY']),
   supportedCountries: csv(process.env.SUPPORTED_COUNTRIES),
+  appUrl: (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, ''),
   payment: {
     provider: (process.env.PAYMENT_PROVIDER ?? 'none').toLowerCase(),
     providers: csv(process.env.PAYMENT_PROVIDERS),
@@ -19,7 +20,13 @@ export default registerAs('commerce', () => ({
     paypalClientId: process.env.PAYPAL_CLIENT_ID,
     paypalClientSecret: process.env.PAYPAL_CLIENT_SECRET,
     paypalWebhookId: process.env.PAYPAL_WEBHOOK_ID,
-    paypalBaseUrl: process.env.PAYPAL_BASE_URL ?? 'https://api-m.sandbox.paypal.com',
+    // Production should use live credentials and the live API by default. Explicitly
+    // set PAYPAL_BASE_URL to the sandbox host when testing with sandbox credentials.
+    paypalBaseUrl:
+      process.env.PAYPAL_BASE_URL ??
+      (process.env.NODE_ENV === 'production'
+        ? 'https://api-m.paypal.com'
+        : 'https://api-m.sandbox.paypal.com'),
     cryptoEnabled: (process.env.CRYPTO_ENABLED ?? 'false').toLowerCase() === 'true',
     cryptoNetworks: csv(process.env.CRYPTO_NETWORKS),
     cryptoSupportedAssets: csv(process.env.CRYPTO_SUPPORTED_ASSETS),
