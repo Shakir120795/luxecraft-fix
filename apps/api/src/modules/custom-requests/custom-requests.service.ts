@@ -62,7 +62,30 @@ export class CustomRequestsService {
         categoryId: data.categoryId,
         status: CustomRequestStatus.SUBMITTED,
           },
-          include: { messages: true, quotes: true, designs: true },
+          include: {
+        messages: true,
+        quotes: {
+          orderBy: { version: 'desc' },
+          include: {
+            order: {
+              select: {
+                id: true,
+                orderNumber: true,
+                paymentStatus: true,
+                payments: {
+                  select: {
+                    provider: true,
+                    status: true,
+                    providerPaymentId: true,
+                    metadata: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        designs: true,
+      },
         });
       } catch (error) {
         const isUniqueConflict =
