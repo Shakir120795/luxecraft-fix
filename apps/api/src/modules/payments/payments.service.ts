@@ -177,6 +177,8 @@ export class PaymentsService {
           receivingAddress: crypto.address,
           expectedAmount: crypto.amount,
           settlementCurrency: crypto.currency,
+          instructions: crypto.instructions,
+          qrPayload: crypto.qrPayload,
         } as Prisma.InputJsonValue,
       },
     });
