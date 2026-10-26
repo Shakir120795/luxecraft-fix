@@ -541,6 +541,7 @@ model Order {
   userId             String?
   guestEmail         String?
   orderType          OrderType         @default(STANDARD)
+  customQuoteId      String?           @unique
   orderStatus        OrderStatus       @default(PENDING)
   paymentStatus      PaymentStatus     @default(PENDING)
   fulfillmentStatus  FulfillmentStatus @default(UNFULFILLED)
@@ -575,6 +576,7 @@ model Order {
   shippingMethod     ShippingMethod?   @relation(fields: [shippingMethodId], references: [id])
   user               User?             @relation(fields: [userId], references: [id])
   coupon             Coupon?           @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  customQuote        CustomQuote?      @relation(fields: [customQuoteId], references: [id], onDelete: SetNull)
   payments           Payment[]
 
   @@index([orderNumber])
@@ -746,6 +748,7 @@ model CustomQuote {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   customRequest    CustomRequest @relation(fields: [customRequestId], references: [id], onDelete: Cascade)
+  order            Order?
 
   @@unique([customRequestId, version])
   @@index([customRequestId])
