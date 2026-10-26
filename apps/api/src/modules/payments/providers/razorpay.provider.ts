@@ -98,6 +98,15 @@ export class RazorpayProvider {
         `Failed to create Razorpay order: ${JSON.stringify(safeDetails) || String(error)}`,
         typeof caught.stack === 'string' ? caught.stack : undefined,
       );
+
+      const gatewayDescription =
+        typeof gatewayError?.description === 'string' ? gatewayError.description : '';
+      if (/amount exceeds maximum amount allowed/i.test(gatewayDescription)) {
+        throw new BadRequestException(
+          'This quote exceeds Razorpay’s maximum permitted transaction amount. Please use PayPal or Crypto for this quote, or contact Razorpay to confirm your account limit.',
+        );
+      }
+
       throw new BadRequestException('Failed to create Razorpay order');
     }
   }
