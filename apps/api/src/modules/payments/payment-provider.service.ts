@@ -60,17 +60,7 @@ export class PaymentProviderService {
       this.isConfigured(effectiveProvider) &&
       this.isCurrencySupported(effectiveProvider, currencyCode);
 
-    let publicKey: string | undefined;
-
-    if (effectiveProvider === 'razorpay') {
-      publicKey = this.config.get<string>(
-        'commerce.payment.razorpayKeyId',
-      );
-    } else if (effectiveProvider === 'paypal') {
-      publicKey = this.config.get<string>(
-        'commerce.payment.paypalClientId',
-      );
-    }
+    const publicKey = this.publicKeyFor(effectiveProvider);
 
     const cryptoPaymentOptions = this.cryptoProvider.getConfiguredPaymentOptions();
     const cryptoNetworks = Array.from(
@@ -90,6 +80,17 @@ export class PaymentProviderService {
         ? { cryptoNetworks, cryptoSupportedAssets, cryptoPaymentOptions }
         : {}),
     };
+  }
+
+  publicKeyFor(provider: string): string | undefined {
+    switch (provider.toLowerCase()) {
+      case 'razorpay':
+        return this.config.get<string>('commerce.payment.razorpayKeyId');
+      case 'paypal':
+        return this.config.get<string>('commerce.payment.paypalClientId');
+      default:
+        return undefined;
+    }
   }
 
   private isCurrencySupported(provider: string, currency: string): boolean {
