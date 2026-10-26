@@ -7,6 +7,10 @@ import {
   getCustomRequest,
   sendCustomMessage,
   acceptQuote,
+  createCustomQuoteCheckout,
+  getPaymentConfiguration,
+  capturePayPalPayment,
+  verifyRazorpayPayment,
   isAuthenticated,
   CustomRequest,
   CustomMessage,
@@ -26,6 +30,21 @@ export default function CustomRequestDetailPage() {
 
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
+  const [quoteProviders, setQuoteProviders] = useState<Array<'paypal' | 'razorpay'>>([]);
+  const [quoteProvider, setQuoteProvider] = useState<'paypal' | 'razorpay'>('paypal');
+  const [startingQuotePayment, setStartingQuotePayment] = useState(false);
+  const [quotePaymentError, setQuotePaymentError] = useState<string | null>(null);
+  const [quotePaymentMessage, setQuotePaymentMessage] = useState<string | null>(null);
+  const [quotePayment, setQuotePayment] = useState<{
+    orderId: string;
+    orderNumber: string;
+    provider: 'paypal' | 'razorpay';
+    providerOrderId: string;
+    approveUrl?: string;
+    publicKey?: string;
+    currency: string;
+    total: number;
+  } | null>(null);
 
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -47,6 +66,32 @@ export default function CustomRequestDetailPage() {
         setRequest(data.request);
         setMessages(data.messages);
         setQuotes(data.quotes);
+
+        const latest = data.quotes[0];
+        const activePayment = latest?.order?.payments?.find(
+          (payment) => payment.status === 'PENDING' || payment.status === 'AUTHORIZED',
+        );
+        if (latest?.order && activePayment) {
+          const metadata = activePayment.metadata && typeof activePayment.metadata === 'object'
+            ? activePayment.metadata
+            : {};
+          const provider = activePayment.provider.toLowerCase();
+          const providerOrderId = provider === 'paypal'
+            ? String(metadata.paypalOrderId || activePayment.providerPaymentId || '')
+            : String(metadata.razorpayOrderId || activePayment.providerPaymentId || '');
+          if ((provider === 'paypal' || provider === 'razorpay') && providerOrderId) {
+            setQuotePayment({
+              orderId: latest.order.id,
+              orderNumber: latest.order.orderNumber,
+              provider,
+              providerOrderId,
+              approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
+              currency: latest.currency,
+              total: latest.total,
+            });
+            setQuotePaymentMessage('A payment session is already open for this accepted quote. Continue with the same payment to avoid creating a duplicate.');
+          }
+        }
       } else {
         setError('Request not found');
       }
@@ -77,15 +122,168 @@ export default function CustomRequestDetailPage() {
   }
 
   async function handleAcceptQuote(quoteId: string) {
-    if (!confirm('Accept this quote and proceed to checkout?')) return;
+    if (!confirm('Accept this quote? You will be able to pay only after accepting it.')) return;
 
+    setQuotePaymentError(null);
+    setQuotePaymentMessage(null);
     const result = await acceptQuote(quoteId);
 
     if (result.success) {
+      setQuotePaymentMessage('Quote accepted. Review the payment method below when you are ready to place the custom-design order.');
       await loadRequest();
-      router.push('/checkout');
     } else {
       alert(result.message || 'Failed to accept quote');
+    }
+  }
+
+  useEffect(() => {
+    const latest = quotes[0];
+    if (!latest) {
+      setQuoteProviders([]);
+      return;
+    }
+
+    let active = true;
+    getPaymentConfiguration(latest.currency || 'USD').then((configuration) => {
+      if (!active) return;
+      const configured = (configuration.providers || [])
+        .map((provider) => provider.toLowerCase())
+        .filter((provider): provider is 'paypal' | 'razorpay' =>
+          provider === 'paypal' || provider === 'razorpay',
+        );
+      const providers = configured.length
+        ? Array.from(new Set(configured))
+        : configuration.configured &&
+          (configuration.provider === 'paypal' || configuration.provider === 'razorpay')
+          ? [configuration.provider]
+          : [];
+      setQuoteProviders(providers);
+      setQuoteProvider((current) => providers.includes(current) ? current : providers[0] || 'paypal');
+    }).catch(() => {
+      if (active) setQuoteProviders([]);
+    });
+
+    return () => { active = false; };
+  }, [quotes]);
+
+  async function handleStartQuotePayment() {
+    const latest = quotes[0];
+    if (!latest || latest.status !== 'Accepted') {
+      setQuotePaymentError('Accept the latest quote before paying.');
+      return;
+    }
+    if (!quoteProviders.includes(quoteProvider)) {
+      setQuotePaymentError('No configured payment gateway supports this quote currency. Please contact Wolhomes.');
+      return;
+    }
+
+    setStartingQuotePayment(true);
+    setQuotePaymentError(null);
+    setQuotePaymentMessage(null);
+    try {
+      const result = await createCustomQuoteCheckout(latest.id, quoteProvider);
+      if (!result.success || !result.data) {
+        throw new Error(result.message || 'Could not prepare custom-design payment.');
+      }
+
+      const payment = result.data;
+      if (payment.alreadyPaid) {
+        setQuotePaymentMessage('Payment is already confirmed for this custom-design order.');
+        await loadRequest();
+        return;
+      }
+
+      const provider = String(payment.provider || quoteProvider).toLowerCase();
+      if ((provider !== 'paypal' && provider !== 'razorpay') || !payment.orderId || !payment.providerOrderId) {
+        throw new Error('Payment session details were incomplete. Please refresh and try again.');
+      }
+
+      const paymentState = {
+        orderId: String(payment.orderId),
+        orderNumber: String(payment.orderNumber || ''),
+        provider,
+        providerOrderId: String(payment.providerOrderId),
+        approveUrl: typeof payment.approveUrl === 'string' ? payment.approveUrl : undefined,
+        publicKey: typeof payment.publicKey === 'string' ? payment.publicKey : undefined,
+        currency: String(payment.currency || latest.currency || 'USD'),
+        total: Number(payment.total ?? latest.total),
+      } as const;
+      setQuotePayment(paymentState);
+
+      if (provider === 'paypal') {
+        if (!paymentState.approveUrl) {
+          throw new Error('PayPal did not return a checkout link. Check PayPal live/sandbox credentials and try again.');
+        }
+        setQuotePaymentMessage('Your secure PayPal session is ready. Open PayPal below; after approval, Wolhomes will confirm the payment automatically.');
+        return;
+      }
+
+      if (!paymentState.publicKey) {
+        throw new Error('Razorpay payment could not be initialized because its public key is missing.');
+      }
+
+      const loadRazorpay = () => new Promise<void>((resolve, reject) => {
+        if ((window as any).Razorpay) {
+          resolve();
+          return;
+        }
+        const existing = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]') as HTMLScriptElement | null;
+        if (existing) {
+          existing.addEventListener('load', () => resolve(), { once: true });
+          existing.addEventListener('error', () => reject(new Error('Razorpay Checkout could not be loaded.')), { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Razorpay Checkout could not be loaded.'));
+        document.body.appendChild(script);
+      });
+
+      await loadRazorpay();
+      const RazorpayConstructor = (window as any).Razorpay;
+      if (!RazorpayConstructor) throw new Error('Razorpay Checkout is unavailable.');
+
+      const checkout = new RazorpayConstructor({
+        key: paymentState.publicKey,
+        order_id: paymentState.providerOrderId,
+        amount: Math.round(paymentState.total * 100),
+        currency: paymentState.currency,
+        name: 'Wolhomes',
+        description: `Custom design ${latest.quoteNumber}`,
+        handler: async (response: {
+          razorpay_order_id: string;
+          razorpay_payment_id: string;
+          razorpay_signature: string;
+        }) => {
+          setStartingQuotePayment(true);
+          try {
+            const verification = await verifyRazorpayPayment({
+              orderId: paymentState.orderId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+            if (!verification.success) {
+              setQuotePaymentError(verification.message || 'Payment confirmation is pending. Do not pay again; refresh this request to check status.');
+              return;
+            }
+            router.push(`/order-confirmation?orderId=${encodeURIComponent(paymentState.orderId)}`);
+          } finally {
+            setStartingQuotePayment(false);
+          }
+        },
+        modal: {
+          ondismiss: () => setQuotePaymentMessage('The payment window was closed. Your accepted quote is saved; you can continue payment later.'),
+        },
+        theme: { color: '#bf4e48' },
+      });
+      checkout.open();
+    } catch (error) {
+      setQuotePaymentError(error instanceof Error ? error.message : 'Could not prepare custom-design payment.');
+    } finally {
+      setStartingQuotePayment(false);
     }
   }
 
@@ -414,20 +612,86 @@ export default function CustomRequestDetailPage() {
                   </p>
                 )}
 
+                {quotePaymentError && (
+                  <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                    {quotePaymentError}
+                  </div>
+                )}
+                {quotePaymentMessage && (
+                  <div className="mb-4 rounded-md border border-[#ded8d0] bg-[#faf9f7] p-3 text-sm leading-6 text-[#6a636b]">
+                    {quotePaymentMessage}
+                  </div>
+                )}
+
                 {latestQuote.status === 'Pending' && (
+                  <button
+                    onClick={() => handleAcceptQuote(latestQuote.id)}
+                    className="w-full rounded-md bg-[#bf4e48] px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#a9443e]"
+                  >
+                    Accept Quote to Continue
+                  </button>
+                )}
+
+                {latestQuote.status === 'Accepted' && latestQuote.order?.paymentStatus === 'PAID' && (
+                  <div className="rounded-md border border-green-200 bg-green-50 p-4 text-sm leading-6 text-green-800">
+                    Payment received for order {latestQuote.order.orderNumber}. The Wolhomes team can now begin production.
+                    <Link
+                      href={`/order-confirmation?orderId=${encodeURIComponent(latestQuote.order.id)}`}
+                      className="mt-3 block font-semibold underline underline-offset-4"
+                    >
+                      View order confirmation
+                    </Link>
+                  </div>
+                )}
+
+                {latestQuote.status === 'Accepted' && latestQuote.order?.paymentStatus !== 'PAID' && (
                   <div className="space-y-3">
-                    <button
-                      onClick={() => handleAcceptQuote(latestQuote.id)}
-                      className="w-full rounded-md bg-[#bf4e48] px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#a9443e]"
-                    >
-                      Accept Quote
-                    </button>
-                    <button
-                      type="button"
-                      className="w-full rounded-md border border-[#ded8d0] bg-white px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.08em] text-[#302b35] transition hover:border-[#bf4e48] hover:text-[#bf4e48]"
-                    >
-                      Request Revision
-                    </button>
+                    <p className="text-xs leading-5 text-[#6a636b]">
+                      Your quote is accepted. Choose a payment gateway and pay the approved amount to place the custom-design order.
+                    </p>
+                    {quoteProviders.length > 0 ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          {quoteProviders.map((provider) => (
+                            <button
+                              type="button"
+                              key={provider}
+                              onClick={() => setQuoteProvider(provider)}
+                              disabled={startingQuotePayment}
+                              className={`rounded-md border px-3 py-3 text-sm font-semibold uppercase tracking-[0.08em] transition ${
+                                quoteProvider === provider
+                                  ? 'border-[#bf4e48] bg-[#bf4e48]/5 text-[#bf4e48]'
+                                  : 'border-[#ded8d0] bg-white text-[#302b35]'
+                              }`}
+                            >
+                              {provider === 'paypal' ? 'PayPal' : 'Razorpay'}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleStartQuotePayment}
+                          disabled={startingQuotePayment}
+                          className="w-full rounded-md bg-[#bf4e48] px-6 py-3.5 text-sm font-semibold uppercase tracking-[0.1em] text-white transition hover:bg-[#a9443e] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {startingQuotePayment ? 'Preparing secure payment…' : 'Continue to Secure Payment'}
+                        </button>
+                        {quotePayment?.provider === 'paypal' && quotePayment.approveUrl && (
+                          <a
+                            href={quotePayment.approveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block w-full rounded-md border border-[#ded8d0] bg-white px-6 py-3.5 text-center text-sm font-semibold uppercase tracking-[0.08em] text-[#302b35] transition hover:border-[#bf4e48] hover:text-[#bf4e48]"
+                          >
+                            Open PayPal to Pay
+                          </a>
+                        )}
+                      </>
+                    ) : (
+                      <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                        No payment gateway is configured for {latestQuote.currency}. Please contact Wolhomes to arrange payment before production starts.
+                      </p>
+                    )}
                   </div>
                 )}
               </section>
