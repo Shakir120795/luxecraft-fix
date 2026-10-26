@@ -80,6 +80,7 @@ export class PayPalProvider {
     orderId: string,
     amount: number,
     currency: string,
+    options?: { customRequestId?: string },
   ): Promise<PayPalOrderResult> {
     const normalizedCurrency = currency.toUpperCase();
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -118,7 +119,9 @@ export class PayPalProvider {
               payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
               user_action: 'PAY_NOW',
               return_url: `${this.appUrl}/order-confirmation?orderId=${encodedOrderId}&paypalReturn=1`,
-              cancel_url: `${this.appUrl}/checkout?paypalCancelled=1&orderId=${encodedOrderId}`,
+              cancel_url: options?.customRequestId
+                ? `${this.appUrl}/custom-design/requests/${encodeURIComponent(options.customRequestId)}?paypalCancelled=1`
+                : `${this.appUrl}/checkout?paypalCancelled=1&orderId=${encodedOrderId}`,
             },
           },
         },
