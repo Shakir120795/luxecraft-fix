@@ -40,11 +40,15 @@ export class PaymentProviderService {
     );
 
     const currencyCode = currency.toUpperCase();
-    const providers = configuredProviders.filter((candidate) =>
-      this.isConfigured(candidate) &&
-      this.isCurrencySupported(candidate, currencyCode) &&
-      (candidate.toLowerCase() !== 'crypto' || currencyCode === 'USD'),
-    );
+    const providers = Array.from(new Set(
+      configuredProviders
+        .map((candidate) => candidate.toLowerCase())
+        .filter((candidate) =>
+          this.isConfigured(candidate) &&
+          this.isCurrencySupported(candidate, currencyCode) &&
+          (candidate !== 'crypto' || currencyCode === 'USD'),
+        ),
+    ));
 
     const configuredProviderSupported =
       this.isConfigured(configuredProvider) &&
