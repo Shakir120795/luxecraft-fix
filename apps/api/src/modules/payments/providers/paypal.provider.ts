@@ -301,7 +301,13 @@ export class PayPalProvider {
   }
 
   private formatAmount(amount: number, currency: string): string {
-    const decimals = PayPalProvider.zeroDecimalCurrencies.has(currency.toUpperCase()) ? 0 : 2;
+    const normalizedCurrency = currency.toUpperCase();
+    const decimals = PayPalProvider.zeroDecimalCurrencies.has(normalizedCurrency) ? 0 : 2;
+    if (decimals === 0 && Math.abs(amount - Math.round(amount)) > 0.00001) {
+      throw new BadRequestException(
+        `PayPal requires a whole-number amount for ${normalizedCurrency}. Please correct the quote or product price before payment.`,
+      );
+    }
     return amount.toFixed(decimals);
   }
 
