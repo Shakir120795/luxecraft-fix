@@ -106,6 +106,9 @@ export class WebhookService {
       include: {
         items: true,
         payments: true,
+        customQuote: {
+          include: { customRequest: true },
+        },
       },
     });
 
@@ -233,6 +236,15 @@ export class WebhookService {
             paymentStatus: PaymentStatus.PAID,
           },
         });
+
+        // For custom-design orders, crafting may only begin after the quote has
+        // been accepted and payment has been verified by the gateway.
+        if (order.customQuote?.customRequestId) {
+          await tx.customRequest.update({
+            where: { id: order.customQuote.customRequestId },
+            data: { status: 'IN_PROGRESS' },
+          });
+        }
 
         for (const item of order.items) {
           if (!item.variantId) continue;
