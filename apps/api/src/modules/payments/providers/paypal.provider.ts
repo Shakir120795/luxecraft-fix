@@ -38,7 +38,7 @@ export class PayPalProvider {
       this.config.get<string>('commerce.payment.paypalBaseUrl') ||
       'https://api-m.sandbox.paypal.com';
     this.appUrl = (this.config.get<string>('commerce.appUrl') || 'http://localhost:3000')
-      .replace(/\\/+$/, '');
+      .replace(/\/+$/, '');
 
     if (!this.isConfigured()) {
       this.logger.warn('PayPal credentials not configured');
