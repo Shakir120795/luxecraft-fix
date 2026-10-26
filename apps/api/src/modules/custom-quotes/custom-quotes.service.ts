@@ -6,6 +6,7 @@ import {
   OrderStatus,
   PaymentStatus,
   FulfillmentStatus,
+  CustomRequestStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
@@ -44,36 +45,95 @@ export class CustomQuotesService {
     });
     if (!req) throw new NotFoundException(`Custom request not found.`);
 
-    // Get next version
-    const latestQuote = await this.prisma.customQuote.findFirst({
-      where: { customRequestId: data.customRequestId },
-      orderBy: { version: 'desc' },
-    });
-    const nextVersion = (latestQuote?.version ?? 0) + 1;
-
+    // Creating another quote is a revision. Retire unpaid checkout sessions for
+    // the previous version and require the customer to accept the new total.
     const quoteNumber = await this.generateQuoteNumber();
 
-    return this.prisma.customQuote.create({
-      data: {
-        customRequestId: data.customRequestId,
-        quoteNumber,
-        version: nextVersion,
-        baseProductPrice: new Prisma.Decimal(data.baseProductPrice),
-        designFee: new Prisma.Decimal(data.designFee),
-        materialFee: new Prisma.Decimal(data.materialFee ?? 0),
-        dimensionFee: new Prisma.Decimal(data.dimensionFee ?? 0),
-        rushFee: new Prisma.Decimal(data.rushFee ?? 0),
-        subtotal: new Prisma.Decimal(data.subtotal),
-        discount: new Prisma.Decimal(data.discount ?? 0),
-        shippingEstimate: new Prisma.Decimal(data.shippingEstimate ?? 0),
-        taxEstimate: new Prisma.Decimal(data.taxEstimate ?? 0),
-        total: new Prisma.Decimal(data.total),
-        currency: data.currency ?? 'USD',
-        description: data.description,
-        expiresAt: data.expiresAt,
-        status: QuoteStatus.DRAFT,
-        customerStatus: QuoteStatus.PENDING,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const latestQuote = await tx.customQuote.findFirst({
+        where: { customRequestId: data.customRequestId },
+        orderBy: { version: 'desc' },
+        include: { order: { include: { payments: true } } },
+      });
+
+      if (latestQuote?.order) {
+        const previousOrder = latestQuote.order;
+        const settledStatuses = [
+          PaymentStatus.PAID,
+          PaymentStatus.PARTIALLY_REFUNDED,
+          PaymentStatus.REFUNDED,
+        ];
+        if (
+          previousOrder.paymentStatus === PaymentStatus.PAID ||
+          previousOrder.payments.some((payment) => settledStatuses.includes(payment.status))
+        ) {
+          throw new BadRequestException(
+            'This quote already has a captured payment and cannot be revised. Contact support for a price adjustment or refund.',
+          );
+        }
+
+        const activePayments = previousOrder.payments.filter(
+          (payment) => payment.status === PaymentStatus.PENDING || payment.status === PaymentStatus.AUTHORIZED,
+        );
+        if (activePayments.length > 0) {
+          const cancelled = await tx.payment.updateMany({
+            where: {
+              id: { in: activePayments.map((payment) => payment.id) },
+              status: { in: [PaymentStatus.PENDING, PaymentStatus.AUTHORIZED] },
+            },
+            data: { status: PaymentStatus.CANCELLED },
+          });
+          if (cancelled.count !== activePayments.length) {
+            throw new BadRequestException(
+              'A previous payment is changing state. Refresh and try revising the quote again.',
+            );
+          }
+        }
+
+        await tx.order.update({
+          where: { id: previousOrder.id },
+          data: {
+            orderStatus: OrderStatus.CANCELLED,
+            paymentStatus: PaymentStatus.CANCELLED,
+            fulfillmentStatus: FulfillmentStatus.CANCELLED,
+          },
+        });
+      }
+
+      if (latestQuote) {
+        await tx.customQuote.update({
+          where: { id: latestQuote.id },
+          data: { status: QuoteStatus.REVISED, customerStatus: QuoteStatus.PENDING },
+        });
+        await tx.customRequest.update({
+          where: { id: data.customRequestId },
+          data: { status: CustomRequestStatus.AWAITING_APPROVAL },
+        });
+      }
+
+      const nextVersion = (latestQuote?.version ?? 0) + 1;
+      return tx.customQuote.create({
+        data: {
+          customRequestId: data.customRequestId,
+          quoteNumber,
+          version: nextVersion,
+          baseProductPrice: new Prisma.Decimal(data.baseProductPrice),
+          designFee: new Prisma.Decimal(data.designFee),
+          materialFee: new Prisma.Decimal(data.materialFee ?? 0),
+          dimensionFee: new Prisma.Decimal(data.dimensionFee ?? 0),
+          rushFee: new Prisma.Decimal(data.rushFee ?? 0),
+          subtotal: new Prisma.Decimal(data.subtotal),
+          discount: new Prisma.Decimal(data.discount ?? 0),
+          shippingEstimate: new Prisma.Decimal(data.shippingEstimate ?? 0),
+          taxEstimate: new Prisma.Decimal(data.taxEstimate ?? 0),
+          total: new Prisma.Decimal(data.total),
+          currency: data.currency ?? 'USD',
+          description: data.description,
+          expiresAt: data.expiresAt,
+          status: QuoteStatus.DRAFT,
+          customerStatus: QuoteStatus.PENDING,
+        },
+      });
     });
   }
 
