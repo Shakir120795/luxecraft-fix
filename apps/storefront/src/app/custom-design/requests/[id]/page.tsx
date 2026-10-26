@@ -11,6 +11,7 @@ import {
   getPaymentConfiguration,
   capturePayPalPayment,
   verifyRazorpayPayment,
+  verifyCryptoPayment,
   isAuthenticated,
   CustomRequest,
   CustomMessage,
@@ -30,20 +31,33 @@ export default function CustomRequestDetailPage() {
 
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
-  const [quoteProviders, setQuoteProviders] = useState<Array<'paypal' | 'razorpay'>>([]);
-  const [quoteProvider, setQuoteProvider] = useState<'paypal' | 'razorpay'>('paypal');
+  const [quoteProviders, setQuoteProviders] = useState<Array<'paypal' | 'razorpay' | 'crypto'>>([]);
+  const [quoteProvider, setQuoteProvider] = useState<'paypal' | 'razorpay' | 'crypto'>('paypal');
+  const [quoteCryptoOptions, setQuoteCryptoOptions] = useState<Array<{ network: string; asset: string }>>([]);
+  const [quoteCryptoNetwork, setQuoteCryptoNetwork] = useState('ethereum');
+  const [quoteCryptoAsset, setQuoteCryptoAsset] = useState('USDT');
+  const [quoteCryptoTxHash, setQuoteCryptoTxHash] = useState('');
   const [startingQuotePayment, setStartingQuotePayment] = useState(false);
   const [quotePaymentError, setQuotePaymentError] = useState<string | null>(null);
   const [quotePaymentMessage, setQuotePaymentMessage] = useState<string | null>(null);
   const [quotePayment, setQuotePayment] = useState<{
     orderId: string;
     orderNumber: string;
-    provider: 'paypal' | 'razorpay';
-    providerOrderId: string;
+    provider: 'paypal' | 'razorpay' | 'crypto';
+    providerOrderId?: string;
     approveUrl?: string;
     publicKey?: string;
     currency: string;
     total: number;
+    crypto?: {
+      network: string;
+      asset: string;
+      address: string;
+      amount: number;
+      currency: string;
+      instructions: string;
+      qrPayload: string;
+    };
   } | null>(null);
 
   useEffect(() => {
@@ -76,20 +90,48 @@ export default function CustomRequestDetailPage() {
             ? activePayment.metadata
             : {};
           const provider = activePayment.provider.toLowerCase();
-          const providerOrderId = provider === 'paypal'
-            ? String(metadata.paypalOrderId || activePayment.providerPaymentId || '')
-            : String(metadata.razorpayOrderId || activePayment.providerPaymentId || '');
-          if ((provider === 'paypal' || provider === 'razorpay') && providerOrderId) {
-            setQuotePayment({
-              orderId: latest.order.id,
-              orderNumber: latest.order.orderNumber,
-              provider,
-              providerOrderId,
-              approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
-              currency: latest.currency,
-              total: latest.total,
-            });
-            setQuotePaymentMessage('A payment session is already open for this accepted quote. Continue with the same payment to avoid creating a duplicate.');
+          if (provider === 'crypto') {
+            const network = String(metadata.network || '').toLowerCase();
+            const asset = String(metadata.asset || '').toUpperCase();
+            const address = String(metadata.receivingAddress || '');
+            const cryptoAmount = Number(metadata.expectedAmount || latest.total);
+            if (network && asset && address && Number.isFinite(cryptoAmount) && cryptoAmount > 0) {
+              setQuoteProvider('crypto');
+              setQuotePayment({
+                orderId: latest.order.id,
+                orderNumber: latest.order.orderNumber,
+                provider: 'crypto',
+                currency: latest.currency,
+                total: latest.total,
+                crypto: {
+                  network,
+                  asset,
+                  address,
+                  amount: cryptoAmount,
+                  currency: String(metadata.settlementCurrency || 'USD'),
+                  instructions: String(metadata.instructions || `Send exactly ${cryptoAmount.toFixed(2)} ${asset} on ${network} network to the address shown above. Do not send through another network.`),
+                  qrPayload: String(metadata.qrPayload || address),
+                },
+              });
+              setQuotePaymentMessage('A crypto payment session is already open. Send the exact amount on the selected network, then submit the transaction hash for verification.');
+            }
+          } else {
+            const providerOrderId = provider === 'paypal'
+              ? String(metadata.paypalOrderId || activePayment.providerPaymentId || '')
+              : String(metadata.razorpayOrderId || activePayment.providerPaymentId || '');
+            if ((provider === 'paypal' || provider === 'razorpay') && providerOrderId) {
+              setQuoteProvider(provider);
+              setQuotePayment({
+                orderId: latest.order.id,
+                orderNumber: latest.order.orderNumber,
+                provider,
+                providerOrderId,
+                approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
+                currency: latest.currency,
+                total: latest.total,
+              });
+              setQuotePaymentMessage('A payment session is already open for this accepted quote. Continue with the same payment to avoid creating a duplicate.');
+            }
           }
         }
       } else {
@@ -148,15 +190,24 @@ export default function CustomRequestDetailPage() {
       if (!active) return;
       const configured = (configuration.providers || [])
         .map((provider) => provider.toLowerCase())
-        .filter((provider): provider is 'paypal' | 'razorpay' =>
-          provider === 'paypal' || provider === 'razorpay',
+        .filter((provider): provider is 'paypal' | 'razorpay' | 'crypto' =>
+          provider === 'paypal' || provider === 'razorpay' || provider === 'crypto',
         );
-      const providers: Array<'paypal' | 'razorpay'> = configured.length
+      const providers: Array<'paypal' | 'razorpay' | 'crypto'> = configured.length
         ? Array.from(new Set(configured))
         : configuration.configured &&
-          (configuration.provider === 'paypal' || configuration.provider === 'razorpay')
+          (configuration.provider === 'paypal' || configuration.provider === 'razorpay' || configuration.provider === 'crypto')
           ? [configuration.provider]
           : [];
+      const cryptoOptions = (configuration.cryptoPaymentOptions || []).map((option) => ({
+        network: String(option.network).toLowerCase(),
+        asset: String(option.asset).toUpperCase(),
+      }));
+      setQuoteCryptoOptions(cryptoOptions);
+      if (cryptoOptions.length > 0) {
+        setQuoteCryptoNetwork(cryptoOptions[0].network);
+        setQuoteCryptoAsset(cryptoOptions[0].asset);
+      }
       setQuoteProviders(providers);
       setQuoteProvider((current) => providers.includes(current) ? current : providers[0] || 'paypal');
     }).catch(() => {
@@ -181,7 +232,11 @@ export default function CustomRequestDetailPage() {
     setQuotePaymentError(null);
     setQuotePaymentMessage(null);
     try {
-      const result = await createCustomQuoteCheckout(latest.id, quoteProvider);
+      const result = await createCustomQuoteCheckout(
+        latest.id,
+        quoteProvider,
+        quoteProvider === 'crypto' ? { network: quoteCryptoNetwork, asset: quoteCryptoAsset } : undefined,
+      );
       if (!result.success || !result.data) {
         throw new Error(result.message || 'Could not prepare custom-design payment.');
       }
@@ -194,21 +249,45 @@ export default function CustomRequestDetailPage() {
       }
 
       const provider = String(payment.provider || quoteProvider).toLowerCase();
-      if ((provider !== 'paypal' && provider !== 'razorpay') || !payment.orderId || !payment.providerOrderId) {
+      if (
+        (provider !== 'paypal' && provider !== 'razorpay' && provider !== 'crypto') ||
+        !payment.orderId ||
+        (provider !== 'crypto' && !payment.providerOrderId)
+      ) {
         throw new Error('Payment session details were incomplete. Please refresh and try again.');
+      }
+
+      const crypto = provider === 'crypto' ? payment.crypto : undefined;
+      if (provider === 'crypto' && (!crypto?.network || !crypto?.asset || !crypto?.address || !Number.isFinite(Number(crypto.amount)))) {
+        throw new Error('Crypto payment details are incomplete. Please refresh the quote or contact support.');
       }
 
       const paymentState = {
         orderId: String(payment.orderId),
         orderNumber: String(payment.orderNumber || ''),
         provider,
-        providerOrderId: String(payment.providerOrderId),
+        providerOrderId: payment.providerOrderId ? String(payment.providerOrderId) : undefined,
         approveUrl: typeof payment.approveUrl === 'string' ? payment.approveUrl : undefined,
         publicKey: typeof payment.publicKey === 'string' ? payment.publicKey : undefined,
         currency: String(payment.currency || latest.currency || 'USD'),
         total: Number(payment.total ?? latest.total),
+        crypto: crypto ? {
+          network: String(crypto.network),
+          asset: String(crypto.asset),
+          address: String(crypto.address),
+          amount: Number(crypto.amount),
+          currency: String(crypto.currency || 'USD'),
+          instructions: String(crypto.instructions || ''),
+          qrPayload: String(crypto.qrPayload || crypto.address),
+        } : undefined,
       } as const;
       setQuotePayment(paymentState);
+
+      if (provider === 'crypto') {
+        setQuoteCryptoTxHash('');
+        setQuotePaymentMessage(`Send exactly ${Number(paymentState.crypto?.amount).toFixed(6)} ${paymentState.crypto?.asset} on the ${paymentState.crypto?.network} network, then submit the transaction hash below. Payment is confirmed only after blockchain verification.`);
+        return;
+      }
 
       if (provider === 'paypal') {
         if (!paymentState.approveUrl) {
@@ -282,6 +361,39 @@ export default function CustomRequestDetailPage() {
       checkout.open();
     } catch (error) {
       setQuotePaymentError(error instanceof Error ? error.message : 'Could not prepare custom-design payment.');
+    } finally {
+      setStartingQuotePayment(false);
+    }
+  }
+
+  async function handleVerifyQuoteCrypto() {
+    if (!quotePayment || quotePayment.provider !== 'crypto' || !quotePayment.crypto) {
+      setQuotePaymentError('Prepare a crypto payment session first.');
+      return;
+    }
+    const txHash = quoteCryptoTxHash.trim();
+    if (!txHash) {
+      setQuotePaymentError('Enter the transaction hash from your wallet.');
+      return;
+    }
+
+    setStartingQuotePayment(true);
+    setQuotePaymentError(null);
+    try {
+      const verification = await verifyCryptoPayment({
+        orderId: quotePayment.orderId,
+        txHash,
+        network: quotePayment.crypto.network,
+        asset: quotePayment.crypto.asset,
+      });
+      if (!verification.success || verification.verified === false || verification.data?.verified === false) {
+        setQuotePaymentError(verification.message || 'Blockchain payment is not confirmed yet. Do not pay again; double-check the transaction hash and network.');
+        return;
+      }
+      setQuotePaymentMessage('Crypto payment verified successfully. Opening your custom-design order confirmation.');
+      router.push(`/order-confirmation?orderId=${encodeURIComponent(quotePayment.orderId)}`);
+    } catch (error) {
+      setQuotePaymentError(error instanceof Error ? error.message : 'Could not verify the crypto transaction.');
     } finally {
       setStartingQuotePayment(false);
     }
