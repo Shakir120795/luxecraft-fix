@@ -20,6 +20,14 @@ export class PayPalProvider {
   private readonly clientId: string;
   private readonly clientSecret: string;
   private readonly baseUrl: string;
+  private readonly appUrl: string;
+
+  private static readonly supportedCurrencies = new Set([
+    'AUD', 'BRL', 'CAD', 'CNY', 'CZK', 'DKK', 'EUR', 'HKD', 'HUF',
+    'ILS', 'JPY', 'MYR', 'MXN', 'TWD', 'NZD', 'NOK', 'PHP', 'PLN',
+    'GBP', 'SGD', 'SEK', 'CHF', 'THB', 'USD',
+  ]);
+  private static readonly zeroDecimalCurrencies = new Set(['HUF', 'JPY', 'TWD']);
 
   constructor(private readonly config: ConfigService) {
     this.clientId =
@@ -29,6 +37,8 @@ export class PayPalProvider {
     this.baseUrl =
       this.config.get<string>('commerce.payment.paypalBaseUrl') ||
       'https://api-m.sandbox.paypal.com';
+    this.appUrl = (this.config.get<string>('commerce.appUrl') || 'http://localhost:3000')
+      .replace(/\\/+$/, '');
 
     if (!this.isConfigured()) {
       this.logger.warn('PayPal credentials not configured');
@@ -55,11 +65,12 @@ export class PayPalProvider {
       body: 'grant_type=client_credentials',
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.access_token) {
-      this.logger.error(`PayPal OAuth failed: ${response.status}`);
-      throw new BadRequestException('Failed to authenticate with PayPal');
+      const detail = this.describePayPalError(data, 'Check that PayPal client ID, secret and API environment match.');
+      this.logger.error(`PayPal OAuth failed: HTTP ${response.status}: ${detail}`);
+      throw new BadRequestException(`PayPal authentication failed (HTTP ${response.status}): ${detail}`);
     }
 
     return data.access_token;
@@ -70,8 +81,18 @@ export class PayPalProvider {
     amount: number,
     currency: string,
   ): Promise<PayPalOrderResult> {
-    const accessToken = await this.getAccessToken();
+    const normalizedCurrency = currency.toUpperCase();
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException('PayPal payment amount must be greater than zero.');
+    }
+    if (!this.isCurrencySupported(normalizedCurrency)) {
+      throw new BadRequestException(
+        `PayPal does not support ${normalizedCurrency} for checkout. Choose a supported payment provider or change the store currency.`,
+      );
+    }
 
+    const accessToken = await this.getAccessToken();
+    const encodedOrderId = encodeURIComponent(orderId);
     const response = await fetch(`${this.baseUrl}/v2/checkout/orders`, {
       method: 'POST',
       headers: {
@@ -86,26 +107,44 @@ export class PayPalProvider {
             reference_id: orderId,
             custom_id: orderId,
             amount: {
-              currency_code: currency.toUpperCase(),
-              value: amount.toFixed(2),
+              currency_code: normalizedCurrency,
+              value: this.formatAmount(amount, normalizedCurrency),
             },
           },
         ],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
+              user_action: 'PAY_NOW',
+              return_url: `${this.appUrl}/order-confirmation?orderId=${encodedOrderId}&paypalReturn=1`,
+              cancel_url: `${this.appUrl}/checkout?paypalCancelled=1&orderId=${encodedOrderId}`,
+            },
+          },
+        },
       }),
     });
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok || !data.id) {
-      this.logger.error(`PayPal order creation failed: ${response.status}`);
-      throw new BadRequestException('Failed to create PayPal order');
+      const detail = this.describePayPalError(data, 'Verify the PayPal business account and API credentials.');
+      this.logger.error(`PayPal order creation failed: HTTP ${response.status}: ${detail}`);
+      throw new BadRequestException(`PayPal order creation failed (HTTP ${response.status}): ${detail}`);
+    }
+
+    const approveUrl = Array.isArray(data.links)
+      ? data.links.find((link: { rel?: string; href?: string }) =>
+          ['approve', 'payer-action'].includes(String(link.rel || '').toLowerCase()),
+        )?.href
+      : undefined;
+
+    if (!approveUrl) {
+      this.logger.error(`PayPal order ${data.id} was created without an approval link.`);
+      throw new BadRequestException('PayPal did not return an approval link. Check the PayPal app and merchant account configuration.');
     }
 
     this.logger.log(`PayPal order created: ${data.id} for ${orderId}`);
-
-    const approveUrl = Array.isArray(data.links)
-      ? data.links.find((link: { rel?: string; href?: string }) => link.rel === 'approve')?.href
-      : undefined;
 
     return {
       orderId: data.id,
@@ -129,11 +168,12 @@ export class PayPalProvider {
       },
     );
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      this.logger.error(`PayPal capture failed: ${response.status}`);
-      throw new BadRequestException('Failed to capture PayPal payment');
+      const detail = this.describePayPalError(data, 'The buyer may not have approved the order yet.');
+      this.logger.error(`PayPal capture failed: HTTP ${response.status}: ${detail}`);
+      throw new BadRequestException(`PayPal capture failed (HTTP ${response.status}): ${detail}`);
     }
 
     return data;
@@ -225,7 +265,7 @@ export class PayPalProvider {
         body: JSON.stringify({
           amount: {
             currency_code: captureCurrency,
-            value: amount.toFixed(2),
+            value: this.formatAmount(amount, captureCurrency),
           },
         }),
       },
@@ -254,6 +294,26 @@ export class PayPalProvider {
       ).toUpperCase(),
       status,
     };
+  }
+
+  isCurrencySupported(currency: string): boolean {
+    return PayPalProvider.supportedCurrencies.has(currency.toUpperCase());
+  }
+
+  private formatAmount(amount: number, currency: string): string {
+    const decimals = PayPalProvider.zeroDecimalCurrencies.has(currency.toUpperCase()) ? 0 : 2;
+    return amount.toFixed(decimals);
+  }
+
+  private describePayPalError(data: any, fallback: string): string {
+    const details = Array.isArray(data?.details)
+      ? data.details
+          .map((item: any) => [item?.issue, item?.description].filter(Boolean).join(': '))
+          .filter(Boolean)
+          .join('; ')
+      : '';
+    return String(data?.error_description || data?.message || details || data?.name || fallback)
+      .slice(0, 280);
   }
 
   isConfigured(): boolean {
