@@ -1247,7 +1247,7 @@ export async function createCategory(data: CreateCategoryRequest): Promise<Categ
   const { isActive, ...categoryData } = data;
   return mapCategory(await adminApi.post<any>('/admin/categories', {
     ...categoryData,
-    status: isActive ? 'ACTIVE' : 'DRAFT',
+    status: isActive ? 'ACTIVE' : 'HIDDEN',
   }));
 }
 
@@ -1255,7 +1255,7 @@ export async function updateCategory(id: string, data: Partial<CreateCategoryReq
   const { isActive, ...categoryData } = data;
   return mapCategory(await adminApi.patch<any>(`/admin/categories/${id}`, {
     ...categoryData,
-    ...(isActive !== undefined ? { status: isActive ? 'ACTIVE' : 'DRAFT' } : {}),
+    ...(isActive !== undefined ? { status: isActive ? 'ACTIVE' : 'HIDDEN' } : {}),
   }));
 }
 
