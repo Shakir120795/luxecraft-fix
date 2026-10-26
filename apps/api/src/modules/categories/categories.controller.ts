@@ -28,7 +28,7 @@ import { AdminUser, AdminRole, CategoryStatus } from '@prisma/client';
 export class AdminCategoriesController {
   constructor(private readonly svc: CategoriesService) {}
 
-  @AdminRoles(AdminRole.SUPER_ADMIN)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
   @Post()
   create(@Body() dto: CreateCategoryDto, @CurrentAdmin() admin: AdminUser) {
     return this.svc.create(dto, admin.id);
@@ -54,7 +54,7 @@ export class AdminCategoriesController {
     return this.svc.findOneAdmin(id);
   }
 
-  @AdminRoles(AdminRole.SUPER_ADMIN)
+  @AdminRoles(AdminRole.SUPER_ADMIN, AdminRole.ADMIN)
   @Patch(':id')
   update(
     @Param('id') id: string,
