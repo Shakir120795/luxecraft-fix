@@ -128,6 +128,7 @@ export class PaymentsService {
             ...data.metadata,
             paypalOrderId: result.orderId,
             paypalStatus: result.status,
+            approveUrl: result.approveUrl,
           } as Prisma.InputJsonValue,
         },
       });
