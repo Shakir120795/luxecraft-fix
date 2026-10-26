@@ -32,7 +32,7 @@ export default function CustomRequestDetailPage() {
   const [newMessage, setNewMessage] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
   const [quoteProviders, setQuoteProviders] = useState<Array<'paypal' | 'razorpay' | 'crypto'>>([]);
-  const [quoteProvider, setQuoteProvider] = useState<'paypal' | 'razorpay' | 'crypto'>('paypal');
+  const [quoteProvider, setQuoteProvider] = useState<'paypal' | 'razorpay' | 'crypto'>('razorpay');
   const [quoteCryptoOptions, setQuoteCryptoOptions] = useState<Array<{ network: string; asset: string }>>([]);
   const [quoteCryptoNetwork, setQuoteCryptoNetwork] = useState('ethereum');
   const [quoteCryptoAsset, setQuoteCryptoAsset] = useState('USDT');
@@ -772,8 +772,20 @@ export default function CustomRequestDetailPage() {
                             <button
                               type="button"
                               key={provider}
-                              onClick={() => setQuoteProvider(provider)}
-                              disabled={startingQuotePayment || !!quotePayment}
+                              onClick={() => {
+                                if (quotePayment && quotePayment.provider !== provider) {
+                                  if (
+                                    quotePayment.provider === 'crypto' &&
+                                    !confirm('This quote has an active crypto payment session. If you already sent crypto, do not switch methods because the old payment may no longer be matched. Switch payment method anyway?')
+                                  ) return;
+                                  setQuotePayment(null);
+                                  setQuoteCryptoTxHash('');
+                                  setQuotePaymentMessage(null);
+                                  setQuotePaymentError(null);
+                                }
+                                setQuoteProvider(provider);
+                              }}
+                              disabled={startingQuotePayment}
                               className={`rounded-md border px-3 py-3 text-sm font-semibold uppercase tracking-[0.08em] transition ${
                                 quoteProvider === provider
                                   ? 'border-[#bf4e48] bg-[#bf4e48]/5 text-[#bf4e48]'
