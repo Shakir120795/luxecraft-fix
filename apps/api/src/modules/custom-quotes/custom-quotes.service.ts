@@ -58,14 +58,14 @@ export class CustomQuotesService {
 
       if (latestQuote?.order) {
         const previousOrder = latestQuote.order;
-        const settledStatuses = [
-          PaymentStatus.PAID,
-          PaymentStatus.PARTIALLY_REFUNDED,
-          PaymentStatus.REFUNDED,
-        ];
         if (
           previousOrder.paymentStatus === PaymentStatus.PAID ||
-          previousOrder.payments.some((payment) => settledStatuses.includes(payment.status))
+          previousOrder.payments.some(
+            (payment) =>
+              payment.status === PaymentStatus.PAID ||
+              payment.status === PaymentStatus.PARTIALLY_REFUNDED ||
+              payment.status === PaymentStatus.REFUNDED,
+          )
         ) {
           throw new BadRequestException(
             'This quote already has a captured payment and cannot be revised. Contact support for a price adjustment or refund.',
