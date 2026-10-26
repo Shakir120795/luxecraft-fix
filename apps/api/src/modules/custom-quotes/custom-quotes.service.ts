@@ -10,6 +10,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PaymentProviderService } from '../payments/payment-provider.service';
+import { CryptoProvider } from '../payments/providers/crypto.provider';
 
 @Injectable()
 export class CustomQuotesService {
@@ -19,6 +20,7 @@ export class CustomQuotesService {
     private readonly prisma: PrismaService,
     private readonly payments: PaymentsService,
     private readonly paymentProviders: PaymentProviderService,
+    private readonly cryptoProvider: CryptoProvider,
   ) {}
 
   async create(data: {
@@ -154,6 +156,8 @@ export class CustomQuotesService {
     quoteId: string,
     userId: string,
     requestedProvider: string,
+    requestedNetwork?: string,
+    requestedAsset?: string,
   ): Promise<Record<string, unknown>> {
     const quote = await this.prisma.customQuote.findUnique({
       where: { id: quoteId },
@@ -197,8 +201,8 @@ export class CustomQuotesService {
       : configuration.configured
         ? [configuration.provider]
         : [];
-    if (!['paypal', 'razorpay'].includes(requested)) {
-      throw new BadRequestException('Choose PayPal or Razorpay to pay for a custom design.');
+    if (!['paypal', 'razorpay', 'crypto'].includes(requested)) {
+      throw new BadRequestException('Choose PayPal, Razorpay, or Crypto to pay for a custom design.');
     }
     if (!configuration.currencySupported) {
       throw new BadRequestException(`Wolhomes checkout is not configured for ${currency}.`);
@@ -207,8 +211,23 @@ export class CustomQuotesService {
       throw new BadRequestException(
         requested === 'paypal'
           ? `PayPal is not configured for ${currency}. PayPal does not support every store currency; choose another available gateway.`
-          : `Razorpay is not configured for ${currency}. Choose another available gateway.`,
+          : requested === 'razorpay'
+            ? `Razorpay is not configured for ${currency}. Choose another available gateway.`
+            : `Crypto payments are not configured for ${currency}.`,
       );
+    }
+    const cryptoNetwork = String(requestedNetwork || '').trim().toLowerCase();
+    const cryptoAsset = String(requestedAsset || '').trim().toUpperCase();
+    if (requested === 'crypto') {
+      if (currency !== 'USD') {
+        throw new BadRequestException('Crypto payments are currently available only for USD custom-design quotes.');
+      }
+      const supportedPair = (configuration.cryptoPaymentOptions || []).some(
+        (option) => option.network === cryptoNetwork && option.asset === cryptoAsset,
+      );
+      if (!supportedPair) {
+        throw new BadRequestException('Choose a configured crypto network and asset for this quote.');
+      }
     }
 
     let order = quote.order;
@@ -314,12 +333,42 @@ export class CustomQuotesService {
           ? (activePayment.metadata as Record<string, unknown>)
           : {};
       const provider = activePayment.provider.toLowerCase();
+      if (provider !== requested) {
+        throw new BadRequestException('This order already has a pending payment using another method. Continue that payment or contact support before switching gateways.');
+      }
+
+      if (provider === 'crypto') {
+        const network = String(metadata.network || '').trim().toLowerCase();
+        const asset = String(metadata.asset || '').trim().toUpperCase();
+        const address = String(metadata.receivingAddress || '').trim();
+        const cryptoAmount = Number(metadata.expectedAmount || activePayment.amount);
+        if (!network || !asset || !address || !Number.isFinite(cryptoAmount) || cryptoAmount <= 0) {
+          throw new BadRequestException('The pending crypto payment details are incomplete. Contact support before retrying.');
+        }
+        return {
+          success: true,
+          alreadyPaid: false,
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          payment: activePayment,
+          provider: 'crypto',
+          crypto: {
+            network,
+            asset,
+            address,
+            amount: cryptoAmount,
+            currency: String(metadata.settlementCurrency || 'USD'),
+            instructions: String(metadata.instructions || `Send exactly ${cryptoAmount.toFixed(2)} ${asset} on ${network} network to the address shown above. Do not send through another network.`),
+            qrPayload: String(metadata.qrPayload || address),
+          },
+          currency,
+          total: amount,
+        };
+      }
+
       const providerOrderId = provider === 'paypal'
         ? String(metadata.paypalOrderId || activePayment.providerPaymentId || '')
         : String(metadata.razorpayOrderId || activePayment.providerPaymentId || '');
-      if (provider !== 'paypal' && provider !== 'razorpay') {
-        throw new BadRequestException('This order already has a pending payment using another method.');
-      }
 
       // Older PayPal payment rows may not contain an approval URL. In that case
       // replace only the still-pending payment session so the customer can resume.
@@ -353,7 +402,7 @@ export class CustomQuotesService {
       amount,
       currency,
       provider: requested,
-      paymentMethod: requested,
+      paymentMethod: requested === 'crypto' ? `crypto:${cryptoAsset}:${cryptoNetwork}` : requested,
       metadata: {
         orderNumber: order.orderNumber,
         customQuoteId: quote.id,
@@ -372,6 +421,7 @@ export class CustomQuotesService {
       providerOrderId: result.providerOrderId,
       publicKey: result.publicKey,
       approveUrl: result.approveUrl,
+      crypto: result.crypto,
       currency,
       total: amount,
     };
