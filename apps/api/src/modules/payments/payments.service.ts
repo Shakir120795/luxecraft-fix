@@ -113,6 +113,9 @@ export class PaymentsService {
         data.orderId,
         data.amount,
         data.currency,
+        data.metadata?.customRequestId
+          ? { customRequestId: data.metadata.customRequestId }
+          : undefined,
       );
 
       const payment = await this.prisma.payment.create({
