@@ -22,11 +22,11 @@ export class CustomQuotesController {
   @Post(':id/checkout')
   async checkout(
     @Param('id') id: string,
-    @Body() body: { provider: string },
+    @Body() body: { provider: string; network?: string; asset?: string },
     @CurrentUser() user: { id: string },
   ) {
     await this.assertOwner(id, user.id);
-    return this.quotes.startCheckout(id, user.id, body.provider);
+    return this.quotes.startCheckout(id, user.id, body.provider, body.network, body.asset);
   }
 
   @Post(':id/reject')
