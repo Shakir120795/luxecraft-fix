@@ -204,7 +204,10 @@ export default function CustomRequestDetailPage() {
         asset: String(option.asset).toUpperCase(),
       }));
       setQuoteCryptoOptions(cryptoOptions);
-      if (cryptoOptions.length > 0) {
+      if (quotePayment?.provider === 'crypto' && quotePayment.crypto) {
+        setQuoteCryptoNetwork(quotePayment.crypto.network);
+        setQuoteCryptoAsset(quotePayment.crypto.asset);
+      } else if (cryptoOptions.length > 0) {
         setQuoteCryptoNetwork(cryptoOptions[0].network);
         setQuoteCryptoAsset(cryptoOptions[0].asset);
       }
@@ -215,7 +218,7 @@ export default function CustomRequestDetailPage() {
     });
 
     return () => { active = false; };
-  }, [quotes]);
+  }, [quotes, quotePayment?.provider, quotePayment?.crypto?.network, quotePayment?.crypto?.asset]);
 
   async function handleStartQuotePayment() {
     const latest = quotes[0];
@@ -763,23 +766,73 @@ export default function CustomRequestDetailPage() {
                     </p>
                     {quoteProviders.length > 0 ? (
                       <>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                           {quoteProviders.map((provider) => (
                             <button
                               type="button"
                               key={provider}
                               onClick={() => setQuoteProvider(provider)}
-                              disabled={startingQuotePayment}
+                              disabled={startingQuotePayment || !!quotePayment}
                               className={`rounded-md border px-3 py-3 text-sm font-semibold uppercase tracking-[0.08em] transition ${
                                 quoteProvider === provider
                                   ? 'border-[#bf4e48] bg-[#bf4e48]/5 text-[#bf4e48]'
                                   : 'border-[#ded8d0] bg-white text-[#302b35]'
                               }`}
                             >
-                              {provider === 'paypal' ? 'PayPal' : 'Razorpay'}
+                              {provider === 'paypal' ? 'PayPal' : provider === 'crypto' ? 'Crypto' : 'Razorpay'}
                             </button>
                           ))}
                         </div>
+                        {quoteProvider === 'crypto' && (
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div>
+                              <label htmlFor="custom-quote-crypto-network" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#8a5d38]">
+                                Crypto Network
+                              </label>
+                              <select
+                                id="custom-quote-crypto-network"
+                                value={quoteCryptoNetwork}
+                                onChange={(e) => {
+                                  const network = e.target.value;
+                                  const firstForNetwork = quoteCryptoOptions.find((option) => option.network === network);
+                                  setQuoteCryptoNetwork(network);
+                                  if (firstForNetwork) setQuoteCryptoAsset(firstForNetwork.asset);
+                                  setQuoteCryptoTxHash('');
+                                }}
+                                disabled={startingQuotePayment || quotePayment?.provider === 'crypto'}
+                                className="w-full rounded-md border border-[#ded8d0] bg-white px-3 py-3 text-sm text-[#302b35]"
+                              >
+                                {Array.from(new Set(quoteCryptoOptions.map((option) => option.network))).map((network) => (
+                                  <option key={network} value={network}>
+                                    {network.charAt(0).toUpperCase() + network.slice(1)}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label htmlFor="custom-quote-crypto-asset" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#8a5d38]">
+                                Stablecoin
+                              </label>
+                              <select
+                                id="custom-quote-crypto-asset"
+                                value={quoteCryptoAsset}
+                                onChange={(e) => {
+                                  setQuoteCryptoAsset(e.target.value);
+                                  setQuoteCryptoTxHash('');
+                                }}
+                                disabled={startingQuotePayment || quotePayment?.provider === 'crypto'}
+                                className="w-full rounded-md border border-[#ded8d0] bg-white px-3 py-3 text-sm text-[#302b35]"
+                              >
+                                {quoteCryptoOptions.filter((option) => option.network === quoteCryptoNetwork).map((option) => (
+                                  <option key={option.asset} value={option.asset}>{option.asset}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <p className="text-xs leading-5 text-[#6a636b] sm:col-span-2">
+                              Crypto checkout is available for USD quotes using the configured USDT/USDC networks only.
+                            </p>
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={handleStartQuotePayment}
@@ -797,6 +850,70 @@ export default function CustomRequestDetailPage() {
                           >
                             Open PayPal to Pay
                           </a>
+                        )}
+                        {quotePayment?.provider === 'crypto' && quotePayment.crypto && (
+                          <div className="space-y-4 rounded-md border border-[#ded8d0] bg-[#faf9f7] p-4">
+                            <div className="rounded-md border border-[#ded8d0] bg-white p-4">
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8a5d38]">Send exactly</p>
+                              <p className="mt-1 font-serif text-2xl text-[#302b35]">
+                                {Number(quotePayment.crypto.amount).toFixed(6)} {quotePayment.crypto.asset}
+                              </p>
+                              <p className="mt-1 text-xs text-[#6a636b]">
+                                {quotePayment.crypto.network} network · settlement value in {quotePayment.crypto.currency}
+                              </p>
+                            </div>
+                            <div className="rounded-md border border-[#ded8d0] bg-white p-4">
+                              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#8a5d38]">Receiving address</p>
+                              <p className="break-all font-mono text-xs text-[#302b35]">{quotePayment.crypto.address}</p>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(quotePayment.crypto!.address)
+                                    .then(() => setQuotePaymentMessage('Wallet address copied. Send only the exact amount on the selected network.'))
+                                    .catch(() => setQuotePaymentError('Could not copy automatically. Please select and copy the receiving address.'));
+                                }}
+                                className="mt-3 rounded-md border border-[#ded8d0] px-3 py-2 text-xs font-semibold text-[#302b35] hover:border-[#bf4e48]"
+                              >
+                                Copy address
+                              </button>
+                            </div>
+                            <div className="rounded-md border border-[#ded8d0] bg-white p-4 text-center">
+                              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#8a5d38]">Scan to pay</p>
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(quotePayment.crypto.qrPayload)}`}
+                                alt={`${quotePayment.crypto.asset} payment QR code on ${quotePayment.crypto.network}`}
+                                className="mx-auto h-44 w-44 rounded-md border border-[#ded8d0] bg-white p-2"
+                              />
+                              <p className="mt-3 text-xs text-[#6a636b]">{quotePayment.crypto.asset} · {quotePayment.crypto.network}</p>
+                            </div>
+                            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900">
+                              <p className="font-semibold">Important</p>
+                              <p>{quotePayment.crypto.instructions}</p>
+                              <p className="mt-1">Do not send another token or use another network. Payment is not confirmed until blockchain verification succeeds.</p>
+                            </div>
+                            <div>
+                              <label htmlFor="custom-quote-crypto-tx" className="mb-2 block text-xs font-semibold uppercase tracking-[0.12em] text-[#8a5d38]">
+                                Transaction hash
+                              </label>
+                              <input
+                                id="custom-quote-crypto-tx"
+                                value={quoteCryptoTxHash}
+                                onChange={(e) => setQuoteCryptoTxHash(e.target.value)}
+                                placeholder="Paste the transaction hash after sending"
+                                autoComplete="off"
+                                className="w-full rounded-md border border-[#ded8d0] bg-white px-3 py-3 text-sm text-[#302b35] placeholder:text-[#9a9298]"
+                                disabled={startingQuotePayment}
+                              />
+                              <button
+                                type="button"
+                                onClick={handleVerifyQuoteCrypto}
+                                disabled={startingQuotePayment || !quoteCryptoTxHash.trim()}
+                                className="mt-3 w-full rounded-md bg-[#302b35] px-5 py-3 text-sm font-semibold uppercase tracking-[0.08em] text-white hover:bg-[#211e24] disabled:cursor-not-allowed disabled:opacity-60"
+                              >
+                                {startingQuotePayment ? 'Verifying transaction…' : 'Verify Crypto Payment'}
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </>
                     ) : (
