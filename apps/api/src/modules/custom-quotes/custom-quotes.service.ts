@@ -357,6 +357,7 @@ export class CustomQuotesService {
       metadata: {
         orderNumber: order.orderNumber,
         customQuoteId: quote.id,
+        customRequestId: quote.customRequestId,
         quoteNumber: quote.quoteNumber,
       },
     });
