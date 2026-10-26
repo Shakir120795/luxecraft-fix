@@ -2012,7 +2012,8 @@ export async function acceptQuote(quoteId: string): Promise<{ success: boolean; 
 
 export async function createCustomQuoteCheckout(
   quoteId: string,
-  provider: 'paypal' | 'razorpay',
+  provider: 'paypal' | 'razorpay' | 'crypto',
+  crypto?: { network: string; asset: string },
 ): Promise<{ success: boolean; data?: any; message?: string }> {
   try {
     const res = await apiFetch(`${API_URL}/custom-quotes/${encodeURIComponent(quoteId)}/checkout`, {
@@ -2021,7 +2022,7 @@ export async function createCustomQuoteCheckout(
         'Content-Type': 'application/json',
         ...await getAuthHeaders(),
       },
-      body: JSON.stringify({ provider }),
+      body: JSON.stringify({ provider, network: crypto?.network, asset: crypto?.asset }),
       cache: 'no-store',
     });
     const payload = await res.json().catch(() => null);
