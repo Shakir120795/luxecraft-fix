@@ -251,14 +251,15 @@ export default function CustomRequestDetailPage() {
         return;
       }
 
-      const provider = String(payment.provider || quoteProvider).toLowerCase();
+      const providerValue = String(payment.provider || quoteProvider).toLowerCase();
       if (
-        (provider !== 'paypal' && provider !== 'razorpay' && provider !== 'crypto') ||
+        (providerValue !== 'paypal' && providerValue !== 'razorpay' && providerValue !== 'crypto') ||
         !payment.orderId ||
-        (provider !== 'crypto' && !payment.providerOrderId)
+        (providerValue !== 'crypto' && !payment.providerOrderId)
       ) {
         throw new Error('Payment session details were incomplete. Please refresh and try again.');
       }
+      const provider = providerValue as 'paypal' | 'razorpay' | 'crypto';
 
       const crypto = provider === 'crypto' ? payment.crypto : undefined;
       if (provider === 'crypto' && (!crypto?.network || !crypto?.asset || !crypto?.address || !Number.isFinite(Number(crypto.amount)))) {
