@@ -1,4 +1,4 @@
-import { Controller, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { CustomRequestsService } from '../custom-requests/custom-requests.service';
@@ -17,6 +17,16 @@ export class CustomQuotesController {
   async accept(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     await this.assertOwner(id, user.id);
     return this.quotes.customerAcceptQuote(id);
+  }
+
+  @Post(':id/checkout')
+  async checkout(
+    @Param('id') id: string,
+    @Body() body: { provider: string },
+    @CurrentUser() user: { id: string },
+  ) {
+    await this.assertOwner(id, user.id);
+    return this.quotes.startCheckout(id, user.id, body.provider);
   }
 
   @Post(':id/reject')
