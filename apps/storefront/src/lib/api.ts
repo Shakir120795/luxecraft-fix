@@ -1768,23 +1768,72 @@ export interface CustomMessage {
   createdAt: string;
 }
 
+export interface CustomQuoteOrderPayment {
+  provider: string;
+  status: string;
+  providerPaymentId: string | null;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface CustomQuoteOrder {
+  id: string;
+  orderNumber: string;
+  paymentStatus: string;
+  payments: CustomQuoteOrderPayment[];
+}
+
 export interface CustomQuote {
   id: string;
   customRequestId: string;
   quoteNumber: string;
   version: number;
   status: string;
+  customerStatus?: string;
   basePrice: number;
+  subtotal?: number;
   designFee: number | null;
   materialFee: number | null;
   dimensionFee: number | null;
   rushFee: number | null;
   discount: number | null;
+  shippingEstimate?: number;
+  taxEstimate?: number;
   total: number;
   currency: string;
   validUntil: string | null;
   notes: string | null;
   createdAt: string;
+  order?: CustomQuoteOrder | null;
+}
+
+function mapCustomQuote(quote: any): CustomQuote {
+  const rawStatus = String(quote.customerStatus || quote.status || 'PENDING').toUpperCase();
+  const statusLabels: Record<string, string> = {
+    DRAFT: 'Pending',
+    PENDING: 'Pending',
+    ACCEPTED: 'Accepted',
+    REJECTED: 'Rejected',
+    REVISED: 'Revised',
+    EXPIRED: 'Expired',
+  };
+  return {
+    ...quote,
+    status: statusLabels[rawStatus] || rawStatus,
+    customerStatus: rawStatus,
+    basePrice: Number(quote.baseProductPrice ?? quote.basePrice ?? 0),
+    subtotal: Number(quote.subtotal ?? 0),
+    designFee: quote.designFee == null ? null : Number(quote.designFee),
+    materialFee: quote.materialFee == null ? null : Number(quote.materialFee),
+    dimensionFee: quote.dimensionFee == null ? null : Number(quote.dimensionFee),
+    rushFee: quote.rushFee == null ? null : Number(quote.rushFee),
+    discount: quote.discount == null ? null : Number(quote.discount),
+    shippingEstimate: Number(quote.shippingEstimate ?? 0),
+    taxEstimate: Number(quote.taxEstimate ?? 0),
+    total: Number(quote.total ?? 0),
+    currency: String(quote.currency || 'USD').toUpperCase(),
+    validUntil: quote.expiresAt ?? quote.validUntil ?? null,
+    notes: quote.description ?? quote.notes ?? null,
+  };
 }
 
 export async function submitContactMessage(params: {
@@ -1901,7 +1950,9 @@ export async function getCustomRequest(requestId: string): Promise<{
       ? {
           request: mapCustomRequest(data.data),
           messages: data.data.messages ?? [],
-          quotes: data.data.quotes ?? [],
+          quotes: (data.data.quotes ?? [])
+            .map(mapCustomQuote)
+            .sort((a: CustomQuote, b: CustomQuote) => b.version - a.version),
         }
       : null;
   } catch (error) {
@@ -1956,6 +2007,35 @@ export async function acceptQuote(quoteId: string): Promise<{ success: boolean; 
   } catch (error) {
     console.error('Failed to accept quote:', error);
     return { success: false, message: 'Failed to accept quote' };
+  }
+}
+
+export async function createCustomQuoteCheckout(
+  quoteId: string,
+  provider: 'paypal' | 'razorpay',
+): Promise<{ success: boolean; data?: any; message?: string }> {
+  try {
+    const res = await apiFetch(`${API_URL}/custom-quotes/${encodeURIComponent(quoteId)}/checkout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...await getAuthHeaders(),
+      },
+      body: JSON.stringify({ provider }),
+      cache: 'no-store',
+    });
+    const payload = await res.json().catch(() => null);
+    const result = payload?.data ?? payload;
+    if (!res.ok || payload?.success === false || result?.success === false) {
+      return {
+        success: false,
+        message: payload?.message || result?.message || 'Unable to start custom-design payment.',
+      };
+    }
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Failed to start custom-design payment:', error);
+    return { success: false, message: 'Failed to start custom-design payment. Please try again.' };
   }
 }
 
