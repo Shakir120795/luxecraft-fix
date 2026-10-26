@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { getOrder, Order } from '@/lib/api';
+import { capturePayPalPayment, getOrder, Order } from '@/lib/api';
 
 function getImageUrl(value: any): string | null {
   if (typeof value === 'string' && value.trim()) return value.trim();
@@ -90,6 +90,8 @@ function formatOrderDate(value?: string | null): string | null {
 export default function OrderConfirmationPage() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const paypalOrderId = searchParams.get('token') || searchParams.get('paypalOrderId');
+  const paypalReturn = searchParams.get('paypalReturn') === '1';
 
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,8 +104,20 @@ export default function OrderConfirmationPage() {
       try {
         setLoading(true);
         setError(null);
-        const data = await getOrder(id);
 
+        // PayPal returns the PayPal order token after the buyer approves payment.
+        // Capture server-side before presenting the order as paid/confirmed.
+        if (paypalReturn && paypalOrderId) {
+          const capture = await capturePayPalPayment({
+            orderId: id,
+            paypalOrderId,
+          });
+          if (!capture.success) {
+            throw new Error(capture.message || 'PayPal payment could not be confirmed. Do not pay again; refresh this page to retry confirmation.');
+          }
+        }
+
+        const data = await getOrder(id);
         if (!active) return;
         if (data) {
           setOrder(data);
@@ -112,7 +126,7 @@ export default function OrderConfirmationPage() {
         }
       } catch (err) {
         if (!active) return;
-        setError('Failed to load order');
+        setError(err instanceof Error ? err.message : 'Failed to load order');
         console.error(err);
       } finally {
         if (active) setLoading(false);
@@ -129,7 +143,7 @@ export default function OrderConfirmationPage() {
     return () => {
       active = false;
     };
-  }, [orderId]);
+  }, [orderId, paypalOrderId, paypalReturn]);
 
   if (loading) {
     return (
