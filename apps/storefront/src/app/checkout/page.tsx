@@ -93,6 +93,7 @@ export default function CheckoutPage() {
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentOrderId, setPaymentOrderId] = useState<string | null>(null);
   const [paymentProviderOrderId, setPaymentProviderOrderId] = useState<string | null>(null);
+  const [paymentApproveUrl, setPaymentApproveUrl] = useState<string | null>(null);
   const [razorpayRetryDetails, setRazorpayRetryDetails] = useState<RazorpayRetryDetails | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -448,6 +449,7 @@ export default function CheckoutPage() {
 
       setPaymentOrderId(result.data.order.id);
       setPaymentProviderOrderId(result.data.providerOrderId || null);
+      setPaymentApproveUrl(result.data.approveUrl || null);
       setPaymentClientSecret(result.data.clientSecret || null);
 
       if (paymentProvider === 'crypto' && result.data.crypto) {
@@ -563,8 +565,11 @@ export default function CheckoutPage() {
           return;
         }
 
+        // Keep a visible fallback link in case the browser blocks a popup opened
+        // after the checkout request finishes. PayPal returns to server-side capture.
+        setPaymentApproveUrl(result.data.approveUrl);
         window.open(result.data.approveUrl, '_blank', 'noopener,noreferrer');
-        setError('PayPal approval page opened in a new tab. Complete the payment there, then return here and click Capture PayPal Payment.');
+        setError('Complete PayPal approval in the opened tab. If no tab appeared, use the Open PayPal Approval link below. Payment will be verified when PayPal returns.');
         setSubmitting(false);
         return;
       }
@@ -1102,6 +1107,16 @@ export default function CheckoutPage() {
                                 : 'Continue with Crypto'}
                       </button>
                     </div>
+                    {paymentProvider === 'paypal' && paymentApproveUrl && paymentProviderOrderId && (
+                      <a
+                        href={paymentApproveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-center text-sm font-semibold uppercase tracking-[0.1em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#f8f6f2]"
+                      >
+                        Open PayPal Approval
+                      </a>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-6">
