@@ -390,7 +390,7 @@ export default function CustomRequestDetailPage() {
         network: quotePayment.crypto.network,
         asset: quotePayment.crypto.asset,
       });
-      if (!verification.success || verification.verified === false || verification.data?.verified === false) {
+      if (!verification.success || verification.data?.verified === false) {
         setQuotePaymentError(verification.message || 'Blockchain payment is not confirmed yet. Do not pay again; double-check the transaction hash and network.');
         return;
       }
