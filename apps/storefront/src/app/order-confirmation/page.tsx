@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { capturePayPalPayment, getOrder, Order } from '@/lib/api';
+import { capturePayPalPayment, clearCart, getOrder, Order } from '@/lib/api';
 
 function getImageUrl(value: any): string | null {
   if (typeof value === 'string' && value.trim()) return value.trim();
@@ -120,6 +120,9 @@ export default function OrderConfirmationPage() {
         const data = await getOrder(id);
         if (!active) return;
         if (data) {
+          if (paypalReturn && data.paymentStatus === 'PAID' && data.orderType !== 'CUSTOM') {
+            await clearCart();
+          }
           setOrder(data);
         } else {
           setError('Order not found');
