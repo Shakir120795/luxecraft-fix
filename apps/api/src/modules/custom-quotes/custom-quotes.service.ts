@@ -321,7 +321,9 @@ export class CustomQuotesService {
       throw new BadRequestException('This custom-design order is not available for payment.');
     }
 
-    // Reuse an unfinished gateway payment instead of creating a second charge.
+    // Resume the current gateway session when it matches the customer's selection.
+    // If they choose a different provider, retire the old local session before creating
+    // a new one. Verification endpoints reject retired sessions so stale tabs cannot pay it.
     const activePayment = order.payments.find(
       (item) => item.status === PaymentStatus.PENDING || item.status === PaymentStatus.AUTHORIZED,
     );
@@ -333,11 +335,13 @@ export class CustomQuotesService {
           ? (activePayment.metadata as Record<string, unknown>)
           : {};
       const provider = activePayment.provider.toLowerCase();
-      if (provider !== requested) {
-        throw new BadRequestException('This order already has a pending payment using another method. Continue that payment or contact support before switching gateways.');
-      }
 
-      if (provider === 'crypto') {
+      if (provider !== requested) {
+        const cancelled = await this.payments.cancelPendingPayment(activePayment.id);
+        if (!cancelled) {
+          throw new BadRequestException('The previous payment is changing state. Refresh the quote before switching payment methods.');
+        }
+      } else if (provider === 'crypto') {
         const network = String(metadata.network || '').trim().toLowerCase();
         const asset = String(metadata.asset || '').trim().toUpperCase();
         const address = String(metadata.receivingAddress || '').trim();
@@ -345,55 +349,62 @@ export class CustomQuotesService {
         if (!network || !asset || !address || !Number.isFinite(cryptoAmount) || cryptoAmount <= 0) {
           throw new BadRequestException('The pending crypto payment details are incomplete. Contact support before retrying.');
         }
-        return {
-          success: true,
-          alreadyPaid: false,
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          payment: activePayment,
-          provider: 'crypto',
-          crypto: {
-            network,
-            asset,
-            address,
-            amount: cryptoAmount,
-            currency: String(metadata.settlementCurrency || 'USD'),
-            instructions: String(metadata.instructions || `Send exactly ${cryptoAmount.toFixed(2)} ${asset} on ${network} network to the address shown above. Do not send through another network.`),
-            qrPayload: String(metadata.qrPayload || address),
-          },
-          currency,
-          total: amount,
-        };
-      }
-
-      const providerOrderId = provider === 'paypal'
-        ? String(metadata.paypalOrderId || activePayment.providerPaymentId || '')
-        : String(metadata.razorpayOrderId || activePayment.providerPaymentId || '');
-
-      // Older PayPal payment rows may not contain an approval URL. In that case
-      // replace only the still-pending payment session so the customer can resume.
-      if (provider === 'paypal' && typeof metadata.approveUrl !== 'string') {
-        const cancelled = await this.payments.cancelPendingPayment(activePayment.id);
-        if (!cancelled) {
-          throw new BadRequestException('The previous payment is changing state. Refresh the quote before trying again.');
+        if (network !== cryptoNetwork || asset !== cryptoAsset) {
+          const cancelled = await this.payments.cancelPendingPayment(activePayment.id);
+          if (!cancelled) {
+            throw new BadRequestException('The previous crypto payment is changing state. Refresh the quote before choosing another asset.');
+          }
+        } else {
+          return {
+            success: true,
+            alreadyPaid: false,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            payment: activePayment,
+            provider: 'crypto',
+            crypto: {
+              network,
+              asset,
+              address,
+              amount: cryptoAmount,
+              currency: String(metadata.settlementCurrency || 'USD'),
+              instructions: String(metadata.instructions || `Send exactly ${cryptoAmount.toFixed(2)} ${asset} on ${network} network to the address shown above. Do not send through another network.`),
+              qrPayload: String(metadata.qrPayload || address),
+            },
+            currency,
+            total: amount,
+          };
         }
       } else {
-        if (!providerOrderId) {
-          throw new BadRequestException('The pending payment reference is missing. Contact support before retrying payment.');
+        const providerOrderId = provider === 'paypal'
+          ? String(metadata.paypalOrderId || activePayment.providerPaymentId || '')
+          : String(metadata.razorpayOrderId || activePayment.providerPaymentId || '');
+
+        // Older PayPal payment rows may not contain an approval URL. In that case
+        // replace only the still-pending payment session so the customer can resume.
+        if (provider === 'paypal' && typeof metadata.approveUrl !== 'string') {
+          const cancelled = await this.payments.cancelPendingPayment(activePayment.id);
+          if (!cancelled) {
+            throw new BadRequestException('The previous payment is changing state. Refresh the quote before trying again.');
+          }
+        } else {
+          if (!providerOrderId) {
+            throw new BadRequestException('The pending payment reference is missing. Contact support before retrying payment.');
+          }
+          return {
+            success: true,
+            alreadyPaid: false,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            payment: activePayment,
+            provider,
+            providerOrderId,
+            publicKey: this.paymentProviders.publicKeyFor(provider),
+            approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
+            currency,
+            total: amount,
+          };
         }
-        return {
-          success: true,
-          alreadyPaid: false,
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          payment: activePayment,
-          provider,
-          providerOrderId,
-          publicKey: this.paymentProviders.publicKeyFor(provider),
-          approveUrl: typeof metadata.approveUrl === 'string' ? metadata.approveUrl : undefined,
-          currency,
-          total: amount,
-        };
       }
     }
 
