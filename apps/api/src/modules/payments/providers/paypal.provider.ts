@@ -90,7 +90,7 @@ export class PayPalProvider {
     orderId: string,
     amount: number,
     currency: string,
-    options?: { customRequestId?: string },
+    options?: { customRequestId?: string; guestCheckout?: boolean },
   ): Promise<PayPalOrderResult> {
     const normalizedCurrency = currency.toUpperCase();
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -131,7 +131,7 @@ export class PayPalProvider {
               return_url: `${this.appUrl}/order-confirmation?orderId=${encodedOrderId}&paypalReturn=1`,
               cancel_url: options?.customRequestId
                 ? `${this.appUrl}/custom-design/requests/${encodeURIComponent(options.customRequestId)}?paypalCancelled=1&orderId=${encodedOrderId}`
-                : `${this.appUrl}/checkout?paypalCancelled=1&orderId=${encodedOrderId}`,
+                : `${this.appUrl}/checkout?paypalCancelled=1&orderId=${encodedOrderId}${options?.guestCheckout ? '&guest=true' : ''}`,
             },
           },
         },
