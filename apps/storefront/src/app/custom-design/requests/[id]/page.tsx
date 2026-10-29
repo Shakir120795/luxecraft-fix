@@ -18,6 +18,27 @@ import {
   CustomQuote,
 } from '@/lib/api';
 
+function getReferenceFileName(fileUrl: string, index: number): string {
+  try {
+    const url = new URL(fileUrl, 'https://wolhomes.com');
+    const originalName = url.searchParams.get('name');
+    if (originalName) return originalName;
+    const filename = decodeURIComponent(url.pathname.split('/').pop() || '');
+    return filename || `Reference file ${index + 1}`;
+  } catch {
+    return `Reference file ${index + 1}`;
+  }
+}
+
+function isReferenceImage(fileUrl: string): boolean {
+  try {
+    const pathname = new URL(fileUrl, 'https://wolhomes.com').pathname;
+    return /\.(?:jpe?g|png|webp|gif|avif)$/i.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
 export default function CustomRequestDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -511,6 +532,24 @@ export default function CustomRequestDetailPage() {
                   </div>
                 )}
 
+                {request.preferredStyle && (
+                  <div>
+                    <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
+                      Preferred Style
+                    </h3>
+                    <p className="text-[#302b35]">{request.preferredStyle}</p>
+                  </div>
+                )}
+
+                {request.designNotes && (
+                  <div>
+                    <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
+                      Additional Design Notes
+                    </h3>
+                    <p className="whitespace-pre-wrap text-[#302b35]">{request.designNotes}</p>
+                  </div>
+                )}
+
                 {request.desiredDimensions && (
                   <div>
                     <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a5d38]">
@@ -558,6 +597,57 @@ export default function CustomRequestDetailPage() {
                   )}
               </div>
             </section>
+
+            {request.referenceFiles.length > 0 && (
+              <section className="rounded-lg border border-[#ded8d0] bg-white p-6 shadow-sm sm:p-8">
+                <div className="mb-6 border-b border-[#eee9e3] pb-5">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8a5d38]">
+                    Customer Uploads
+                  </p>
+                  <h2 className="font-serif text-2xl text-[#302b35]">Reference Images & Files</h2>
+                  <p className="mt-2 text-sm text-[#6a636b]">
+                    Open any image for a full-size view, or open a document in a new tab.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {request.referenceFiles.map((fileUrl, index) => {
+                    const imageFile = isReferenceImage(fileUrl);
+                    const fileName = getReferenceFileName(fileUrl, index);
+                    return (
+                      <a
+                        key={fileUrl}
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group overflow-hidden rounded-md border border-[#ded8d0] bg-[#faf9f7] transition hover:border-[#bf4e48]"
+                        aria-label={`Open reference file: ${fileName}`}
+                      >
+                        {imageFile ? (
+                          <img
+                            src={fileUrl}
+                            alt={`Customer reference ${index + 1}: ${fileName}`}
+                            loading="lazy"
+                            className="h-36 w-full bg-white object-cover transition group-hover:scale-[1.02] sm:h-44"
+                          />
+                        ) : (
+                          <div className="flex h-36 items-center justify-center bg-[#f0ece7] text-sm font-semibold uppercase tracking-[0.15em] text-[#8a5d38] sm:h-44">
+                            File
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <p className="truncate text-sm font-medium text-[#302b35]" title={fileName}>
+                            {fileName}
+                          </p>
+                          <p className="mt-1 text-xs text-[#8a5d38]">
+                            {imageFile ? 'View full image ↗' : 'Open file ↗'}
+                          </p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
 
             <section className="rounded-lg border border-[#ded8d0] bg-white p-6 shadow-sm sm:p-8">
               <div className="mb-7 flex items-end justify-between border-b border-[#eee9e3] pb-5">
