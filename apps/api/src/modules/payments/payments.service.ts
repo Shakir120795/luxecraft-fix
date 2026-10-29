@@ -113,9 +113,12 @@ export class PaymentsService {
         data.orderId,
         data.amount,
         data.currency,
-        data.metadata?.customRequestId
-          ? { customRequestId: data.metadata.customRequestId }
-          : undefined,
+        {
+          ...(data.metadata?.customRequestId
+            ? { customRequestId: data.metadata.customRequestId }
+            : {}),
+          guestCheckout: data.metadata?.guestCheckout === 'true',
+        },
       );
 
       const payment = await this.prisma.payment.create({
