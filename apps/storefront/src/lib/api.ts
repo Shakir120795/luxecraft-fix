@@ -1736,25 +1736,49 @@ export interface CustomRequest {
   title: string;
   description: string;
   productCategory: string | null;
+  designNotes?: string | null;
   desiredDimensions: string | null;
   preferredColors: string | null;
   preferredMaterials: string | null;
   quantity: number;
   estimatedBudget: number | null;
   referenceFiles: string[];
+  messages?: CustomMessage[];
   createdAt: string;
   updatedAt: string;
 }
 
 function mapCustomRequest(request: any): CustomRequest {
+  const rawDesignNotes = String(request.designNotes ?? '').trim();
+  const categoryMatch = rawDesignNotes.match(/^Product\/category:\s*(.*)$/im);
+  const remainingDesignNotes = rawDesignNotes
+    .replace(/^Product\/category:\s*.*(?:\r?\n)?/im, '')
+    .trim();
+  const messages = Array.isArray(request.messages)
+    ? request.messages.map((message: any) => ({
+        ...message,
+        attachments: Array.isArray(message.attachments) ? message.attachments : [],
+      }))
+    : [];
+  const rawBudget = request.estimatedBudget ?? request.budgetRange ?? null;
+  const numericBudget = rawBudget == null || rawBudget === '' ? null : Number(rawBudget);
+  const referenceFiles = Array.from(new Set([
+    ...(Array.isArray(request.referenceFiles) ? request.referenceFiles : []),
+    ...messages.flatMap((message: CustomMessage) => message.attachments ?? []),
+  ]));
+
   return {
     ...request,
-    requestNumber: request.customRequestNumber,
-    desiredDimensions: request.dimensions ?? null,
-    preferredMaterials: request.materialPreference ?? null,
-    quantity: request.quantityRequested ?? 1,
-    estimatedBudget: request.estimatedBudget ?? null,
-    referenceFiles: request.referenceFiles ?? [],
+    requestNumber: request.customRequestNumber ?? request.requestNumber,
+    productCategory: request.productCategory ?? categoryMatch?.[1]?.trim() ?? request.category?.name ?? null,
+    designNotes: remainingDesignNotes || null,
+    desiredDimensions: request.dimensions ?? request.desiredDimensions ?? null,
+    preferredColors: request.preferredColors ?? null,
+    preferredMaterials: request.materialPreference ?? request.preferredMaterials ?? null,
+    quantity: Number(request.quantityRequested ?? request.quantity ?? 1),
+    estimatedBudget: numericBudget != null && Number.isFinite(numericBudget) ? numericBudget : null,
+    referenceFiles,
+    messages,
   };
 }
 
