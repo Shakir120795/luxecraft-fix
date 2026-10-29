@@ -130,7 +130,7 @@ export class PayPalProvider {
               user_action: 'PAY_NOW',
               return_url: `${this.appUrl}/order-confirmation?orderId=${encodedOrderId}&paypalReturn=1`,
               cancel_url: options?.customRequestId
-                ? `${this.appUrl}/custom-design/requests/${encodeURIComponent(options.customRequestId)}?paypalCancelled=1`
+                ? `${this.appUrl}/custom-design/requests/${encodeURIComponent(options.customRequestId)}?paypalCancelled=1&orderId=${encodedOrderId}`
                 : `${this.appUrl}/checkout?paypalCancelled=1&orderId=${encodedOrderId}`,
             },
           },
