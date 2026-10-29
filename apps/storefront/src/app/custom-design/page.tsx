@@ -24,6 +24,7 @@ export default function CustomDesignPage() {
     title: '',
     description: '',
     productCategory: '',
+    preferredStyle: '',
     desiredDimensions: '',
     preferredColors: '',
     preferredMaterials: '',
@@ -180,6 +181,7 @@ export default function CustomDesignPage() {
         title: formData.title.trim(),
         description: formData.description.trim(),
         productCategory: formData.productCategory || undefined,
+        preferredStyle: formData.preferredStyle.trim() || undefined,
         desiredDimensions: formData.desiredDimensions || undefined,
         preferredColors: formData.preferredColors || undefined,
         preferredMaterials: formData.preferredMaterials || undefined,
@@ -357,6 +359,19 @@ export default function CustomDesignPage() {
                 <option value="Craft & Statue">Craft & Statue</option>
                 <option value="Other">Other</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-base font-serif font-bold text-black mb-2 tracking-wide">
+                Preferred Style / Design
+              </label>
+              <input
+                name="preferredStyle"
+                value={formData.preferredStyle}
+                onChange={handleChange}
+                className="input-luxury w-full"
+                placeholder="e.g., Persian, traditional, geometric, modern"
+              />
             </div>
 
             <div>
