@@ -416,6 +416,62 @@ export class PaymentsController {
     };
   }
   @UseGuards(OptionalJwtAuthGuard)
+  @Post('paypal/cancel')
+  async cancelPayPalApproval(
+    @Body() body: { orderId: string },
+    @Req() req: Request & { user?: { id: string } },
+  ) {
+    if (!body.orderId) {
+      throw new BadRequestException('orderId is required');
+    }
+
+    // An order must belong to the signed-in customer, or be protected by the
+    // guest-order access cookie created during checkout.
+    const order = req.user?.id
+      ? await this.orders.findOneForUser(body.orderId, req.user.id)
+      : await this.orders.findOneForGuest(
+          body.orderId,
+          req.cookies?.[getGuestOrderAccessCookieName(body.orderId)] ?? '',
+        );
+
+    const paypalPayment = order.payments.find(
+      (item) => item.provider === 'paypal' &&
+        (item.status === PaymentStatus.PENDING || item.status === PaymentStatus.AUTHORIZED),
+    );
+
+    if (!paypalPayment) {
+      const alreadyPaid = order.paymentStatus === PaymentStatus.PAID ||
+        order.payments.some((item) => item.provider === 'paypal' && item.status === PaymentStatus.PAID);
+      return {
+        success: true,
+        alreadyProcessed: true,
+        alreadyPaid,
+      };
+    }
+
+    const metadata =
+      paypalPayment.metadata &&
+      typeof paypalPayment.metadata === 'object' &&
+      !Array.isArray(paypalPayment.metadata)
+        ? (paypalPayment.metadata as Record<string, unknown>)
+        : {};
+    const paypalOrderId = String(metadata.paypalOrderId || paypalPayment.providerPaymentId || '');
+    if (!paypalOrderId || paypalPayment.providerPaymentId !== paypalOrderId) {
+      throw new BadRequestException('PayPal order reference does not match this checkout.');
+    }
+
+    // Reuse the single failure/release transaction so cancelled approvals do
+    // not strand reserved inventory or coupon capacity.
+    await this.webhooks.handlePaymentFailed({
+      orderId: order.id,
+      paymentIntentId: paypalOrderId,
+      reason: 'Buyer cancelled PayPal approval.',
+    });
+
+    return { success: true, cancelled: true };
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
   @Post('paypal/capture')
   async capturePayPalPayment(
     @Body() body: { orderId: string; paypalOrderId: string },
