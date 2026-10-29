@@ -326,7 +326,7 @@ export class CheckoutService {
         currency: cart.currency,
         provider: paymentProvider,
         paymentMethod: input.dto.paymentMethod,
-        metadata: { orderNumber: order.orderNumber },
+        metadata: { orderNumber: order.orderNumber, guestCheckout: input.userId ? 'false' : 'true' },
       });
 
       payment = paymentResult.payment;
