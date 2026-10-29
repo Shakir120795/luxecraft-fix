@@ -1769,7 +1769,7 @@ export default function ProductEditPage() {
 
                     <div>
                       <label className="mb-2 block text-xs font-semibold uppercase tracking-wider">
-                        Stock
+                        On-hand Stock
                       </label>
                       <input
                         type="number"
@@ -1782,6 +1782,11 @@ export default function ProductEditPage() {
                         }
                         className="w-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2.5"
                       />
+                      <p className="mt-1 text-xs text-[var(--color-muted)]">
+                        {variant.trackInventory
+                          ? `Available to sell: ${Math.max(0, Number(variant.stockQty || 0) - Math.max(0, Number(variant.reservedQty || 0)))}${Number(variant.reservedQty || 0) > 0 ? ` · ${Number(variant.reservedQty || 0)} reserved for pending checkout(s)` : ''}`
+                          : 'Inventory tracking is disabled'}
+                      </p>
                     </div>
 
                     <div>
