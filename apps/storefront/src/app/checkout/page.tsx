@@ -1150,8 +1150,6 @@ export default function CheckoutPage() {
                     {paymentProvider === 'paypal' && paymentApproveUrl && paymentProviderOrderId && (
                       <a
                         href={paymentApproveUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
                         className="block rounded-md border border-[#cfc8c0] bg-white px-6 py-3 text-center text-sm font-semibold uppercase tracking-[0.1em] text-[#302b35] transition hover:border-[#302b35] hover:bg-[#f8f6f2]"
                       >
                         Open PayPal Approval
