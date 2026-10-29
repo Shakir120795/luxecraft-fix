@@ -73,7 +73,8 @@ export class CustomRequestsController {
       signature,
     );
     res.setHeader('Content-Type', file.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${file.filename}"`);
+    const canPreviewInline = file.mimeType.startsWith('image/') || file.mimeType === 'application/pdf';
+    res.setHeader('Content-Disposition', `${canPreviewInline ? 'inline' : 'attachment'}; filename="${file.filename}"`);
     res.setHeader('Cache-Control', 'private, max-age=60, no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     file.stream.pipe(res);
