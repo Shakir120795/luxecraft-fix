@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminNotificationsService } from '../admin-notifications/admin-notifications.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { CustomRequest, CustomRequestStatus, Prisma } from '@prisma/client';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class CustomRequestsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: AdminNotificationsService,
+    private readonly uploads: UploadsService,
   ) {}
 
   async create(data: {
@@ -154,7 +156,7 @@ export class CustomRequestsService {
       include: { messages: { orderBy: { createdAt: 'desc' } }, quotes: true, designs: true },
     });
     if (!req) throw new NotFoundException(`Custom request ${id} not found.`);
-    return req;
+    return this.refreshRequestAttachments(req);
   }
 
   async findOneForUser(id: string, userId: string): Promise<CustomRequest> {
@@ -186,7 +188,7 @@ export class CustomRequestsService {
       },
     });
     if (!request) throw new NotFoundException(`Custom request ${id} not found.`);
-    return request;
+    return this.refreshRequestAttachments(request);
   }
 
   async findByCustomRequestNumber(customRequestNumber: string): Promise<CustomRequest> {
@@ -195,15 +197,16 @@ export class CustomRequestsService {
       include: { messages: { orderBy: { createdAt: 'desc' } }, quotes: true, designs: true },
     });
     if (!req) throw new NotFoundException(`Custom request ${customRequestNumber} not found.`);
-    return req;
+    return this.refreshRequestAttachments(req);
   }
 
   async findAllForUser(userId: string): Promise<CustomRequest[]> {
-    return this.prisma.customRequest.findMany({
+    const requests = await this.prisma.customRequest.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
       include: { messages: { take: 1, orderBy: { createdAt: 'desc' } }, quotes: { take: 1, orderBy: { createdAt: 'desc' } } },
     });
+    return requests.map((request) => this.refreshRequestAttachments(request));
   }
 
   async findAll(params: {
@@ -236,6 +239,20 @@ export class CustomRequestsService {
       where: { id },
       data: { status },
     });
+  }
+
+  private refreshRequestAttachments<T extends { id: string; messages?: Array<{ attachments?: string[] }> }>(request: T): T {
+    if (!Array.isArray(request.messages)) return request;
+
+    return {
+      ...request,
+      messages: request.messages.map((message) => ({
+        ...message,
+        attachments: (message.attachments ?? []).map(
+          (url) => this.uploads.refreshCustomRequestAttachmentUrl(request.id, url) ?? url,
+        ),
+      })),
+    } as T;
   }
 
   private async generateCustomRequestNumber(): Promise<string> {
