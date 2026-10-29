@@ -476,6 +476,13 @@ export interface CustomRequest {
   status: string;
   title: string;
   description: string;
+  productCategory?: string | null;
+  designNotes?: string | null;
+  desiredDimensions?: string | null;
+  preferredColors?: string | null;
+  preferredMaterials?: string | null;
+  quantity?: number;
+  referenceFiles?: string[];
   budget: number | null;
   timeline: string | null;
   createdAt: string;
@@ -494,6 +501,8 @@ export interface CustomRequestMessage {
   id: string;
   customRequestId: string;
   message: string;
+  attachments: string[];
+  senderType?: 'CUSTOMER' | 'ADMIN' | 'SYSTEM';
   isAdminReply: boolean;
   createdAt: string;
 }
@@ -1356,15 +1365,31 @@ export async function getCustomRequests(): Promise<CustomRequest[]> {
 export async function getCustomRequest(id: string): Promise<CustomRequest> {
   const request = await adminApi.get<any>(`/admin/custom-orders/requests/${id}`);
   const quote = request.quotes?.[0];
+  const rawDesignNotes = String(request.designNotes ?? '').trim();
+  const categoryMatch = rawDesignNotes.match(/^Product\/category:\s*(.*)$/im);
+  const remainingDesignNotes = rawDesignNotes
+    .replace(/^Product\/category:\s*.*(?:\r?\n)?/im, '')
+    .trim();
+  const rawBudget = request.estimatedBudget ?? request.budgetRange ?? null;
+  const numericBudget = rawBudget == null || rawBudget === '' ? null : Number(rawBudget);
+  const messages = (request.messages ?? []).map((message: any) => ({
+    ...message,
+    attachments: Array.isArray(message.attachments) ? message.attachments : [],
+    isAdminReply: message.senderType === 'ADMIN',
+  }));
   return {
     ...request,
     requestNumber: request.customRequestNumber,
-    budget: request.estimatedBudget ?? request.budgetRange ?? null,
+    productCategory: request.productCategory ?? categoryMatch?.[1]?.trim() ?? request.category?.name ?? null,
+    designNotes: remainingDesignNotes || null,
+    desiredDimensions: request.dimensions ?? null,
+    preferredColors: request.preferredColors ?? null,
+    preferredMaterials: request.materialPreference ?? null,
+    quantity: Number(request.quantityRequested ?? 1),
+    referenceFiles: Array.from(new Set(messages.flatMap((message: CustomRequestMessage) => message.attachments ?? []))),
+    budget: numericBudget != null && Number.isFinite(numericBudget) ? numericBudget : null,
     timeline: null,
-    messages: (request.messages ?? []).map((message: any) => ({
-      ...message,
-      isAdminReply: message.senderType === 'ADMIN',
-    })),
+    messages,
     quote: quote ? { ...quote, amount: Number(quote.total), description: quote.description ?? '' } : null,
   };
 }
