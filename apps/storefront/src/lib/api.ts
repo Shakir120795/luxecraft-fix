@@ -1396,6 +1396,34 @@ export async function verifyRazorpayPayment(params: {
   }
 }
 
+export async function cancelPayPalPayment(orderId: string): Promise<{
+  success: boolean;
+  cancelled?: boolean;
+  alreadyPaid?: boolean;
+  message?: string;
+}> {
+  try {
+    const res = await apiFetch(`${API_URL}/payments/paypal/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
+      body: JSON.stringify({ orderId }),
+      cache: 'no-store',
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.success === false) {
+      return { success: false, message: data?.message || 'Unable to release the cancelled PayPal checkout.' };
+    }
+    return {
+      success: true,
+      cancelled: data?.cancelled === true,
+      alreadyPaid: data?.alreadyPaid === true,
+    };
+  } catch (error) {
+    console.error('PayPal cancellation reconciliation failed:', error);
+    return { success: false, message: 'Unable to reconcile the cancelled PayPal checkout.' };
+  }
+}
+
 export async function capturePayPalPayment(params: {
   orderId: string;
   paypalOrderId: string;
