@@ -46,8 +46,17 @@ export class CartController {
     @Body('code') code: string,
     @Body('subtotal') subtotal: number,
     @Body('productIds') productIds: string[] = [],
+    @Req() req: RequestWithUser,
   ) {
-    return this.svc.validateCoupon(code, subtotal, Array.isArray(productIds) ? productIds : []);
+    // Validate customer-specific redemption limits at the same point the
+    // coupon is applied, not only later when checkout creates the order.
+    return this.svc.validateCoupon(
+      code,
+      subtotal,
+      Array.isArray(productIds) ? productIds : [],
+      undefined,
+      req.user?.id,
+    );
   }
   @Post('items')
   addToCart(@Body() dto: AddToCartDto, @Req() req: RequestWithUser) {
