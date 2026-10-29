@@ -110,6 +110,9 @@ export class PayPalProvider {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         Prefer: 'return=representation',
+        // Retry-safe key for this internal order; the same order must not
+        // create duplicate PayPal orders if the network response is lost.
+        'PayPal-Request-Id': orderId,
       },
       body: JSON.stringify({
         intent: 'CAPTURE',
@@ -177,6 +180,8 @@ export class PayPalProvider {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
           Prefer: 'return=representation',
+          // Retries after a timeout reuse the same idempotency key.
+          'PayPal-Request-Id': `${paypalOrderId}-capture`,
         },
       },
     );
