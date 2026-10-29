@@ -1409,14 +1409,18 @@ export async function cancelPayPalPayment(orderId: string): Promise<{
       body: JSON.stringify({ orderId }),
       cache: 'no-store',
     });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.success === false) {
-      return { success: false, message: data?.message || 'Unable to release the cancelled PayPal checkout.' };
+    const body = await res.json().catch(() => ({}));
+    const data = body?.data ?? body;
+    if (!res.ok || body?.success === false || data?.success === false) {
+      return {
+        success: false,
+        message: data?.message || body?.message || 'Unable to release the cancelled PayPal checkout.',
+      };
     }
     return {
       success: true,
-      cancelled: data?.cancelled === true,
-      alreadyPaid: data?.alreadyPaid === true,
+      cancelled: data?.cancelled === true || body?.cancelled === true,
+      alreadyPaid: data?.alreadyPaid === true || body?.alreadyPaid === true,
     };
   } catch (error) {
     console.error('PayPal cancellation reconciliation failed:', error);
@@ -1434,8 +1438,12 @@ export async function capturePayPalPayment(params: {
       headers: { 'Content-Type': 'application/json', ...await getAuthHeaders() },
       body: JSON.stringify(params),
     });
-    const data = await res.json();
-    return res.ok ? data : { success: false, message: data?.message || 'PayPal capture failed' };
+    const body = await res.json().catch(() => ({}));
+    const data = body?.data ?? body;
+    if (!res.ok || body?.success === false || data?.success === false) {
+      return { success: false, message: data?.message || body?.message || 'PayPal capture failed' };
+    }
+    return data;
   } catch (error) {
     console.error('PayPal capture failed:', error);
     return { success: false, message: 'PayPal capture failed' };
