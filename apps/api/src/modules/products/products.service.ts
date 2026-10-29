@@ -57,6 +57,8 @@ export class ProductsService {
         salePrice: dto.salePrice,
         currency: dto.currency ?? 'USD',
         status: dto.status ?? ProductStatus.DRAFT,
+        // Products created as ACTIVE must be immediately publishable on the storefront.
+        publishedAt: dto.status === ProductStatus.ACTIVE ? new Date() : null,
         weightKg: dto.weightKg,
         lengthCm: dto.lengthCm,
         widthCm: dto.widthCm,
@@ -122,6 +124,8 @@ export class ProductsService {
         ...(dto.salePrice !== undefined && { salePrice: dto.salePrice }),
         ...(dto.currency && { currency: dto.currency }),
         ...(dto.status && { status: dto.status }),
+        // A direct status change to ACTIVE should behave like the Publish action.
+        ...(dto.status === ProductStatus.ACTIVE && !existing.publishedAt && { publishedAt: new Date() }),
         ...(dto.weightKg !== undefined && { weightKg: dto.weightKg }),
         ...(dto.lengthCm !== undefined && { lengthCm: dto.lengthCm }),
         ...(dto.widthCm !== undefined && { widthCm: dto.widthCm }),
