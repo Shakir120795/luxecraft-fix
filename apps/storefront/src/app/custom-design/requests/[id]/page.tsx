@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   getCustomRequest,
@@ -10,6 +10,7 @@ import {
   createCustomQuoteCheckout,
   getPaymentConfiguration,
   capturePayPalPayment,
+  cancelPayPalPayment,
   verifyRazorpayPayment,
   verifyCryptoPayment,
   isAuthenticated,
@@ -42,6 +43,7 @@ function isReferenceImage(fileUrl: string): boolean {
 export default function CustomRequestDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const requestId = params.id as string;
 
   const [request, setRequest] = useState<CustomRequest | null>(null);
@@ -87,10 +89,41 @@ export default function CustomRequestDetailPage() {
       return;
     }
 
-    if (requestId) {
-      loadRequest();
+    if (!requestId) return;
+
+    const paypalWasCancelled = searchParams.get('paypalCancelled') === '1';
+    const cancelledOrderId = searchParams.get('orderId');
+    if (paypalWasCancelled && cancelledOrderId) {
+      void (async () => {
+        const cancellation = await cancelPayPalPayment(cancelledOrderId);
+        if (cancellation.success && cancellation.alreadyPaid) {
+          router.replace(`/order-confirmation?orderId=${encodeURIComponent(cancelledOrderId)}`);
+          return;
+        }
+
+        if (cancellation.success) {
+          setQuotePaymentError('PayPal approval was cancelled. No payment was confirmed; you can try again below.');
+          const remainingParams = new URLSearchParams(searchParams.toString());
+          remainingParams.delete('paypalCancelled');
+          remainingParams.delete('orderId');
+          const query = remainingParams.toString();
+          router.replace(query
+            ? `/custom-design/requests/${encodeURIComponent(requestId)}?${query}`
+            : `/custom-design/requests/${encodeURIComponent(requestId)}`);
+        } else {
+          setQuotePaymentError(
+            cancellation.message ||
+              'PayPal cancellation could not be reconciled yet. Refresh this page to retry; do not start another payment until the order status is checked.',
+          );
+        }
+
+        await loadRequest();
+      })();
+      return;
     }
-  }, [requestId]);
+
+    void loadRequest();
+  }, [requestId, searchParams]);
 
   async function loadRequest() {
     try {
