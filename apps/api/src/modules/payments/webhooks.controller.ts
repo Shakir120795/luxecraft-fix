@@ -190,7 +190,7 @@ export class WebhooksController {
     if (!webhookId) throw new BadRequestException('PayPal webhook ID is not configured');
 
     const accessToken = await this.getPayPalWebhookAccessToken();
-    const baseUrl = this.config.get<string>('commerce.payment.paypalBaseUrl') || 'https://api-m.sandbox.paypal.com';
+    const baseUrl = this.config.get<string>('commerce.payment.paypalBaseUrl') || (process.env.NODE_ENV === 'production' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
 
     const verifyResponse = await fetch(`${baseUrl}/v1/notifications/verify-webhook-signature`, {
       method: 'POST',
@@ -277,7 +277,7 @@ export class WebhooksController {
   }
 
   private async getPayPalWebhookAccessToken(): Promise<string> {
-    const baseUrl = this.config.get<string>('commerce.payment.paypalBaseUrl') || 'https://api-m.sandbox.paypal.com';
+    const baseUrl = this.config.get<string>('commerce.payment.paypalBaseUrl') || (process.env.NODE_ENV === 'production' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
     const clientId = this.config.get<string>('commerce.payment.paypalClientId') || '';
     const clientSecret = this.config.get<string>('commerce.payment.paypalClientSecret') || '';
 
