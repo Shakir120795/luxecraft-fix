@@ -1751,8 +1751,10 @@ export interface CustomRequest {
 function mapCustomRequest(request: any): CustomRequest {
   const rawDesignNotes = String(request.designNotes ?? '').trim();
   const categoryMatch = rawDesignNotes.match(/^Product\/category:\s*(.*)$/im);
+  const styleMatch = rawDesignNotes.match(/^Style:\s*(.*)$/im);
   const remainingDesignNotes = rawDesignNotes
     .replace(/^Product\/category:\s*.*(?:\r?\n)?/im, '')
+    .replace(/^Style:\s*.*(?:\r?\n)?/im, '')
     .trim();
   const messages = Array.isArray(request.messages)
     ? request.messages.map((message: any) => ({
@@ -1771,6 +1773,7 @@ function mapCustomRequest(request: any): CustomRequest {
     ...request,
     requestNumber: request.customRequestNumber ?? request.requestNumber,
     productCategory: request.productCategory ?? categoryMatch?.[1]?.trim() ?? request.category?.name ?? null,
+    preferredStyle: request.preferredStyle ?? styleMatch?.[1]?.trim() ?? null,
     designNotes: remainingDesignNotes || null,
     desiredDimensions: request.dimensions ?? request.desiredDimensions ?? null,
     preferredColors: request.preferredColors ?? null,
@@ -1890,6 +1893,7 @@ export async function createCustomRequest(params: {
   title: string;
   description: string;
   productCategory?: string;
+  preferredStyle?: string;
   desiredDimensions?: string;
   preferredColors?: string;
   preferredMaterials?: string;
@@ -1912,7 +1916,10 @@ export async function createCustomRequest(params: {
         title: params.title,
         description: params.description,
         dimensions: params.desiredDimensions,
-        designNotes: params.productCategory ? `Product/category: ${params.productCategory}` : undefined,
+        designNotes: [
+          params.productCategory ? `Product/category: ${params.productCategory}` : '',
+          params.preferredStyle ? `Style: ${params.preferredStyle}` : '',
+        ].filter(Boolean).join('\n') || undefined,
         preferredColors: params.preferredColors,
         materialPreference: params.preferredMaterials,
         quantityRequested: params.quantity,
