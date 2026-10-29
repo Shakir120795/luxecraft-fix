@@ -34,14 +34,24 @@ export class PayPalProvider {
       this.config.get<string>('commerce.payment.paypalClientId') || '';
     this.clientSecret =
       this.config.get<string>('commerce.payment.paypalClientSecret') || '';
-    this.baseUrl =
+    this.baseUrl = (
       this.config.get<string>('commerce.payment.paypalBaseUrl') ||
-      'https://api-m.sandbox.paypal.com';
+      (process.env.NODE_ENV === 'production'
+        ? 'https://api-m.paypal.com'
+        : 'https://api-m.sandbox.paypal.com')
+    ).replace(/\/+$/, '');
     this.appUrl = (this.config.get<string>('commerce.appUrl') || 'http://localhost:3000')
       .replace(/\/+$/, '');
 
-    if (!this.isConfigured()) {
+    if (!this.clientId || !this.clientSecret) {
       this.logger.warn('PayPal credentials not configured');
+    } else if (this.isSandboxEndpoint() && process.env.NODE_ENV === 'production' &&
+      process.env.PAYPAL_ALLOW_SANDBOX_IN_PRODUCTION?.toLowerCase() !== 'true') {
+      this.logger.error(
+        'PayPal Sandbox is disabled in production. Configure live PayPal credentials and https://api-m.paypal.com; use PAYPAL_ALLOW_SANDBOX_IN_PRODUCTION=true only for intentional test transactions.',
+      );
+    } else if (this.isSandboxEndpoint()) {
+      this.logger.warn('PayPal is using Sandbox: transactions are tests and do not collect real money.');
     }
   }
 
@@ -325,8 +335,28 @@ export class PayPalProvider {
       .slice(0, 280);
   }
 
+  private isSandboxEndpoint(): boolean {
+    try {
+      return new URL(this.baseUrl).hostname === 'api-m.sandbox.paypal.com';
+    } catch {
+      return false;
+    }
+  }
+
   isConfigured(): boolean {
-    return Boolean(this.clientId && this.clientSecret && this.baseUrl);
+    if (!this.clientId || !this.clientSecret || !this.baseUrl) return false;
+
+    // A deployed production storefront must never silently accept test-only
+    // PayPal payments. Sandbox on production requires an explicit opt-in.
+    if (
+      process.env.NODE_ENV === 'production' &&
+      this.isSandboxEndpoint() &&
+      process.env.PAYPAL_ALLOW_SANDBOX_IN_PRODUCTION?.toLowerCase() !== 'true'
+    ) {
+      return false;
+    }
+
+    return true;
   }
 
   getClientId(): string {
