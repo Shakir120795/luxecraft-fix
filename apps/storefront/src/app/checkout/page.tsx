@@ -20,7 +20,7 @@ import {
   getPaymentConfiguration,
   createOrder,
   verifyRazorpayPayment,
-  capturePayPalPayment,
+  cancelPayPalPayment,
   verifyCryptoPayment,
   resumePayment,
   Cart,
@@ -137,6 +137,33 @@ export default function CheckoutPage() {
   async function loadCheckoutData() {
     try {
       setLoading(true);
+
+      // PayPal returns to the configured cancel URL without a payment token.
+      // Close the server-side payment attempt so its stock/coupon reservations
+      // are released before the customer starts another checkout.
+      const paypalWasCancelled = searchParams.get('paypalCancelled') === '1';
+      const cancelledOrderId = searchParams.get('orderId');
+      if (paypalWasCancelled && cancelledOrderId) {
+        const cancellation = await cancelPayPalPayment(cancelledOrderId);
+        if (cancellation.success && cancellation.alreadyPaid) {
+          router.replace(`/order-confirmation?orderId=${encodeURIComponent(cancelledOrderId)}`);
+          return;
+        }
+        if (cancellation.success) {
+          setError('PayPal approval was cancelled. No payment was confirmed; you can try again below.');
+          const remainingParams = new URLSearchParams(searchParams.toString());
+          remainingParams.delete('paypalCancelled');
+          remainingParams.delete('orderId');
+          const query = remainingParams.toString();
+          router.replace(query ? `/checkout?${query}` : '/checkout');
+        } else {
+          setError(
+            cancellation.message ||
+              'PayPal cancellation could not be reconciled yet. Refresh this page to retry; do not submit another payment until the order status is checked.',
+          );
+        }
+      }
+
       const cartData = await getCart();
       
       if (!cartData || cartData.items.length === 0) {
@@ -400,20 +427,16 @@ export default function CheckoutPage() {
       }
 
       if (paymentProvider === 'paypal' && paymentProviderOrderId && paymentOrderId) {
-        const capture = await capturePayPalPayment({
-          orderId: paymentOrderId,
-          paypalOrderId: paymentProviderOrderId,
-        });
-
-        if (!capture.success) {
-          setError(capture.message || 'PayPal payment capture failed.');
+        if (!paymentApproveUrl) {
+          setError('The PayPal approval link is missing. Please return to the cart and try checkout again.');
           setSubmitting(false);
           return;
         }
 
-        await clearCart();
-        const confirmationQuery = new URLSearchParams({ orderId: paymentOrderId });
-        router.push(`/order-confirmation?${confirmationQuery.toString()}`);
+        // Checkout must never capture an order before the buyer approves it.
+        // Redirecting in the same tab avoids popup blockers and lets PayPal
+        // return to /order-confirmation with its order token for server capture.
+        window.location.assign(paymentApproveUrl);
         return;
       }
 
@@ -583,12 +606,11 @@ export default function CheckoutPage() {
           return;
         }
 
-        // Keep a visible fallback link in case the browser blocks a popup opened
-        // after the checkout request finishes. PayPal returns to server-side capture.
+        // Navigate this tab directly. Opening a new tab after awaiting the API
+        // request is commonly blocked by browsers, leaving an unapproved order
+        // behind with stock/coupon reservations.
         setPaymentApproveUrl(result.data.approveUrl);
-        window.open(result.data.approveUrl, '_blank', 'noopener,noreferrer');
-        setError('Complete PayPal approval in the opened tab. If no tab appeared, use the Open PayPal Approval link below. Payment will be verified when PayPal returns.');
-        setSubmitting(false);
+        window.location.assign(result.data.approveUrl);
         return;
       }
 
@@ -1121,7 +1143,7 @@ export default function CheckoutPage() {
                             : paymentProvider === 'razorpay'
                               ? 'Continue with Card Payment'
                               : paymentProvider === 'paypal'
-                                ? paymentProviderOrderId ? 'Capture PayPal Payment' : 'Continue with PayPal'
+                                ? paymentProviderOrderId ? 'Open PayPal Approval' : 'Continue with PayPal'
                                 : 'Continue with Crypto'}
                       </button>
                     </div>
