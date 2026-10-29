@@ -20,6 +20,7 @@ export default function CartPage() {
   const [estimatedDelivery, setEstimatedDelivery] = useState<number | null>(null);
   const [couponOpen, setCouponOpen] = useState(false);
   const [couponCode, setCouponCode] = useState('');
+  const [appliedCouponCode, setAppliedCouponCode] = useState('');
   const [couponMessage, setCouponMessage] = useState<string | null>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
 
@@ -118,12 +119,14 @@ export default function CartPage() {
     if (!code) {
       setCouponMessage('Enter a coupon code.');
       setCouponDiscount(0);
+      setAppliedCouponCode('');
       return;
     }
 
     if (!cart || cart.items.length === 0) {
       setCouponMessage('Your cart is empty.');
       setCouponDiscount(0);
+      setAppliedCouponCode('');
       return;
     }
 
@@ -137,11 +140,11 @@ export default function CartPage() {
       const result = await validateCoupon(code, cartSubtotal, productIds);
       setCouponDiscount(result.discountAmount);
       setCouponCode(result.code);
-      localStorage.setItem('appliedCouponCode', result.code);
+      setAppliedCouponCode(result.code);
       setCouponMessage(`Coupon applied. You save ${result.discountAmount.toFixed(2)}.`);
     } catch (err) {
       setCouponDiscount(0);
-      localStorage.removeItem('appliedCouponCode');
+      setAppliedCouponCode('');
       setCouponMessage(err instanceof Error ? err.message : 'Unable to apply coupon.');
     }
   }
@@ -373,12 +376,16 @@ export default function CartPage() {
 
                 <button
                   onClick={() => {
-                    // Check if user is authenticated
-                    const authenticated = typeof window !== 'undefined' && localStorage.getItem('accessToken');
+                    // Only carry a coupon to checkout when the customer explicitly
+                    // applied it in this cart session. Never auto-apply a stale code.
+                    const checkoutPath = appliedCouponCode
+                      ? `/checkout?coupon=${encodeURIComponent(appliedCouponCode)}`
+                      : '/checkout';
+                    const authenticated = isAuthenticated();
                     if (authenticated) {
-                      router.push('/checkout');
+                      router.push(checkoutPath);
                     } else {
-                      router.push('/auth/login?redirect=/checkout');
+                      router.push(`/auth/login?redirect=${encodeURIComponent(checkoutPath)}`);
                     }
                   }}
                   className="mb-4 w-full rounded-md bg-[#302b35] px-6 py-3.5 text-sm font-semibold text-white transition hover:bg-[#211e24]"
@@ -403,7 +410,7 @@ export default function CartPage() {
                     <span className="flex h-8 w-12 items-center justify-center rounded border border-[#ddd7cf] bg-white p-1"><svg viewBox="0 0 48 24" className="h-6 w-11" aria-label="UPI"><path d="M4 15 9 5h5l-5 10H4Z" fill="#5b8db8"/><path d="m13 15 5-10h5l-5 10h-5Z" fill="#39a94a"/><path d="m22 15 5-10h5l-5 10h-5Z" fill="#f4a21e"/><text x="31" y="15" font-size="8" font-family="Arial" font-weight="700" fill="#2b4e8a">UPI</text></svg></span>
                   </div>
                   
-                  <div className="mt-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] p-4"><label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#59535b]">Coupon code</label><div className="flex gap-2"><input type="text" value={couponCode} onChange={(e) => { setCouponCode(e.target.value); setCouponMessage(null); }} onKeyDown={(e) => { if (e.key === "Enter") void handleApplyCoupon(); }} placeholder="Enter coupon code" className="min-w-0 flex-1 rounded-md border border-[#ded8d0] bg-white px-3 py-2.5 text-sm text-[#302b35] outline-none transition focus:border-[#302b35]" /><button type="button" onClick={() => void handleApplyCoupon()} className="rounded-md bg-[#302b35] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#211e24]">Apply</button></div>
+                  <div className="mt-5 rounded-md border border-[#ded8d0] bg-[#faf9f7] p-4"><label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-[#59535b]">Coupon code</label><div className="flex gap-2"><input type="text" value={couponCode} onChange={(e) => { setCouponCode(e.target.value); setCouponMessage(null); setAppliedCouponCode(''); setCouponDiscount(0); }} onKeyDown={(e) => { if (e.key === "Enter") void handleApplyCoupon(); }} placeholder="Enter coupon code" className="min-w-0 flex-1 rounded-md border border-[#ded8d0] bg-white px-3 py-2.5 text-sm text-[#302b35] outline-none transition focus:border-[#302b35]" /><button type="button" onClick={() => void handleApplyCoupon()} className="rounded-md bg-[#302b35] px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[#211e24]">Apply</button></div>
                     <p className="mt-2 text-xs text-[#6a636b]">{couponMessage || "Coupon discounts are applied at checkout."}</p></div>
                     <p className="mt-2 text-xs text-[#6a636b]">Local taxes included (where applicable)</p>
                 </div>
