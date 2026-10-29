@@ -477,6 +477,7 @@ export interface CustomRequest {
   title: string;
   description: string;
   productCategory?: string | null;
+  preferredStyle?: string | null;
   designNotes?: string | null;
   desiredDimensions?: string | null;
   preferredColors?: string | null;
@@ -1367,8 +1368,10 @@ export async function getCustomRequest(id: string): Promise<CustomRequest> {
   const quote = request.quotes?.[0];
   const rawDesignNotes = String(request.designNotes ?? '').trim();
   const categoryMatch = rawDesignNotes.match(/^Product\/category:\s*(.*)$/im);
+  const styleMatch = rawDesignNotes.match(/^Style:\s*(.*)$/im);
   const remainingDesignNotes = rawDesignNotes
     .replace(/^Product\/category:\s*.*(?:\r?\n)?/im, '')
+    .replace(/^Style:\s*.*(?:\r?\n)?/im, '')
     .trim();
   const rawBudget = request.estimatedBudget ?? request.budgetRange ?? null;
   const numericBudget = rawBudget == null || rawBudget === '' ? null : Number(rawBudget);
@@ -1381,6 +1384,7 @@ export async function getCustomRequest(id: string): Promise<CustomRequest> {
     ...request,
     requestNumber: request.customRequestNumber,
     productCategory: request.productCategory ?? categoryMatch?.[1]?.trim() ?? request.category?.name ?? null,
+    preferredStyle: request.preferredStyle ?? styleMatch?.[1]?.trim() ?? null,
     designNotes: remainingDesignNotes || null,
     desiredDimensions: request.dimensions ?? null,
     preferredColors: request.preferredColors ?? null,
