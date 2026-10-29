@@ -212,7 +212,7 @@ export class UploadsService {
 
         const expiresAt = Math.floor(Date.now() / 1000) + PRIVATE_FILE_URL_TTL_SECONDS;
         const signature = createPrivateFileSignature(safeRequestId, filename, expiresAt);
-        const url = `${this.publicApiUrl()}/api/v1/custom-requests/${encodeURIComponent(safeRequestId)}/files/${encodeURIComponent(filename)}?expires=${expiresAt}&signature=${signature}`;
+        const url = `${this.publicApiUrl()}/api/v1/custom-requests/${encodeURIComponent(safeRequestId)}/files/${encodeURIComponent(filename)}?expires=${expiresAt}&signature=${signature}&name=${encodeURIComponent(file.originalname)}`;
 
         saved.push({
           filename,
@@ -229,6 +229,47 @@ export class UploadsService {
       await this.cleanupTempFiles(files);
       if (error instanceof BadRequestException) throw error;
       throw new InternalServerErrorException('Failed to save files.');
+    }
+  }
+
+  /** Generate a fresh signed URL for an attachment already stored on a request message. */
+  refreshCustomRequestAttachmentUrl(customRequestId: string, attachmentUrl: string): string | null {
+    if (!customRequestId || !attachmentUrl) return null;
+
+    try {
+      const url = new URL(attachmentUrl);
+      const configuredOrigin = new URL(this.publicApiUrl()).origin;
+      if (url.origin !== configuredOrigin) return null;
+
+      const segments = url.pathname.split('/').filter(Boolean);
+      const filesIndex = segments.lastIndexOf('files');
+      if (filesIndex < 2 || filesIndex !== segments.length - 2 || segments[filesIndex - 2] !== 'custom-requests') {
+        return null;
+      }
+
+      const requestId = decodeURIComponent(segments[filesIndex - 1]);
+      const filename = decodeURIComponent(segments[filesIndex + 1]);
+      const safeRequestId = customRequestId.replace(/[^a-zA-Z0-9_-]/g, '');
+      if (
+        requestId !== customRequestId ||
+        !safeRequestId ||
+        safeRequestId !== customRequestId ||
+        !filename ||
+        basename(filename) !== filename
+      ) {
+        return null;
+      }
+
+      const expiresAt = Math.floor(Date.now() / 1000) + PRIVATE_FILE_URL_TTL_SECONDS;
+      const signature = createPrivateFileSignature(safeRequestId, filename, expiresAt);
+      const displayName = url.searchParams.get('name');
+      url.search = '';
+      url.searchParams.set('expires', String(expiresAt));
+      url.searchParams.set('signature', signature);
+      if (displayName) url.searchParams.set('name', displayName);
+      return url.toString();
+    } catch {
+      return null;
     }
   }
 
