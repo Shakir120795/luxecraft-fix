@@ -1772,6 +1772,7 @@ export interface CustomRequest {
   title: string;
   description: string;
   productCategory: string | null;
+  preferredStyle?: string | null;
   designNotes?: string | null;
   desiredDimensions: string | null;
   preferredColors: string | null;
