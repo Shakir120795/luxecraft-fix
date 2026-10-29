@@ -105,15 +105,19 @@ export default function OrderConfirmationPage() {
         setLoading(true);
         setError(null);
 
-        // PayPal returns the PayPal order token after the buyer approves payment.
-        // Capture server-side before presenting the order as paid/confirmed.
+        // PayPal returns the provider order token after buyer approval.
+        // A capture error must not hide the real order state: fetch the order
+        // anyway and show a retry notice without falsely declaring payment complete.
+        let paymentConfirmationError: string | null = null;
         if (paypalReturn && paypalOrderId) {
           const capture = await capturePayPalPayment({
             orderId: id,
             paypalOrderId,
           });
           if (!capture.success) {
-            throw new Error(capture.message || 'PayPal payment could not be confirmed. Do not pay again; refresh this page to retry confirmation.');
+            paymentConfirmationError =
+              capture.message ||
+              'PayPal payment is not confirmed yet. Do not pay again; refresh this page to retry verification.';
           }
         }
 
@@ -124,6 +128,9 @@ export default function OrderConfirmationPage() {
             await clearCart();
           }
           setOrder(data);
+          if (paymentConfirmationError && data.paymentStatus !== 'PAID') {
+            setError(paymentConfirmationError);
+          }
         } else {
           setError('Order not found');
         }
@@ -160,7 +167,7 @@ export default function OrderConfirmationPage() {
     );
   }
 
-  if (error || !order) {
+  if (!order) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-luxury-cream px-4 py-16">
         <div className="w-full max-w-md border border-luxury-sand bg-white p-8 text-center shadow-[0_18px_60px_rgba(48,43,53,0.06)] sm:p-10">
@@ -177,8 +184,16 @@ export default function OrderConfirmationPage() {
   const currency = order.currency || 'USD';
   const items = Array.isArray(order.items) ? order.items : [];
   const orderDate = formatOrderDate(order.createdAt);
-  const paymentStatus = String(order.paymentStatus || 'PENDING').replace(/_/g, ' ');
-  const orderStatus = String(order.orderStatus || order.status || 'CONFIRMED').replace(/_/g, ' ');
+  const rawPaymentStatus = String(order.paymentStatus || 'PENDING').toUpperCase();
+  const isPaymentConfirmed = rawPaymentStatus === 'PAID';
+  const isPaymentFailed = rawPaymentStatus === 'FAILED' || rawPaymentStatus === 'CANCELLED';
+  const paymentStatus = rawPaymentStatus.replace(/_/g, ' ');
+  const orderStatus = String(order.orderStatus || order.status || 'PENDING').replace(/_/g, ' ');
+  const confirmationTitle = isPaymentConfirmed
+    ? 'Order Confirmed'
+    : isPaymentFailed
+      ? 'Payment Not Completed'
+      : 'Order Received — Payment Pending';
   const address = order.shippingAddress;
   const addressLines = address
     ? [
@@ -195,6 +210,20 @@ export default function OrderConfirmationPage() {
 
   return (
     <main className="min-h-screen bg-luxury-cream text-luxury-charcoal">
+      {error && order && (
+        <div role="alert" className="mx-auto max-w-5xl px-4 pt-6 sm:px-8">
+          <div className="border border-[#d8b16a] bg-[#fff8e8] px-5 py-4 text-sm leading-6 text-[#6f5520]">
+            <p>{error}</p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-3 font-semibold underline underline-offset-4"
+            >
+              Retry payment verification
+            </button>
+          </div>
+        </div>
+      )}
       <div className="relative overflow-hidden border-b border-luxury-sand bg-gradient-to-br from-white via-[#fbf8f3] to-[#f0e5d3]">
         <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full border border-[#c99545]/20" />
         <div className="pointer-events-none absolute -right-4 -top-8 h-48 w-48 rounded-full border border-[#c99545]/15" />
@@ -202,13 +231,19 @@ export default function OrderConfirmationPage() {
           <div className="mx-auto max-w-3xl text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-[#d5b16f] bg-white shadow-[0_8px_24px_rgba(169,121,52,0.12)]">
               <svg viewBox="0 0 24 24" className="h-8 w-8 text-[#a87836]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                <path d="m5 12.5 4.2 4.2L19.5 6.8" strokeLinecap="round" strokeLinejoin="round" />
+                {isPaymentConfirmed
+                  ? <path d="m5 12.5 4.2 4.2L19.5 6.8" strokeLinecap="round" strokeLinejoin="round" />
+                  : <><path d="M12 8v5" strokeLinecap="round" /><path d="M12 17h.01" strokeLinecap="round" /><circle cx="12" cy="12" r="9" /></>}
               </svg>
             </div>
             <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-[#a87836]">Wolhomes · Order Received</p>
-            <h1 className="font-serif text-4xl font-light tracking-tight text-luxury-charcoal sm:text-6xl">Order Confirmed</h1>
+            <h1 className="font-serif text-4xl font-light tracking-tight text-luxury-charcoal sm:text-6xl">{confirmationTitle}</h1>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-6 text-luxury-brown sm:text-base">
-              Thank you for choosing Wolhomes. Your order details are below, ready whenever you need them.
+              {isPaymentConfirmed
+                ? 'Thank you for choosing Wolhomes. Your payment is confirmed and your order details are below.'
+                : isPaymentFailed
+                  ? 'Payment was not completed. Your order is not marked as paid; you can return to checkout to try again.'
+                  : 'We have received your order details, but payment is still pending. We will process the order after the payment provider confirms the payment. Do not pay again if you already approved it.'}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 text-xs">
               <span className="border border-[#d8c7a8] bg-white/80 px-4 py-2 text-[#5d4a2b]">
