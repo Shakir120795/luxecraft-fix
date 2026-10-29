@@ -113,10 +113,7 @@ export class PaymentProviderService {
         );
 
       case 'paypal':
-        return Boolean(
-          this.config.get<string>('commerce.payment.paypalClientId') &&
-            this.config.get<string>('commerce.payment.paypalClientSecret'),
-        );
+        return this.paypalProvider.isConfigured();
 
       case 'crypto':
         return this.cryptoProvider.isConfigured();
