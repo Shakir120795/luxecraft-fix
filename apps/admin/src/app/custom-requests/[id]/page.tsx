@@ -22,6 +22,27 @@ const statusOptions = [
   { value: 'CANCELLED', label: 'CANCELLED' },
 ];
 
+function getReferenceFileName(fileUrl: string, index: number): string {
+  try {
+    const url = new URL(fileUrl, 'https://wolhomes.com');
+    const originalName = url.searchParams.get('name');
+    if (originalName) return originalName;
+    const filename = decodeURIComponent(url.pathname.split('/').pop() || '');
+    return filename || `Reference file ${index + 1}`;
+  } catch {
+    return `Reference file ${index + 1}`;
+  }
+}
+
+function isReferenceImage(fileUrl: string): boolean {
+  try {
+    const pathname = new URL(fileUrl, 'https://wolhomes.com').pathname;
+    return /\.(?:jpe?g|png|webp|gif|avif)$/i.test(pathname);
+  } catch {
+    return false;
+  }
+}
+
 export default function CustomRequestDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -202,7 +223,49 @@ export default function CustomRequestDetailPage() {
                     {request.description}
                   </p>
                 </div>
-                {request.budget && (
+                {request.productCategory && (
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)] mb-2">Product Category</h3>
+                    <p className="text-[var(--color-text)]">{request.productCategory}</p>
+                  </div>
+                )}
+                {request.preferredStyle && (
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)] mb-2">Preferred Style</h3>
+                    <p className="text-[var(--color-text)]">{request.preferredStyle}</p>
+                  </div>
+                )}
+                {request.designNotes && (
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)] mb-2">Additional Design Notes</h3>
+                    <p className="whitespace-pre-wrap text-[var(--color-text)]">{request.designNotes}</p>
+                  </div>
+                )}
+                {request.desiredDimensions && (
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)] mb-2">Dimensions</h3>
+                    <p className="text-[var(--color-text)]">{request.desiredDimensions}</p>
+                  </div>
+                )}
+                {request.preferredColors && (
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)] mb-2">Preferred Colors</h3>
+                    <p className="text-[var(--color-text)]">{request.preferredColors}</p>
+                  </div>
+                )}
+                {request.preferredMaterials && (
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)] mb-2">Preferred Materials</h3>
+                    <p className="text-[var(--color-text)]">{request.preferredMaterials}</p>
+                  </div>
+                )}
+                {request.quantity != null && (
+                  <div>
+                    <h3 className="font-medium text-[var(--color-text)] mb-2">Quantity</h3>
+                    <p className="text-[var(--color-text)]">{request.quantity}</p>
+                  </div>
+                )}
+                {request.budget != null && Number.isFinite(Number(request.budget)) && (
                   <div>
                     <h3 className="font-medium text-[var(--color-text)] mb-2">Budget</h3>
                     <p className="text-[var(--color-text)]">
@@ -218,6 +281,50 @@ export default function CustomRequestDetailPage() {
                 )}
               </div>
             </div>
+
+            {(request.referenceFiles ?? []).length > 0 && (
+              <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+                <div className="mb-5">
+                  <h2 className="text-xl font-serif text-[var(--color-primary)]">Reference Images & Files</h2>
+                  <p className="mt-1 text-sm text-[var(--color-muted)]">
+                    Customer uploads related to this custom request. Select an image to open it full size.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                  {(request.referenceFiles ?? []).map((fileUrl, index) => {
+                    const imageFile = isReferenceImage(fileUrl);
+                    const fileName = getReferenceFileName(fileUrl, index);
+                    return (
+                      <a
+                        key={fileUrl}
+                        href={fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg)] transition hover:border-[var(--color-accent)]"
+                        aria-label={`Open reference file: ${fileName}`}
+                      >
+                        {imageFile ? (
+                          <img
+                            src={fileUrl}
+                            alt={`Customer reference ${index + 1}: ${fileName}`}
+                            loading="lazy"
+                            className="h-32 w-full bg-white object-cover transition group-hover:scale-[1.02] sm:h-40"
+                          />
+                        ) : (
+                          <div className="flex h-32 items-center justify-center bg-[var(--color-border)]/30 text-sm font-semibold uppercase tracking-wider text-[var(--color-muted)] sm:h-40">
+                            File
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <p className="truncate text-sm font-medium text-[var(--color-text)]" title={fileName}>{fileName}</p>
+                          <p className="mt-1 text-xs text-[var(--color-accent)]">{imageFile ? 'View full image ↗' : 'Open file ↗'}</p>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Quote Section */}
             <div className="border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
