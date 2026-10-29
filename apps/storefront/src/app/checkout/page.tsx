@@ -146,21 +146,39 @@ export default function CheckoutPage() {
 
       setCart(cartData);
 
-      // Re-validate the coupon from the cart page against the current server-side cart.
-      const savedCouponCode = localStorage.getItem('appliedCouponCode');
-      if (savedCouponCode) {
+      // Clear legacy persisted coupon state. A coupon is carried into checkout
+      // only through the explicit cart Apply action (the ?coupon= query param).
+      try {
+        localStorage.removeItem('appliedCouponCode');
+      } catch {
+        // Storage may be unavailable; checkout still works without remembered coupons.
+      }
+
+      const requestedCouponCode = searchParams.get('coupon')?.trim() || '';
+      if (requestedCouponCode) {
         try {
           const coupon = await validateCoupon(
-            savedCouponCode,
+            requestedCouponCode,
             cartData.items.reduce((sum, item) => sum + Number(item.priceSnapshot) * item.quantity, 0),
             cartData.items.map((item) => item.productId),
           );
           setCouponCode(coupon.code);
           setCouponDiscount(coupon.discountAmount);
-        } catch {
-          localStorage.removeItem('appliedCouponCode');
+        } catch (couponError) {
           setCouponCode('');
           setCouponDiscount(0);
+          setError(
+            couponError instanceof Error
+              ? `Coupon was not applied: ${couponError.message} You can continue without it.`
+              : 'Coupon was not applied. You can continue without it.',
+          );
+        } finally {
+          // Remove the one-time coupon hand-off so refreshing or revisiting
+          // checkout cannot silently reapply a previously used/reserved code.
+          const remainingParams = new URLSearchParams(searchParams.toString());
+          remainingParams.delete('coupon');
+          const query = remainingParams.toString();
+          router.replace(query ? `/checkout?${query}` : '/checkout');
         }
       }
 
