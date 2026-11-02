@@ -130,7 +130,9 @@ export function SiteHeader() {
     animationFrame = window.requestAnimationFrame(tick);
 
     return () => window.cancelAnimationFrame(animationFrame);
-  }, [openFilter]);
+  // The category bar is removed on product-detail routes and recreated on return.
+  // Restart the RAF loop so it always targets the currently mounted element.
+  }, [openFilter, pathname]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
