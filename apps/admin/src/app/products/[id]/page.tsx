@@ -255,15 +255,19 @@ export default function ProductEditPage() {
         const freshVariants = freshProduct.variants ?? [];
         setSizes((current) =>
           current.map((variant) => {
-            if (!variant.id || variant.stockQtyDirty) return variant;
+            if (!variant.id) return variant;
             const latest = freshVariants.find((item) => item.id === variant.id);
-            return latest
-              ? {
-                  ...variant,
-                  stockQty: String(latest.stockQty ?? 0),
-                  reservedQty: Math.max(0, Number(latest.reservedQty ?? 0)),
-                }
-              : variant;
+            if (!latest) return variant;
+
+            return {
+              ...variant,
+              // Preserve an admin's unsaved on-hand edit, but always refresh
+              // reserved stock so Available to sell never uses stale holds.
+              stockQty: variant.stockQtyDirty
+                ? variant.stockQty
+                : String(latest.stockQty ?? 0),
+              reservedQty: Math.max(0, Number(latest.reservedQty ?? 0)),
+            };
           }),
         );
       } catch (err) {
