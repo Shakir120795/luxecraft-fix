@@ -430,7 +430,10 @@ export default function ProductEditPage() {
         allowBackorder: item.allowBackorder === true,
         isAvailable: item.isAvailable !== false,
         sortOrder: item.sortOrder ?? index,
-      })),
+      }))
+        // Open the editor in numeric size order; the list is NOT re-sorted
+        // while editing (see variantDrafts below).
+        .sort((a, b) => compareSizeLabels(a.name, b.name)),
     );
 
     setCustomizations(
@@ -1034,10 +1037,12 @@ export default function ProductEditPage() {
     }
   }
 
-  const sortedVariantDrafts = useMemo(
-    () => variants
-      .map((variant, index) => ({ variant, index }))
-      .sort((a, b) => compareSizeLabels(a.variant.name, b.variant.name)),
+  // Editor rows keep a stable order while typing: re-sorting by size name
+  // on every keystroke moved the card being edited (and its cursor) to a
+  // different position mid-edit. Sizes are sorted when the product loads
+  // and again in the save payload.
+  const variantDrafts = useMemo(
+    () => variants.map((variant, index) => ({ variant, index })),
     [variants],
   );
 
@@ -1719,7 +1724,7 @@ export default function ProductEditPage() {
             )}
 
             <div className="space-y-5">
-              {sortedVariantDrafts.map(({ variant, index }, displayIndex) => (
+              {variantDrafts.map(({ variant, index }, displayIndex) => (
                 <div
                   key={variant.id ?? `variant-${index}`}
                   className="border border-[var(--color-border)] bg-[var(--color-bg)] p-5"
