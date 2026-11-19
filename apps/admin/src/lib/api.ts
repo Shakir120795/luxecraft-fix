@@ -1214,7 +1214,10 @@ export interface CreateProductRequest {
 export async function createProduct(data: CreateProductRequest): Promise<Product> {
   const product = await adminApi.post<any>('/admin/products', {
     ...data,
-    status: data.isActive ? 'ACTIVE' : 'DRAFT',
+    // The editor's explicit Status selection wins. The legacy isActive flag
+    // is only a fallback — deriving status from it unconditionally forced
+    // every new listing to DRAFT even when Active was selected.
+    status: data.status ?? (data.isActive ? 'ACTIVE' : 'DRAFT'),
   });
   return mapProduct(product);
 }
@@ -1222,7 +1225,7 @@ export async function createProduct(data: CreateProductRequest): Promise<Product
 export async function updateProduct(id: string, data: Partial<CreateProductRequest>): Promise<Product> {
   const product = await adminApi.patch<any>(`/admin/products/${id}`, {
     ...data,
-    ...(data.isActive !== undefined ? { status: data.isActive ? 'ACTIVE' : 'DRAFT' } : {}),
+    ...(data.status === undefined && data.isActive !== undefined ? { status: data.isActive ? 'ACTIVE' : 'DRAFT' } : {}),
   });
   return mapProduct(product);
 }
