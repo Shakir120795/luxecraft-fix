@@ -26,7 +26,6 @@ export function HomeCouponLabel() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const manuallyOpenedRef = useRef(false);
   const mobileMenuOpenRef = useRef(false);
-  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -65,35 +64,15 @@ export function HomeCouponLabel() {
         manuallyOpenedRef.current = false;
       }
       setOpen(false);
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-        scrollTimeoutRef.current = null;
-      }
     };
 
     window.addEventListener('wolhomes:mobile-menu-state', handleMobileMenuState);
     return () => window.removeEventListener('wolhomes:mobile-menu-state', handleMobileMenuState);
   }, []);
 
-  useEffect(() => {
-    const isTouchLayout = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
-    if (!isTouchLayout) return;
-
-    const handleScroll = () => {
-      if (manuallyOpenedRef.current || mobileMenuOpenRef.current) return;
-      setOpen(true);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = setTimeout(() => {
-        setOpen(manuallyOpenedRef.current);
-      }, 900);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    };
-  }, []);
+  // The label opens only when the visitor taps/clicks it (or hovers on
+  // desktop). It must NOT auto-expand on scroll — on mobile the expanded
+  // label covered a large part of the screen while browsing.
 
   if (!coupon || mobileMenuOpen) return null;
 
