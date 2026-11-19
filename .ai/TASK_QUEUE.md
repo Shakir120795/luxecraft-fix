@@ -594,3 +594,14 @@ LuxeCraft is fully implemented and production-ready:
 
 
 - [x] Automatically deactivate a coupon and clear its homepage label after the global use limit is reached, including when legacy use counts are corrected by an admin.
+
+---
+
+## User-Reported Fix Batch — Editor/Publish/Prices/Label (2026-11-20)
+
+- [x] Stop variant editor rows from re-sorting mid-typing (cursor jumped between size cards on Space/Tab).
+- [x] Make a new listing go ACTIVE in one save when Active is selected (client was forcing DRAFT).
+- [x] Show each size's own price on the product page and the lowest size price on cards.
+- [x] Stop the homepage offer label from expanding on mobile scroll; open only on tap.
+- [x] Run API/admin/storefront builds (verified 2026-11-20: API tsc clean + Jest 13/13; admin and storefront tsc + Next builds pass).
+- [ ] Deploy to AWS (user runs pull/build/up) and browser smoke checks: variant typing, one-save Active listing, per-size prices, label tap-only on mobile.

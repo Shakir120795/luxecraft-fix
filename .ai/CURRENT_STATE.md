@@ -948,3 +948,14 @@ Changes are committed on `safe-site-pages-cms-fix`. **Deployed by the user on AW
 
 
 Additional coupon behavior: when the last allowed use is successfully redeemed, the backend now sets `isActive=false` and `showOnHome=false`. If an admin corrects historical `usedCount` and that reaches the global limit, saving the coupon also deactivates it and clears the homepage flag. Existing historical orders still cannot be matched to a particular coupon automatically because old order rows did not retain coupon IDs.
+
+---
+
+## Recent Fix Batch — Editor Focus, Publish Status, Variant Prices, Offer Label (2026-11-20)
+
+Four user-reported fixes on `safe-site-pages-cms-fix`; verified locally (API tsc clean + Jest 13/13, admin tsc + Next build, storefront tsc + Next build). Deployment to AWS is pending the user's pull/build/up.
+
+- Admin product editor: variant rows are no longer re-sorted by size name on every keystroke (typing in one size card moved it — and the cursor — into another card). Sizes sort when the product loads and in the save payload, as before.
+- Admin product create: the API client no longer derives the product status from the legacy `isActive` flag, which forced every new listing to DRAFT even when Active was selected. The editor's explicit status is now sent; `isActive` remains only as a fallback when no status is given (same precedence on update).
+- Variant pricing display: a variant with its own regular price now uses its own sale price (or none) on the product page, in size-filtered listing results, and cards show the lowest priced size. Previously larger sizes inherited the base size's sale price, so every size showed the same amount. Cart/checkout server pricing already used variant-first precedence and is unchanged.
+- Homepage offer label: removed the mobile scroll listener that auto-expanded the label while scrolling; it now opens only on tap/click (or desktop hover).
