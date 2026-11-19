@@ -587,6 +587,7 @@ LuxeCraft is fully implemented and production-ready:
 - [x] Hide exhausted/reserved-out homepage coupons and refresh offer visibility.
 - [x] Add admin correction for historical coupon uses that were not recorded before the fix.
 - [x] Replace legacy custom-design token refresh/localStorage assumptions with shared HttpOnly-cookie auth; use the same flow for reference uploads/messages.
+- [x] Harden storefront token refresh against refresh-token rotation races: on a 401/403 the refresh retries once with the rotated cookie before the session is treated as expired (2026-11-20).
 - [x] Run API/admin/storefront builds (verified 2026-11-19: API Jest 13/13 pass, including coupon customer-usage specs; API, storefront and admin builds pass at 77ecc3f).
 - [ ] Browser smoke checks after deployment (coupon one-time use end-to-end; custom design submit while logged in).
 - [x] Pull and deploy the combined batch once the user confirms the remaining issue list is complete. (Deployed by user on AWS, 2026-11-19.)

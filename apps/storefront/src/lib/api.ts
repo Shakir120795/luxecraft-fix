@@ -474,35 +474,62 @@ async function refreshAccessToken(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       try {
-        const res = await apiFetch(`${API_URL}/auth/refresh`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({}),
-          cache: 'no-store',
-        });
+        // The API rotates the refresh cookie on every refresh and revokes the
+        // previous token, so exactly one concurrent refresh can win. A second
+        // tab, or a page navigation racing an in-flight refresh, can lose
+        // that race even though the session is still valid: its request
+        // carried the pre-rotation cookie and gets a 401. Retry once — by
+        // then the browser holds the rotated cookie — before treating a
+        // 401/403 as a genuinely expired session.
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          if (attempt > 0) {
+            await new Promise((resolve) => setTimeout(resolve, 350));
+          }
 
-        const data = await res.json().catch(() => null);
-        const auth = data?.data ?? data;
+          const res = await apiFetch(`${API_URL}/auth/refresh`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({}),
+            cache: 'no-store',
+          });
 
-        if (!res.ok || !auth?.accessToken) {
-          accessToken = null;
+          const data = await res.json().catch(() => null);
+          const auth = data?.data ?? data;
+
+          if (res.ok && auth?.accessToken) {
+            accessToken = auth.accessToken as string;
+            refreshBlocked = false;
+            if (auth.user) {
+              localStorage.setItem('user', JSON.stringify(auth.user));
+              notifyAuthStateChanged();
+            }
+            return accessToken;
+          }
+
           const invalidSession = res.status === 401 || res.status === 403;
-          refreshBlocked = invalidSession;
+          if (!invalidSession) {
+            // Server-shaped failure (5xx etc.): stay unblocked so the next
+            // protected action can try the refresh cookie again.
+            accessToken = null;
+            refreshBlocked = false;
+            return null;
+          }
 
-          if (invalidSession && typeof window !== 'undefined') {
+          if (attempt === 0) {
+            // Possible lost rotation race — retry once with the current cookie.
+            continue;
+          }
+
+          accessToken = null;
+          refreshBlocked = true;
+          if (typeof window !== 'undefined') {
             localStorage.removeItem('user');
             notifyAuthStateChanged();
           }
           return null;
         }
 
-        accessToken = auth.accessToken as string;
-        refreshBlocked = false;
-        if (auth.user) {
-          localStorage.setItem('user', JSON.stringify(auth.user));
-          notifyAuthStateChanged();
-        }
-        return accessToken;
+        return null;
       } catch (error) {
         console.error('Failed to refresh access token:', error);
         accessToken = null;
