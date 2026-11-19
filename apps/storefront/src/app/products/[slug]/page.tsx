@@ -222,15 +222,19 @@ export default function ProductDetailPage() {
   const selectedSizeVariant =
     product.variants?.find((variant) => variant.id === selectedVariant) ?? null;
 
-  const effectiveRegularPrice =
-    selectedSizeVariant?.regularPrice != null
-      ? selectedSizeVariant.regularPrice
-      : product.regularPrice;
+  // A variant that carries its own regular price defines its own price
+  // point: its own sale price (or none) applies. Falling back to the
+  // product-level sale price made every size show the base size's sale
+  // price (e.g. the 9x12 showed the smallest size's sale price).
+  const variantHasOwnPrice = selectedSizeVariant?.regularPrice != null;
 
-  const effectiveSalePrice =
-    selectedSizeVariant?.salePrice != null
-      ? selectedSizeVariant.salePrice
-      : product.salePrice;
+  const effectiveRegularPrice = variantHasOwnPrice
+    ? selectedSizeVariant.regularPrice
+    : product.regularPrice;
+
+  const effectiveSalePrice = variantHasOwnPrice
+    ? selectedSizeVariant.salePrice
+    : product.salePrice;
 
   const displayPrice = parseFloat(
     String(effectiveSalePrice ?? effectiveRegularPrice),

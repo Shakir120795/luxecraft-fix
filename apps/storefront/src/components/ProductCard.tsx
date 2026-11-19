@@ -3,11 +3,44 @@ import { Product } from '@/lib/api';
 
 export function ProductCard({ product }: { product: Product }) {
   const mainImage = product.media?.find((m) => m.isMain) || product.media?.[0];
-  const displayPrice = parseFloat(String(product.salePrice ?? product.regularPrice));
-  const regularPrice = parseFloat(String(product.regularPrice));
-  const hasDiscount =
-    product.salePrice != null &&
-    parseFloat(String(product.salePrice)) < regularPrice;
+  // Cards show the lowest size price. A variant that carries its own
+  // regular price defines its own price point (its sale price, or none),
+  // never the product-level sale price, which belongs to the base size.
+  // When a size filter selected a variant, the API has already mapped
+  // that variant's price onto the product fields, so use them as-is.
+  const pricedVariants = product.selectedVariantName
+    ? []
+    : (product.variants ?? []).filter(
+        (variant) =>
+          variant.isAvailable !== false &&
+          variant.name?.trim() &&
+          variant.name.trim().toLowerCase() !== 'default' &&
+          variant.regularPrice != null,
+      );
+  const cheapestVariant = pricedVariants.reduce<(typeof pricedVariants)[number] | null>(
+    (cheapest, variant) =>
+      cheapest == null ||
+      parseFloat(String(variant.salePrice ?? variant.regularPrice)) <
+        parseFloat(String(cheapest.salePrice ?? cheapest.regularPrice))
+        ? variant
+        : cheapest,
+    null,
+  );
+  const displayPrice = parseFloat(
+    String(
+      cheapestVariant
+        ? (cheapestVariant.salePrice ?? cheapestVariant.regularPrice)
+        : (product.salePrice ?? product.regularPrice),
+    ),
+  );
+  const regularPrice = parseFloat(
+    String(cheapestVariant ? cheapestVariant.regularPrice : product.regularPrice),
+  );
+  const hasDiscount = cheapestVariant
+    ? cheapestVariant.salePrice != null &&
+      parseFloat(String(cheapestVariant.salePrice)) < regularPrice
+    : product.salePrice != null &&
+      parseFloat(String(product.salePrice)) < regularPrice;
   const variantSizes = Array.from(
     new Set(
       (product.variants ?? [])

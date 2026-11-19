@@ -383,7 +383,12 @@ export class StorefrontService {
           ...product,
           ...(selectedVariant && {
             regularPrice: selectedVariant.regularPrice ?? product.regularPrice,
-            salePrice: selectedVariant.salePrice ?? product.salePrice,
+            // A variant with its own regular price uses its own sale price
+            // (or none) — never the product-level (base size) sale price.
+            salePrice:
+              selectedVariant.regularPrice != null
+                ? selectedVariant.salePrice
+                : (selectedVariant.salePrice ?? product.salePrice),
           }),
           ...(selectedSize && {
             selectedVariantName:
