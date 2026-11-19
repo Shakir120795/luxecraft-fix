@@ -935,16 +935,16 @@ Changes committed to `safe-site-pages-cms-fix`; **do not deploy this batch until
 
 ## Recent Fix Batch — Coupon Limits + Custom Design Auth (2026-10-25)
 
-Changes are committed on `safe-site-pages-cms-fix`; still **pending combined deployment**.
+Changes are committed on `safe-site-pages-cms-fix`. **Deployed by the user on AWS on 2026-11-19** (branch head 77ecc3f). Build/test verification completed 2026-11-19: API Jest 13/13 pass (including coupon customer-usage specs), API build passes, storefront and admin TypeScript + Next builds pass. Browser smoke checks on the live site remain pending.
 
 - Added coupon usage reservations so global limits are enforced at checkout, including concurrent checkouts. A coupon reservation becomes a redemption only when payment is confirmed; failed/cancelled orders release the reservation.
 - Enforced `maxPerCustomer` against this customer's reserved/used coupon orders.
 - Homepage offer lookup now hides a coupon once its usage limit is consumed or fully reserved; the home offer component refreshes on focus/visibility and every 30 seconds.
 - Added an admin-only-by-role correction field, **Already redeemed uses**, so the known historic use count can be backfilled for coupons used before this tracking existed.
 - Custom Design now uses the shared HttpOnly-cookie auth refresh flow, not legacy `localStorage` refresh/access tokens. Reference file uploads and follow-up messages use the same credentialed API helper and handle wrapped upload responses.
-- Added migration `20261025180000_coupon_usage_reservations`. Production migration is still pending.
+- Added migration `20261025180000_coupon_usage_reservations` (plus `20261025190000_coupon_customer_usage_counters` and `20261025193000_custom_request_submission_idempotency`). These must be applied on production via `prisma migrate deploy` as part of the deployment.
 - Important: orders created before this fix did not persist the coupon code, so their exact coupon usage cannot be inferred safely. Before reactivating/using an old one-time coupon after deployment, edit that coupon and set **Already redeemed uses** to the known historical count (e.g. `1` for an already-redeemed single-use code).
-- Build/typecheck/browser verification and AWS deployment remain pending. Do not deploy until the user says the remaining fix list is complete.
+- Build/typecheck verification completed 2026-11-19 (see above); browser smoke verification on the live site remains pending.
 
 
 Additional coupon behavior: when the last allowed use is successfully redeemed, the backend now sets `isActive=false` and `showOnHome=false`. If an admin corrects historical `usedCount` and that reaches the global limit, saving the coupon also deactivates it and clears the homepage flag. Existing historical orders still cannot be matched to a particular coupon automatically because old order rows did not retain coupon IDs.

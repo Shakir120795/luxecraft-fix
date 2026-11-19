@@ -572,8 +572,9 @@ LuxeCraft is fully implemented and production-ready:
 - [x] Make admin stock counts refresh automatically and expose per-size available stock.
 - [x] Prevent product edits from overwriting inventory with stale stock quantities.
 - [x] Apply numeric ascending ordering to Size filter values and product variants across admin and storefront.
-- [ ] Run API/admin/storefront builds and browser smoke checks after all requested fixes are complete.
-- [ ] Pull and deploy once only after the user confirms the remaining issue list is complete.
+- [x] Run API/admin/storefront builds (verified 2026-11-19: API Jest 13/13 pass; API, storefront and admin builds pass at 77ecc3f).
+- [ ] Browser smoke checks after deployment.
+- [x] Pull and deploy once only after the user confirms the remaining issue list is complete. (Deployed by user on AWS, 2026-11-19.)
 
 
 ---
@@ -586,8 +587,9 @@ LuxeCraft is fully implemented and production-ready:
 - [x] Hide exhausted/reserved-out homepage coupons and refresh offer visibility.
 - [x] Add admin correction for historical coupon uses that were not recorded before the fix.
 - [x] Replace legacy custom-design token refresh/localStorage assumptions with shared HttpOnly-cookie auth; use the same flow for reference uploads/messages.
-- [ ] Run API/admin/storefront builds and browser smoke checks after all requested fixes are complete.
-- [ ] Pull and deploy the combined batch once the user confirms the remaining issue list is complete.
+- [x] Run API/admin/storefront builds (verified 2026-11-19: API Jest 13/13 pass, including coupon customer-usage specs; API, storefront and admin builds pass at 77ecc3f).
+- [ ] Browser smoke checks after deployment (coupon one-time use end-to-end; custom design submit while logged in).
+- [x] Pull and deploy the combined batch once the user confirms the remaining issue list is complete. (Deployed by user on AWS, 2026-11-19.)
 
 
 - [x] Automatically deactivate a coupon and clear its homepage label after the global use limit is reached, including when legacy use counts are corrected by an admin.
